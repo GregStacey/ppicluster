@@ -11,7 +11,7 @@ colormap(cmap)
 %% Plot
 
 sRange = [0 0.01 0.02 0.05 .1 0.15 .25 .5 1];
-
+mRange = sRange;
 
 figure,hold on
 plot(data.chromnoise.Chromatograms{1,1}(395,:),'k')
@@ -79,34 +79,35 @@ xlabel('Co-interactome probability')
 ylabel('Co-complex probability')
 
 
-% Network noise, Dense vs sparse
-%I = [2 3 4 6 7 8];
-I = 1:8;
-figure,subplot(1,3,1), hold on
-plot(mRange,data.netnoise.dense.cocom(I,:)','k')
-plot(mRange,data.netnoise.sparse.cocom(I,:)', 'r')
-axis([0 .5 0 1])
-ylabel('Co-complex probability')
-xlabel('Noise added (% shuffled)')
-title('Network noise, dense vs sparse')
-subplot(1,3,2), hold on
-plot(mRange,data.netnoise.dense.ga(I,:)', 'k')
-plot(mRange,data.netnoise.sparse.ga(I,:)', 'r')
-axis([0 .5 0 1])
-ylabel('Geometric accuracy')
-xlabel('Noise added (% shuffled)')
-subplot(1,3,3), hold on
-plot(0,0,'k')
-plot(0,0,'r')
-plot(mRange,data.netnoise.dense.mr(I,:)', 'k')
-plot(mRange,data.netnoise.sparse.mr(I,:)', 'r')
-axis([0 .5 0 1])
-ylabel('Matching ratio')
-xlabel('Noise added (% shuffled)')
-legend('Sparse','Dense')
-set(gcf,'units','normalized','paperunits','normalized',...
-    'position',[.1 .1 .6 .3],'paperposition',[.1 .1 .6 .3])
-
+try
+    % Network noise, Dense vs sparse
+    %I = [2 3 4 6 7 8];
+    I = 1:8;
+    figure,subplot(1,3,1), hold on
+    %plot(mRange,data.netnoise.dense.cocom(I,:)','k')
+    plot(mRange,data.netnoise.sparse.cocom(I,:)', 'r')
+    axis([0 .5 0 1])
+    ylabel('Co-complex probability')
+    xlabel('Noise added (% shuffled)')
+    title('Network noise, dense vs sparse')
+    subplot(1,3,2), hold on
+    %plot(mRange,data.netnoise.dense.ga(I,:)', 'k')
+    plot(mRange,data.netnoise.sparse.ga(I,:)', 'r')
+    axis([0 .5 0 1])
+    ylabel('Geometric accuracy')
+    xlabel('Noise added (% shuffled)')
+    subplot(1,3,3), hold on
+    plot(0,0,'k')
+    plot(0,0,'r')
+    %plot(mRange,data.netnoise.dense.mr(I,:)', 'k')
+    plot(mRange,data.netnoise.sparse.mr(I,:)', 'r')
+    axis([0 .5 0 1])
+    ylabel('Matching ratio')
+    xlabel('Noise added (% shuffled)')
+    legend('Sparse','Dense')
+    set(gcf,'units','normalized','paperunits','normalized',...
+        'position',[.1 .1 .6 .3],'paperposition',[.1 .1 .6 .3])
+end
 
 
 % Corum-noise
@@ -138,24 +139,202 @@ title('Co-complex prob')
 subplot(2,4,5), hold on
 plot(cRange(1:8), data.corum.remove.co_mcl.mr,'k')
 plot(cRange(1:8), data.corum.remove.co.mr,'r')
-plot(cRange, data.corum.remove.mcl.mr,'b')
+plot(cRange(1:8), data.corum.remove.mcl.mr,'b')
 
 subplot(2,4,6), hold on
 plot(cRange(1:8), data.corum.remove.co_mcl.ga,'k')
 plot(cRange(1:8), data.corum.remove.co.ga,'r')
-plot(cRange, data.corum.remove.mcl.ga,'b')
+plot(cRange(1:8), data.corum.remove.mcl.ga,'b')
 
 subplot(2,4,7), hold on
 plot(cRange(1:8), data.corum.remove.co_mcl.coint,'k')
 plot(cRange(1:8), data.corum.remove.co.coint,'r')
-plot(cRange, data.corum.remove.mcl.coint,'b')
+plot(cRange(1:8), data.corum.remove.mcl.coint,'b')
 
 subplot(2,4,8), hold on
 plot(cRange(1:8), data.corum.remove.co_mcl.cocom,'k')
 plot(cRange(1:8), data.corum.remove.co.cocom,'r')
-plot(cRange, data.corum.remove.mcl.cocom,'b')
+plot(cRange(1:8), data.corum.remove.mcl.cocom,'b')
 
 
+
+%% Make "keep it simple" figure
+
+
+% figure 1 -  chrom noise
+figure
+subplot(1,6,1), hold on
+plot(mRange, data.chromnoise.co_mcl.mr, '--k')
+plot(mRange, data.chromnoise.co.mr, '--r')
+plot(mRange, data.chromnoise.mcl.mr, '--b')
+title('MMR')
+ylabel('Craig chrom noise')
+axis([0 .5 0 1])
+subplot(1,6,2), hold on
+plot(mRange, data.chromnoise.co_mcl.ga, '--k')
+plot(mRange, data.chromnoise.co.ga, '--r')
+plot(mRange, data.chromnoise.mcl.ga, '--b')
+axis([0 .5 0 1])
+title('GA')
+subplot(1,6,3), hold on
+plot(mRange, data.chromnoise.co_mcl.sn, '--k')
+plot(mRange, data.chromnoise.co.sn, '--r')
+plot(mRange, data.chromnoise.mcl.sn, '--b')
+axis([0 .5 0 1])
+title('Sn')
+subplot(1,6,4), hold on
+plot(mRange, data.chromnoise.co_mcl.ppv, '--k')
+plot(mRange, data.chromnoise.co.ppv, '--r')
+plot(mRange, data.chromnoise.mcl.ppv, '--b')
+axis([0 .5 0 1])
+title('PPV')
+subplot(1,6,5), hold on
+plot(mRange, data.chromnoise.co_mcl.nmi, '--k')
+plot(mRange, data.chromnoise.co.nmi, '--r')
+plot(mRange, data.chromnoise.mcl.nmi, '--b')
+axis([0 .5 0 1])
+title('NMI')
+subplot(1,6,6)
+axis([0 .5 0 1])
+plot(mRange, data.chromnoise.mcl.ga, 'b')
+title('ARI')
+set(gcf,'units','normalized','position',[.3 .6 .6 .25])
+
+
+% figure 2 - net noise
+figure
+% row 1 - Craig network noise add
+subplot(4,6,1), hold on
+plot(mRange, data.netnoise.add.co_mcl.mr, 'k')
+plot(mRange, data.netnoise.add.co.mr, 'r')
+plot(mRange, data.netnoise.add.mcl.mr, 'b')
+title('MMR')
+ylabel('Data net add')
+axis([0 1 0 1])
+subplot(4,6,2), hold on
+plot(mRange, data.netnoise.add.co_mcl.ga, 'k')
+plot(mRange, data.netnoise.add.co.ga, 'r')
+plot(mRange, data.netnoise.add.mcl.ga, 'b')
+title('GA')
+axis([0 1 0 1])
+subplot(4,6,3), hold on
+plot(mRange, data.netnoise.add.co_mcl.sn, 'k')
+plot(mRange, data.netnoise.add.co.sn, 'r')
+plot(mRange, data.netnoise.add.mcl.sn, 'b')
+title('Sn')
+axis([0 1 0 1])
+subplot(4,6,4), hold on
+plot(mRange, data.netnoise.add.co_mcl.ppv, 'k')
+plot(mRange, data.netnoise.add.co.ppv, 'r')
+plot(mRange, data.netnoise.add.mcl.ppv, 'b')
+title('PPV')
+axis([0 1 0 1])
+subplot(4,6,5), hold on
+plot(mRange, data.netnoise.add.co_mcl.nmi, 'k')
+plot(mRange, data.netnoise.add.co.nmi, 'r')
+plot(mRange, data.netnoise.add.mcl.nmi, 'b')
+title('NMI')
+axis([0 1 0 1])
+subplot(4,6,6), hold on
+plot(mRange, data.netnoise.add.mcl.ga, 'b')
+axis([0 1 0 1])
+title('ARI')
+
+% row 2 - Craig network noise remove
+subplot(4,6,7), hold on
+plot(mRange, data.netnoise.remove.co_mcl.mr, 'k')
+plot(mRange, data.netnoise.remove.co.mr, 'r')
+plot(mRange, data.netnoise.remove.mcl.mr, 'b')
+ylabel('Data net remove')
+axis([0 1 0 1])
+subplot(4,6,8), hold on
+plot(mRange, data.netnoise.remove.co_mcl.ga, 'k')
+plot(mRange, data.netnoise.remove.co.ga, 'r')
+plot(mRange, data.netnoise.remove.mcl.ga, 'b')
+axis([0 1 0 1])
+subplot(4,6,9), hold on
+plot(mRange, data.netnoise.remove.co_mcl.sn, 'k')
+plot(mRange, data.netnoise.remove.co.sn, 'r')
+plot(mRange, data.netnoise.remove.mcl.sn, 'b')
+axis([0 1 0 1])
+subplot(4,6,10), hold on
+plot(mRange, data.netnoise.remove.co_mcl.ppv, 'k')
+plot(mRange, data.netnoise.remove.co.ppv, 'r')
+plot(mRange, data.netnoise.remove.mcl.ppv, 'b')
+axis([0 1 0 1])
+subplot(4,6,11), hold on
+plot(mRange, data.netnoise.remove.co_mcl.nmi, 'k')
+plot(mRange, data.netnoise.remove.co.nmi, 'r')
+plot(mRange, data.netnoise.remove.mcl.nmi, 'b')
+axis([0 1 0 1])
+subplot(4,6,12)
+plot(mRange, data.netnoise.remove.mcl.ari, 'b')
+axis([0 1 0 1])
+
+% row 3 - corum add
+subplot(4,6,13), hold on
+plot(mRange, data.corum.add.co_mcl.mr, 'k')
+plot(mRange, data.corum.add.co.mr, 'r')
+plot(mRange, data.corum.add.mcl.mr, 'b')
+legend('CO+MCL','CO','MCL','location','south')
+ylabel('Corum add')
+axis([0 1 0 1])
+subplot(4,6,14), hold on
+plot(mRange, data.corum.add.co_mcl.ga, 'k')
+plot(mRange, data.corum.add.co.ga, 'r')
+plot(mRange, data.corum.add.mcl.ga, 'b')
+axis([0 1 0 1])
+subplot(4,6,15), hold on
+plot(mRange, data.corum.add.co_mcl.sn, 'k')
+plot(mRange, data.corum.add.co.sn, 'r')
+plot(mRange, data.corum.add.mcl.sn, 'b')
+axis([0 1 0 1])
+subplot(4,6,16), hold on
+plot(mRange, data.corum.add.co_mcl.ppv, 'k')
+plot(mRange, data.corum.add.co.ppv, 'r')
+plot(mRange, data.corum.add.mcl.ppv, 'b')
+axis([0 1 0 1])
+subplot(4,6,17), hold on
+plot(mRange, data.corum.add.co_mcl.nmi, 'k')
+plot(mRange, data.corum.add.co.nmi, 'r')
+plot(mRange, data.corum.add.mcl.nmi, 'b')
+axis([0 1 0 1])
+subplot(4,6,18), hold on
+plot(mRange, data.corum.add.mcl.ari, 'b')
+axis([0 1 0 1])
+
+% row 4 - corum remove
+subplot(4,6,19), hold on
+plot(mRange(1:length(data.corum.remove.co_mcl.mr)), data.corum.remove.co_mcl.mr, 'k')
+plot(mRange(1:length(data.corum.remove.co.mr)), data.corum.remove.co.mr, 'r')
+plot(mRange(1:length(data.corum.remove.mcl.mr)), data.corum.remove.mcl.mr, 'b')
+ylabel('Corum remove')
+axis([0 1 0 1])
+subplot(4,6,20), hold on
+plot(mRange(1:length(data.corum.remove.co_mcl.ga)), data.corum.remove.co_mcl.ga, 'k')
+plot(mRange(1:length(data.corum.remove.co.ga)), data.corum.remove.co.ga, 'r')
+plot(mRange(1:length(data.corum.remove.mcl.ga)), data.corum.remove.mcl.ga, 'b')
+axis([0 1 0 1])
+subplot(4,6,21), hold on
+plot(mRange(1:length(data.corum.remove.co_mcl.mr)), data.corum.remove.co_mcl.sn, 'k')
+plot(mRange(1:length(data.corum.remove.co.mr)), data.corum.remove.co.sn, 'r')
+plot(mRange(1:length(data.corum.remove.mcl.mr)), data.corum.remove.mcl.sn, 'b')
+axis([0 1 0 1])
+subplot(4,6,22), hold on
+plot(mRange(1:length(data.corum.remove.co_mcl.ppv)), data.corum.remove.co_mcl.ppv, 'k')
+plot(mRange(1:length(data.corum.remove.co.ppv)), data.corum.remove.co.ppv, 'r')
+plot(mRange(1:length(data.corum.remove.mcl.ppv)), data.corum.remove.mcl.ppv, 'b')
+axis([0 1 0 1])
+subplot(4,6,23), hold on
+plot(mRange(1:length(data.corum.remove.co_mcl.nmi)), data.corum.remove.co_mcl.nmi, 'k')
+plot(mRange(1:length(data.corum.remove.co.nmi)), data.corum.remove.co.nmi, 'r')
+plot(mRange(1:length(data.corum.remove.mcl.nmi)), data.corum.remove.mcl.nmi, 'b')
+axis([0 1 0 1])
+subplot(4,6,24), hold on
+plot(mRange(1:length(data.corum.remove.mcl.ari)), data.corum.remove.mcl.ari, 'b')
+axis([0 1 0 1])
+
+set(gcf,'units','normalized','position',[.1 .1 .6 .8])
 
 
 %% Illustrate clustering with an "animation"
@@ -218,6 +397,8 @@ for ii = 1:length(Iprots)
         end
     end
 end
+
+%%
 % ground truth network
 figure
 imagesc(M)
@@ -235,11 +416,11 @@ axis xy square
 set(gcf,'paperunits','centimeters','paperposition',[1 1 5 6],...
     'units','centimeters','position',[1 1 5 6])
 sf = [figdir 'figure01_clust0_v01.png'];
-saveas(gcf,sf);
+%saveas(gcf,sf);
 
 
 for ii = 1:8
-    C = data.corum.add.mcl.cluster{ii};
+    C = data.corum.remove.co.cluster{ii};
     I = cellfun(@(x) ismember(x, Iprots), C, 'UniformOutput', 0);
     I = cellfun(@(x) sum(x)>0, I);
     goodClusters = C(I);
@@ -251,7 +432,7 @@ for ii = 1:8
         for kk = 1:length(I0)
             this_kk = corum{I0(kk),2};
             JJ(kk,jj) = length(intersect(this_jj, this_kk));% / ...
-                %length(unique([this_kk this_jj']));
+            %length(unique([this_kk this_jj']));
         end
     end
     % resolve multiple predicted mathcing to the same reference
@@ -298,7 +479,7 @@ for ii = 1:8
     set(gcf,'paperunits','centimeters','paperposition',[1 1 5 6],...
         'units','centimeters','position',[1 1 5 6])
     sf = [figdir 'figure01_mcl' num2str(ii) '_v01.png'];
-    saveas(gcf,sf);
+    %saveas(gcf,sf);
 end
 
 

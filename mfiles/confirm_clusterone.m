@@ -1,7 +1,7 @@
 % compare my code to clusterone.java for a small connection matrix MM
 
 % connection matrices
-load('E:/Greg/ClusterReliable/data/MM.mat')
+load('/Users/Mercy/Academics/Foster/ClusterExplore/data/MM.mat')
 
 % clusterone.java
 CCj = cell(1,3);
