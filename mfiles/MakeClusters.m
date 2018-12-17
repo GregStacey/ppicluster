@@ -369,4 +369,21 @@ catch
 end
 
 
+%% Write clusters for functional analysis (R)
+% one cluster per row
+% metadata:
+%   - data type ('us' or 'corum')
+%   - noise type ('chrom', 'network_add', or 'network_remove')
+%   - noise magnitude
+%   - clustering algorithm
+
+fnout = 'E:\Greg\ClusterReliable\data/clusters.txt';
+fid = fopen(fnout, 'w');
+
+fnames0 = {'add' 'remove'};
+fnames1 = {'co_mcl' 'co' 'mcl'};
+fnames2 = {'mr' 'ga' 'sn' 'ppv' 'nmi' 'ari' 'coint' 'cocom'};
+
+fprintf(fid,'%s\t%s\t%s\t%s\t%s\t','data_type','noise_type','noise_mag','algorithm','cluster');
+
 
