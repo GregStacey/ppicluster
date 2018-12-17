@@ -1,8 +1,8 @@
 
-if (!library("ontologyIndex")) {
+if (!library(ontologyIndex)) {
   install.packages("ontologyIndex")
 }
-library("ontologyIndex")
+library(ontologyIndex)
 
 if (!library(GOstats)) {
   install.packages("GOstats")
