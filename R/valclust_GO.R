@@ -1,31 +1,31 @@
 
 if (!require(ontologyIndex)) {
-  install.packages("ontologyIndex")
+  install.packages("ontologyIndex", repos='http://cran.us.r-project.org')
 }
 library(ontologyIndex)
 
 if (!require(GOstats)) {
-  install.packages("GOstats")
+  install.packages("GOstats", repos='http://cran.us.r-project.org')
 }
 library(GOstats)
 
 if (!require("ggplot2")) {
-  install.packages("ggplot2")
+  install.packages("ggplot2", repos='http://cran.us.r-project.org')
 }
 require(ggplot2)
 
 if (!require("tidyverse")) {
-  install.packages("tidyverse")
+  install.packages("tidyverse", repos='http://cran.us.r-project.org')
 }
 library(tidyverse)
 
 if (!require("magrittr")) {
-  install.packages("magrittr")
+  install.packages("magrittr", repos='http://cran.us.r-project.org')
 }
 library(magrittr)
 
 if (!require("flavin")) {
-  install.packages("flavin")
+  install.packages("flavin", repos='http://cran.us.r-project.org')
 }
 library(flavin)
 
