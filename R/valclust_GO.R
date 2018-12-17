@@ -10,7 +10,7 @@ fnsave = "../data/clusters_coexp.Rda"
 load(fnsave)
 
 # # load clusters
-# fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters.txt"
+# fn = "../data/clusters.txt"
 # clusters = read.csv2(fn, sep="\t", quote="", stringsAsFactors = F)
 # clusters = clusters[,!names(clusters) %in% "X"]
 # clusters$noise_mag = as.numeric(clusters$noise_mag)
@@ -46,7 +46,7 @@ allsets = unique(clusters$set)
 #                ontology = ontology, propagate = T)
 # goa = goa[goa$UNIPROT %in% unqprots,]
 # read go slim
-slim = get_ontology("/Users/Mercy/Academics/Foster/ClusterExplore/data/goslim_pir.obo")
+slim = get_ontology("../data/goslim_pir.obo")
 goa.slim = read_gpa("/Users/Mercy/Academics/Foster/Manuscripts/GoldStandards/Data/goa_human.gpa",
                filter.NOT = T, filter.evidence = "IPI",
                ontology = slim, propagate = T)
