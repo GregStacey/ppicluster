@@ -5,8 +5,8 @@ if (!require(ontologyIndex)) {
 library(ontologyIndex)
 
 if (!require(GOstats)) {
-  install.packages("BiocManager")
-  BiocManager::install("GOstats", version = "3.8")
+  source("https://bioconductor.org/biocLite.R")
+  biocLite("GOstats")
 }
 library(GOstats)
 
