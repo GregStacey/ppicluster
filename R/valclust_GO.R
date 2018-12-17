@@ -21,7 +21,9 @@ if (!require("magrittr")) {
 library(magrittr)
 
 if (!require("flavin")) {
-  install.packages("flavin", repos='http://cran.us.r-project.org')
+  install.packages("devtools")
+  require(devtools)
+  install_github("skinnider/flavin")
 }
 library(flavin)
 
