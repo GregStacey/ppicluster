@@ -1,30 +1,30 @@
 
-if (!library(ontologyIndex)) {
+if (!require(ontologyIndex)) {
   install.packages("ontologyIndex")
 }
 library(ontologyIndex)
 
-if (!library(GOstats)) {
+if (!require(GOstats)) {
   install.packages("GOstats")
 }
 library(GOstats)
 
-if (!library("ggplot2")) {
+if (!require("ggplot2")) {
   install.packages("ggplot2")
 }
 require(ggplot2)
 
-if (!library("tidyverse")) {
+if (!require("tidyverse")) {
   install.packages("tidyverse")
 }
 library(tidyverse)
 
-if (!library("magrittr")) {
+if (!require("magrittr")) {
   install.packages("magrittr")
 }
 library(magrittr)
 
-if (!library("flavin")) {
+if (!require("flavin")) {
   install.packages("flavin")
 }
 library(flavin)
