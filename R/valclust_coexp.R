@@ -27,10 +27,13 @@ corum2add$noise_mag = "-1"
 corum2add$algorithm = "-1"
 clusters = rbind(clusters, corum2add)
 
-
 # unique IDs
 unqprots = unique(unlist(strsplit(clusters$cluster, ";")))
 
+# assign each cluster to a set (data_type, noise_type, noise_mag, algorithm)
+cols = c("data_type", "noise_type", "noise_mag", "algorithm")
+clusters$set = do.call(paste, c(clusters[cols], sep=";"))
+allsets = unique(clusters$set)
 
 
 # Co-expression
@@ -77,11 +80,18 @@ for (ii in 1:length(I)){
   RR[diag(nrow(RR))==1] = NA
   this.R = mean(as.vector(RR), na.rm=T)
   
+  # get unique proteins for this cluster set
+  this.set = clusters$set[I[ii]]
+  I.set = clusters$set %in% this.set
+  unqprots.this.set = unique(unlist(strsplit(clusters$ensembl[I.set], ";")))
+  Igtex_background = which(gtex$ensembl %in% unqprots.this.set)
+  
   # significance
   iterMax = 100
   rand.RR = numeric(iterMax)
   for (iter in 1:iterMax) {
-    fake.I = sample(nrow(gtex), sum(Igtex))
+    #fake.I = sample(nrow(gtex), sum(Igtex))
+    fake.I = sample(Igtex_background, sum(Igtex)) # background = proteins in this set (not all proteins)
     fake.RR = all.RR[fake.I, fake.I]
     fake.RR[diag(nrow(fake.RR))==1] = NA
     rand.RR[iter] = mean(as.vector(fake.RR), na.rm=T)

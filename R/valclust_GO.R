@@ -1,16 +1,41 @@
 
+if (!library("ontologyIndex")) {
+  install.packages("ontologyIndex")
+}
 library("ontologyIndex")
+
+if (!library(GOstats)) {
+  install.packages("GOstats")
+}
 library(GOstats)
+
+if (!library("ggplot2")) {
+  install.packages("ggplot2")
+}
 require(ggplot2)
+
+if (!library("tidyverse")) {
+  install.packages("tidyverse")
+}
 library(tidyverse)
+
+if (!library("magrittr")) {
+  install.packages("magrittr")
+}
 library(magrittr)
+
+if (!library("flavin")) {
+  install.packages("flavin")
+}
 library(flavin)
+
+
 
 fnsave = "../data/clusters_coexp.Rda"
 load(fnsave)
 
 # # load clusters
-# fn = "../data/clusters.txt"
+# fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters.txt"
 # clusters = read.csv2(fn, sep="\t", quote="", stringsAsFactors = F)
 # clusters = clusters[,!names(clusters) %in% "X"]
 # clusters$noise_mag = as.numeric(clusters$noise_mag)
@@ -95,6 +120,9 @@ for (ii in 1:length(allsets)) {
     print(paste("number of sig annotation terms = ", nrow(sumTable)))
   }
 }
+
+# write
+write_tsv(clusters, path = "../data/test_clusters.txt")
 
 
 
