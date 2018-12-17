@@ -10,11 +10,6 @@ if (!require(GOstats)) {
 }
 library(GOstats)
 
-if (!require("ggplot2")) {
-  install.packages("ggplot2", repos='http://cran.us.r-project.org')
-}
-require(ggplot2)
-
 if (!require("tidyverse")) {
   install.packages("tidyverse", repos='http://cran.us.r-project.org')
 }
