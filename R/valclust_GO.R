@@ -5,7 +5,8 @@ if (!require(ontologyIndex)) {
 library(ontologyIndex)
 
 if (!require(GOstats)) {
-  install.packages("GOstats", repos='http://cran.us.r-project.org')
+  install.packages("BiocManager")
+  BiocManager::install("GOstats", version = "3.8")
 }
 library(GOstats)
 
