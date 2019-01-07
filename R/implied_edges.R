@@ -45,6 +45,10 @@ if (!require("org.Hs.eg.db")) {
 }
 library(org.Hs.eg.db)
 
+if (!require(grex)) {
+  install.packages("grex", repos='http://cran.us.r-project.org')
+}
+
 
 print("initializing...")
 # load clusters
@@ -212,7 +216,6 @@ for (ii in 1:length(Igood)) {
 
 print("do co-expression analysis...")
 # now do co-expression analysis
-require(grex)
 
 # read gtex data
 fn = "../data/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_tpm.gct.gz"
