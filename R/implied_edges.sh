@@ -4,7 +4,7 @@
 #SBATCH --mail-user=richard.greg.stacey@gmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --time=23:55:00
-#SBATCH --mem=4000M
+#SBATCH --mem=16000M
 #SBATCH --array=1-24
 
 module load r/3.4.3

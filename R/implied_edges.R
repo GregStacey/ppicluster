@@ -108,7 +108,7 @@ interactomes$edges = apply(interactomes[,1:2],1,paste,collapse="-")
 
 print("get cluster edges...")
 # get cluster edges
-nn = 10^6
+nn = 5*10^6
 edges = character(nn)
 cc = 0
 for (ii in 1:nrow(clusters)) {
