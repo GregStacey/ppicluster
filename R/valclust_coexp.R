@@ -10,7 +10,11 @@ load(fnsave)
 fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters.txt"
 clusters = read.csv2(fn, sep="\t", quote="", stringsAsFactors = F)
 clusters = clusters[,!names(clusters) %in% "X"]
-clusters$noise_mag = as.numeric(clusters$noise_mag)
+
+# add clusters+shuffle
+fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_wshuffle.txt"
+clusters2add = read.csv2(fn, sep="\t", quote="", stringsAsFactors = F)
+clusters2add = clusters2add[,!names(clusters2add) %in% "X"]
 
 # add real CORUM complexes as positive control
 fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/allComplexes.txt"
@@ -25,7 +29,9 @@ corum2add$data_type = "corum_real"
 corum2add$noise_type = "-1"
 corum2add$noise_mag = "-1"
 corum2add$algorithm = "-1"
-clusters = rbind(clusters, corum2add)
+clusters = rbind(clusters, clusters2add, corum2add)
+clusters$noise_mag = as.numeric(clusters$noise_mag)
+
 
 # unique IDs
 unqprots = unique(unlist(strsplit(clusters$cluster, ";")))
@@ -119,7 +125,7 @@ ggsave("/Users/Mercy/Academics/Foster/ClusterExplore/figures/coexp_corum_box_siz
 
 
 I = !is.na(clusters$R.avg.pairwise) & clusters$data_type %in% "corum" & 
-  clusters$noise_type %in% "network_remove" & clusters$algorithm %in% "co_mcl"
+  clusters$noise_type %in% "network_shuffle" & clusters$algorithm %in% "co_mcl"
 ggplot(clusters[I,], aes(x=jitter(as.numeric(noise_mag)), y=log10(size.ensembl))) + geom_point(alpha=0.1) + geom_smooth()
 
 
@@ -133,3 +139,76 @@ ggplot(tmp2, aes(fill=data_type,x=R.avg.pairwise)) + geom_density(alpha=0.3, bw=
 
 
 save(all.RR, clusters, file=fnsave)
+
+
+
+# Ooooookay.
+# Something weird is going on.
+# Namely, average coexpression does not really change with noise.
+#
+# Therefore, pick a case study (ribosome) and follow it as noise is added.
+
+prots.rib = unlist(strsplit(corum$subunits.UniProt.IDs.[272], ";"))
+Icluster = clusters$data_type %in% "corum" & clusters$noise_type %in% "network_shuffle" &
+  clusters$algorithm %in% "co_mcl"
+
+clusters$noise_mag = as.numeric(clusters$noise_mag)
+
+noiseRange = unique(clusters$noise_mag[Icluster])
+noiseRange = sort(noiseRange[noiseRange>=0])
+
+df = data.frame(noiseMag = numeric(1000),
+                avg.R = numeric(1000),
+                N.clusters = numeric(1000),
+                I = numeric(1000))
+cc = 0
+for (ii in 1:length(noiseRange)) {
+  Inoise = Icluster & clusters$noise_mag==noiseRange[ii]
+  
+  I = numeric(nrow(clusters))
+  for (jj in 1:length(prots.rib)) {
+    I = I | grepl(prots.rib[jj], clusters$cluster)
+  }
+  I = which(I & Inoise) # all clusters with ribosomal proteins
+  
+  for (jj in 1:length(I)) {
+    cc = cc+1
+    this.cluster = unlist(strsplit(clusters$ensembl[I[jj]], ";", fixed=T))
+    Igtex = gtex$ensembl %in% this.cluster
+    RR = all.RR[Igtex, Igtex]
+    RR[diag(nrow(RR))==1] = NA
+    
+    df$noiseMag[cc] = noiseRange[ii]
+    df$avg.R[cc] = mean(as.vector(RR), na.rm=T)
+    df$N.clusters[cc] = length(I)
+    df$I[cc] = I[jj]
+  }
+}
+df = df[1:cc,]
+
+ggplot(df, aes(x=noiseMag, y=avg.R)) + geom_point() + geom_smooth()
+
+
+
+
+
+## Another QC idea:
+#   Do ribosomal protein clusters have similar avg.R when noise_mag==0?
+
+# 1. Subset of clusters with noise_mag==0 and contain ribosomal proteins
+I0 = clusters$noise_mag %in% "0" 
+Irib = numeric(nrow(clusters))
+for (jj in 1:length(prots.rib)) {
+  Irib = Irib| grepl(prots.rib[jj], clusters$cluster)
+}
+I = I0#Irib & I0
+
+# plot, grouped by
+#   data_type
+#   noise_type
+#   algorithm
+ggplot(clusters[I,], aes(noise_type, R.avg.pairwise)) + geom_boxplot() + 
+  facet_grid(algorithm ~ data_type)
+
+
+

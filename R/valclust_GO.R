@@ -27,6 +27,12 @@ if (!require("flavin")) {
 }
 library(flavin)
 
+if (!require("org.Hs.eg.db")) {
+  source("https://bioconductor.org/biocLite.R")
+  biocLite("org.Hs.eg.db")
+}
+library(org.Hs.eg.db)
+
 
 
 fnsave = "../data/clusters_coexp.Rda"
@@ -69,15 +75,15 @@ allsets = unique(clusters$set)
 #                ontology = ontology, propagate = T)
 # goa = goa[goa$UNIPROT %in% unqprots,]
 # read go slim
-slim = get_ontology("../data/goslim_pir.obo")
-goa.slim = read_gpa("/Users/Mercy/Academics/Foster/Manuscripts/GoldStandards/Data/goa_human.gpa",
-               filter.NOT = T, filter.evidence = "IPI",
-               ontology = slim, propagate = T)
+slim = get_ontology("../data/goslim_generic.obo")
+goa.slim = read_gpa("../data/goa_human.gpa",
+                    filter.NOT = T, filter.evidence = "IPI",
+                    ontology = slim, propagate = T)
 goa.slim = goa.slim[goa.slim$UNIPROT %in% unqprots,]
 
 
 # make a uniprot <--> ensembl map
-fn.map = "/Users/Mercy/Academics/Foster/Data/dbs/HUMAN_9606_idmapping.dat.gz"
+fn.map = "../data/HUMAN_9606_idmapping.dat.gz"
 map = read_tsv(fn.map,
                col_names = c("uniprot", "db", "id"))
 ens = filter(map, db == "GeneID") %>% dplyr::select(-db)
@@ -88,7 +94,15 @@ ens_ent = left_join(ens, ent, by = 'uniprot') %>%
   set_colnames(c("uniprot", "entrez", "gene"))
 
 
-clusters$n.sig.annot = numeric(nrow(clusters))
+# read gene2go file in case GOstats fails
+fn = "../data/gene2go"
+gene2go = read_tsv(fn)
+gene2go = gene2go[!gene2go$Evidence %in% "IEA", ] # filter by evidence
+# filter to go slim
+gene2go = gene2go[gene2go$GO_ID %in% goa.slim$GO.ID, ]
+
+
+clusters$n.BP.sig = -1
 # cluster set
 for (ii in 1:length(allsets)) {
   I.clusters = which(clusters$set %in% allsets[ii])
@@ -97,59 +111,134 @@ for (ii in 1:length(allsets)) {
   
   # complex
   for (jj in 1:length(I.clusters)) {
+    print(paste("enrichment analysis ", allsets[ii], " complex", jj))
+    
     this.complex = clusters$cluster[I.clusters[jj]]
     this.ids = unlist(strsplit(clusters$cluster[I.clusters[jj]], ";"))
     this.ids.entrez = ens_ent$entrez[ens_ent$uniprot %in% this.ids]
     
-    clusters$n.sig.annot[I.clusters[jj]] = NA
-    if (length(this.ids.entrez)<2) next
+    clusters$n.BP.sig[I.clusters[jj]] = NA
+    if (length(this.ids.entrez)<2) {
+      print("    cluster size <= 2...")
+      next
+    }
     
-    param <- new("GOHyperGParams", geneIds=this.ids.entrez,
-                 universeGeneIds=this.background.entrez,
-                 annotation="org.Hs.eg.db", ontology="BP",pvalueCutoff=0.05,
-                 conditional=FALSE, testDirection="over")
-    hyp <- hyperGTest(param)
-    sumTable <- summary(hyp, categorySize=30)
+    # need this nonsense trycatch() because of an sqlite error
+    # on computecanada
+    #sumTable = NA
+    #sumTable <- tryCatch(
+    #  {
+    #    param <- new("GOHyperGParams", geneIds=this.ids.entrez,
+    #                 universeGeneIds=this.background.entrez,
+    #                 annotation="org.Hs.eg.db", ontology="BP",pvalueCutoff=0.05,
+    #                 conditional=FALSE, testDirection="over")
+    #    hyp <- hyperGTest(param)
+    #    sumTable <- summary(hyp)
+    #  },
+    #  error=function(cond) {
+
+    # get all GO terms associated with background
+    this.gene2go = gene2go[gene2go$GeneID %in% this.background.entrez,]
     
-    # filter to go slim
-    sumTable = sumTable[sumTable$GOBPID %in% goa.slim$GO.ID,]
+    # remove redundant entries
+    this.gene2go = distinct(this.gene2go[,c("GeneID", "GO_ID")])
+    this.goterms = unique(this.gene2go$GO_ID)
+    nn = length(this.goterms)
     
-    clusters$n.sig.annot[I.clusters[jj]] = nrow(sumTable)
-    print(paste("number of sig annotation terms = ", nrow(sumTable)))
+    print(paste("    testing", nn, "go bp terms..."))
+    
+    sumTable = data.frame(GOBPID = character(nn), Pvalue = numeric(nn),
+                          stringsAsFactors = F)
+    for (kk in 1:nn) {
+      go = this.goterms[kk]
+      sumTable$GOBPID[kk] = go
+      #print(sumTable$GOBPID[kk])
+      
+      # universe
+      I.clusters = which(clusters$set %in% allsets[ii])
+      this.background = unique(unlist(strsplit(clusters$cluster[I.clusters], ";")))
+      this.background.entrez = unique(ens_ent$entrez[ens_ent$uniprot %in% this.background])
+      n.universe = length(this.background.entrez)
+      
+      # universe hits
+      n.u.hits = sum(this.gene2go$GeneID %in% this.background.entrez & this.gene2go$GO_ID %in% go)
+      
+      # set
+      this.complex = clusters$cluster[I.clusters[jj]]
+      this.ids = unlist(strsplit(clusters$cluster[I.clusters[jj]], ";"))
+      this.ids.entrez = ens_ent$entrez[ens_ent$uniprot %in% this.ids]
+      n.set = length(this.ids.entrez)
+      
+      # set hits
+      n.s.hits = sum(this.gene2go$GeneID %in% this.ids.entrez & this.gene2go$GO_ID %in% go)
+      
+      sumTable$Pvalue[kk] = phyper(n.s.hits-1, n.u.hits, n.universe-n.u.hits, n.set, lower.tail=FALSE)
+    }
+    sumTable = sumTable[sumTable$Pvalue<=.01, ]
+    #},
+    #warning=function(cond) {
+    #  print("error")
+    #},
+    #finally={
+    #  print("umm, finally")
+    #}
+    #)    
+    if (is.data.frame(sumTable)) {
+      clusters$n.BP.sig[I.clusters[jj]] = nrow(sumTable)
+      print(paste("    number of sig terms = ", nrow(sumTable)))
+    }
   }
+  
+  # write after each set in case of crash
+  write_tsv(clusters, path = "../data/BP_clusters.txt")
 }
 
 # write
-write_tsv(clusters, path = "../data/test_clusters.txt")
+write_tsv(clusters, path = "../data/BP_clusters.txt")
 
 
 
-# fn = "/Users/Mercy/Downloads/gene2go"
-# gene2go = read_tsv(fn)
-# 
-# 
-# # do a test (GO:0006412)
-# go = "GO:0006412"
-# # universe
-# ii = 546
-# I.clusters = which(clusters$set %in% allsets[ii])
-# this.background = unique(unlist(strsplit(clusters$cluster[I.clusters], ";")))
-# this.background.entrez = unique(ens_ent$entrez[ens_ent$uniprot %in% this.background])
-# n.universe = length(this.background.entrez)
-# 
-# # universe hits
-# n.u.hits = sum(gene2go$GeneID %in% this.background.entrez & gene2go$GO_ID %in% go)
-# 
-# # set
-# jj = 70
-# this.complex = clusters$cluster[I.clusters[jj]]
-# this.ids = unlist(strsplit(clusters$cluster[I.clusters[jj]], ";"))
-# this.ids.entrez = ens_ent$entrez[ens_ent$uniprot %in% this.ids]
-# n.set = length(this.ids.entrez)
-# 
-# # set hits
-# n.s.hits = sum(gene2go$GeneID %in% this.ids.entrez & gene2go$GO_ID %in% go)
-# 
-# phyper(n.s.hits, n.u.hits, n.universe-n.u.hits, n.set, lower.tail=FALSE)
-# 
-# 
+## analyze BP_clusters table
+fn = "../data/BP_clusters_graham.txt"
+bp = read_tsv(fn)
+bp = bp[!bp$noise_mag == -1,]
+
+# fraction of clusters with no support
+nn = length(allsets)
+df = data.frame(data_type=character(nn),
+                noise_type=character(nn),
+                noise_mag=numeric(nn),
+                algorithm = character(nn),
+                mean = numeric(nn),
+                fraction0 = numeric(nn),
+                nn = numeric(nn), stringsAsFactors = F)
+for (ii in 1:length(allsets)) {
+  tmp = unlist(strsplit(allsets[ii], ";"))
+  I = bp$data_type%in%tmp[1] & bp$noise_type%in%tmp[2] & 
+    bp$noise_mag==as.numeric(tmp[3]) & bp$algorithm%in%tmp[4] &
+    bp$n.BP.sig>-1 & bp$noise_type %in% c("chrom","network_remove","network_add", "network_shuffle")
+  
+  df$data_type[ii] = tmp[1]
+  df$noise_type[ii] = tmp[2]
+  df$noise_mag[ii] = as.numeric(tmp[3])
+  df$algorithm[ii] = tmp[4]
+  df$mean[ii] = mean(bp$n.BP.sig[I], na.rm=T)
+  df$fraction0[ii] = mean(bp$n.BP.sig[I]==0, na.rm=T)
+  df$nn[ii] = sum(!is.na(bp$n.BP.sig[I]))
+}
+df = df[!df$noise_type %in% "-1",]
+
+
+I = bp$noise_mag>-1 & bp$n.BP.sig>-1 & !is.na(log10(bp$n.BP.sig+1)) & bp$noise_mag<=1
+# number of sig terms
+ggplot(bp[I,], aes(jitter(x=noise_mag), y=log10(n.BP.sig+1))) + 
+  geom_point(alpha=0.05) + geom_smooth() + facet_grid(noise_type~algorithm)
+ggsave("/Users/Mercy/Academics/Foster/ClusterExplore/figures/GOvalidation_avgNterms.png")
+
+# fraction 0
+ggplot(df, aes(x=jitter(noise_mag), y=fraction0)) + 
+  geom_point(alpha=0.3) + facet_grid(algorithm~noise_type, scales="free") + 
+  geom_smooth()
+ggsave("/Users/Mercy/Academics/Foster/ClusterExplore/figures/GOvalidation_frac0terms.png")
+
+

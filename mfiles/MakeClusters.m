@@ -13,7 +13,7 @@ datadir = 'E:/Greg/PCP_SILAC/Runs/Craig/Final_interactome_13k/Output/tmp/';
 datanames = {'Craig'};
 tmp = dir([datadir 'data*rep*chan*.mat']);
 
-fnsave = 'E:\Greg\ClusterReliable\data/data_save_08.mat';
+fnsave = 'E:\Greg\ClusterReliable\data/data_save_09.mat';
 
 java_path = 'E:/Greg/ClusterReliable/java/cluster_one-1.0.jar';
 
@@ -48,17 +48,17 @@ catch
     % multiplicative noise, chrom_new = chrom * (1 + randn * s)
     %   s = [0 .1 .25 .5 1 2 5]
     
-    sRange = [0 0.01 0.02 0.05 .1 0.15 .25 .5 1];
-    data.chromnoise.Chromatograms = cell(length(data.file.name),length(sRange));
-    data.chromnoise.score = cell(length(data.file.name),length(sRange));
-    data.chromnoise.interactome = cell(length(data.file.name),length(sRange));
+    data.chromnoiseRange = [0 0.01 0.02 0.05 .1 0.15 .25 .5 1];
+    data.chromnoise.Chromatograms = cell(length(data.file.name),length(data.chromnoiseRange));
+    data.chromnoise.score = cell(length(data.file.name),length(data.chromnoiseRange));
+    data.chromnoise.interactome = cell(length(data.file.name),length(data.chromnoiseRange));
     for ii = 1:length(data.file.name)
         load(data.file.name{ii})
-        for jj = 1:length(sRange)
+        for jj = 1:length(data.chromnoiseRange)
             disp(['Making score matrix... ' num2str(ii) ' ' num2str(jj)])
             % add noise to chroms
             rnd = randn(size(data.Chromatograms{ii}));
-            data.chromnoise.Chromatograms{ii,jj} = data.Chromatograms{ii}.*exp(rnd*sRange(jj));
+            data.chromnoise.Chromatograms{ii,jj} = data.Chromatograms{ii}.*exp(rnd*data.chromnoiseRange(jj));
             
             % pre-process chromatograms
             chromclean = data.chromnoise.Chromatograms{ii,jj};
@@ -140,7 +140,7 @@ catch
         % chrom_noise clusters
         for jj = 1:size(data.chromnoise.score,2)
             disp('Clustering net_noise')
-            disp(['    chrom noise ' num2str(cRange(jj)*100) '%'])
+            disp(['    chrom noise ' num2str(data.chromnoiseRange(jj)*100) '%'])
             % make intMatrix
             intMatrix = data.chromnoise.score{ii,jj} > 0.5;
             intMatrix(intMatrix<0) = 0;
@@ -171,7 +171,7 @@ catch
                 for mm = 1:length(fnames_compare)
                     data.chromnoise.(fnames1{kk}).(fnames_compare{mm})(ii,jj) = tmp.(fnames_compare{mm});
                 end
-                if ismember('mcl', fnames1{kk})
+                if ismember('mcl', fnames1(kk))
                     data.chromnoise.mcl.ari(ii,jj) = ari(data.chromnoise.mcl.cluster{ii,1},...
                         data.chromnoise.mcl.cluster{ii,jj});
                 end
@@ -182,7 +182,7 @@ catch
     
     %% 2c. Cluster data - network noise
     
-%     intMatrix = shufflenetwork(data.chromnoise.score{ii,1}, sRange(jj));
+%     intMatrix = shufflenetwork(data.chromnoise.score{ii,1}, data.chromnoiseRange(jj));
 %     intMatrix = intMatrix > 0.5;
 %     intMatrix(intMatrix<0) = 0;
 %     intMatrix = (intMatrix - nanmin(intMatrix(:))) / (nanmax(intMatrix(:)) - nanmin(intMatrix(:)));
@@ -205,6 +205,8 @@ catch
         end
     end
     
+    data.addnoiseRange = [0 0.01 0.02 0.05 .1 0.15 .25 .5 1];
+    data.remnoiseRange = [0 0.01 0.02 0.05 .1 0.15 .25 .5 0.95];
     for ii = 1:length(data.file.name)
         % chrom_noise clusters
         for jj = 1:size(data.chromnoise.score,2)
@@ -213,11 +215,11 @@ catch
                 % make intMatrix
                 intMatrix = data.chromnoise.score{ii,1} > 0.5;
                 if ismember(fnames0{cc}, 'add')
-                    disp(['    add ' num2str(cRange(jj))])
-                    intMatrix = addremovenetwork(intMatrix, 1 * cRange(jj));
+                    disp(['    add ' num2str(data.addnoiseRange(jj))])
+                    intMatrix = addremovenetwork(intMatrix, 1 *  data.addnoiseRange(jj));
                 elseif ismember(fnames0{cc},'remove')
-                    disp(['    remove ' num2str(cRange(jj))])
-                    intMatrix = addremovenetwork(intMatrix, -1 * cRange(jj));
+                    disp(['    remove ' num2str(data.remnoiseRange(jj))])
+                    intMatrix = addremovenetwork(intMatrix, -1 * data.remnoiseRange(jj));
                 end
                 
                 for kk = 1:length(fnames1)
@@ -245,7 +247,7 @@ catch
                     for mm = 1:length(fnames_compare)
                         data.netnoise.(fnames0{cc}).(fnames1{kk}).(fnames_compare{mm})(ii,jj) = tmp.(fnames_compare{mm});
                     end
-                    if ismember('mcl', fnames1{kk})
+                    if ismember('mcl', fnames1(kk))
                         data.netnoise.(fnames0{cc}).mcl.ari(ii,jj) = ari(data.netnoise.(fnames0{cc}).mcl.cluster{ii,1},...
                             data.netnoise.(fnames0{cc}).mcl.cluster{ii,jj});
                     end
@@ -264,14 +266,13 @@ catch
     
     % turn corum into a network
     fn = 'E:/Greg/ClusterReliable/data/allComplexes.txt';
-    data.corum.network = corum2network(fn);
+    [data.corum.network, data.corum.proteins] = corum2network(fn);
     
-    cRange = sRange;
-    for ii = 1:length(cRange)
+    for ii = 1:length(data.addnoiseRange)
         disp('Clustering corum... ')
-        disp(['    add ' num2str(cRange(ii))])
+        disp(['    add ' num2str(data.addnoiseRange(ii))])
         % ADD edges to corum-network
-        intMatrix = addremovenetwork(data.corum.network, 1 * cRange(ii));
+        intMatrix = addremovenetwork(data.corum.network, 1 * data.addnoiseRange(ii));
         
         disp('        clusterone+mcl')
         % cluster with clusterone+mcl
@@ -318,8 +319,8 @@ catch
         
         
         % REMOVE edges to corum-network
-        disp(['    remove ' num2str(cRange(ii))])
-        intMatrix = addremovenetwork(data.corum.network, -1 * cRange(ii));
+        disp(['    remove ' num2str(data.remnoiseRange(ii))])
+        intMatrix = addremovenetwork(data.corum.network, -1 * data.remnoiseRange(ii));
         
         disp('        clusterone+mcl')
         % cluster with clusterone+mcl
@@ -369,6 +370,7 @@ catch
 end
 
 
+
 %% Write clusters for functional analysis (R)
 % one cluster per row
 % metadata:
@@ -384,6 +386,62 @@ fnames0 = {'add' 'remove'};
 fnames1 = {'co_mcl' 'co' 'mcl'};
 fnames2 = {'mr' 'ga' 'sn' 'ppv' 'nmi' 'ari' 'coint' 'cocom'};
 
-fprintf(fid,'%s\t%s\t%s\t%s\t%s\t','data_type','noise_type','noise_mag','algorithm','cluster');
+fprintf(fid,'%s\t%s\t%s\t%s\t%s\t\n','data_type','noise_type','noise_mag','algorithm','cluster');
+% chromnoise
+for ii = 1:length(fnames1) % ii = algorithm
+    for jj = 1:size(data.chromnoise.(fnames1{ii}).cluster,1) % jj = dataset
+        for kk = 1:size(data.chromnoise.(fnames1{ii}).cluster,2) % kk = noise mag
+            these_clusters = data.chromnoise.(fnames1{ii}).cluster{jj,kk};
+            for cc = 1:length(these_clusters)
+                this_cluster = these_clusters{cc};
+                if isempty(this_cluster); continue; end
+                this_cluster = strjoin(data.Protein{jj}.MajorID_NoIsoforms(this_cluster), ';');
+                fprintf(fid,'%s\t%s\t%6.4f\t%s\t%s\n',...
+                    ['us_' num2str(jj)],'chrom',data.chromnoiseRange(kk),fnames1{ii},this_cluster);
+            end
+        end
+    end
+end
+% us netnoise
+for ii = 1:length(fnames1) % ii = algorithm
+    for bb = 1:length(fnames0) % bb = add or remove
+        for jj = 1:size(data.netnoise.(fnames0{bb}).(fnames1{ii}).cluster,1) % jj = dataset
+            for kk = 1:size(data.netnoise.(fnames0{bb}).(fnames1{ii}).cluster,2) % kk = noise mag
+                if ismember('add', fnames0{bb})
+                    noisemag = data.addnoiseRange(kk);
+                elseif ismember('remove', fnames0{bb})
+                    noisemag = data.remnoiseRange(kk);
+                else
+                    error('whaat')
+                end
+                these_clusters = data.netnoise.(fnames0{bb}).(fnames1{ii}).cluster{jj,kk};
+                for cc = 1:length(these_clusters)
+                    this_cluster = these_clusters{cc};
+                    if isempty(this_cluster); continue; end
+                    this_cluster = strjoin(data.Protein{jj}.MajorID_NoIsoforms(this_cluster), ';');
+                    fprintf(fid,'%s\t%s\t%6.4f\t%s\t%s\n',...
+                        ['us_' num2str(jj)],['network_' fnames0{bb}],mRange(kk),fnames1{ii},this_cluster);
+                end
+            end
+        end
+    end
+end
 
+% corum netnoise
+for ii = 1:length(fnames1) % ii = algorithm
+    for bb = 1:length(fnames0) % bb = add or remove
+        for kk = 1:size(data.corum.(fnames0{bb}).(fnames1{ii}).cluster,2) % kk = noise mag
+            these_clusters = data.corum.(fnames0{bb}).(fnames1{ii}).cluster{kk};
+            for cc = 1:length(these_clusters)
+                this_cluster = these_clusters{cc};
+                if isempty(this_cluster); continue; end
+                this_cluster = strjoin(data.corum.proteins(this_cluster), ';');
+                fprintf(fid,'%s\t%s\t%6.4f\t%s\t%s\n',...
+                    'corum',['network_' fnames0{bb}],mRange(kk),fnames1{ii},this_cluster);
+            end
+        end
+    end
+end
+
+fclose all;
 
