@@ -11,7 +11,42 @@ if (!require("tidyverse")) {
   install.packages("tidyverse", repos='http://cran.us.r-project.org')
 }
 library(tidyverse)
+if (!require(ontologyIndex)) {
+  install.packages("ontologyIndex", repos='http://cran.us.r-project.org')
+}
+library(ontologyIndex)
 
+if (!require(GOstats)) {
+  source("https://bioconductor.org/biocLite.R")
+  biocLite("GOstats")
+}
+library(GOstats)
+
+if (!require("tidyverse")) {
+  install.packages("tidyverse", repos='http://cran.us.r-project.org')
+}
+library(tidyverse)
+
+if (!require("magrittr")) {
+  install.packages("magrittr", repos='http://cran.us.r-project.org')
+}
+library(magrittr)
+
+if (!require("flavin")) {
+  install.packages("devtools")
+  require(devtools)
+  install_github("skinnider/flavin")
+}
+library(flavin)
+
+if (!require("org.Hs.eg.db")) {
+  source("https://bioconductor.org/biocLite.R")
+  biocLite("org.Hs.eg.db")
+}
+library(org.Hs.eg.db)
+
+
+print("initializing...")
 # load clusters
 fnsave = "../data/clusters_wshuffle_coexp.Rda"
 load(fnsave)
@@ -24,6 +59,8 @@ if (length(this.args)==0) { # assume not called from the command line, run with 
   clusters = clusters[clusters$noise_mag==0, ]
   noise_type = "all"
   noise_mag = 0
+  
+  print("using all noise_types with noise_mag=0")
 } else if(length(this.args)==01) { # assume called correctly from implied_edges.sh
   # map command line argument (integer 1-27) to noise_type and noise_mag
   ia = mod(this.args-1, 8) + 1 # noise_mag index
@@ -40,6 +77,7 @@ if (length(this.args)==0) { # assume not called from the command line, run with 
 }
 
 
+print("get corum edges...")
 # get corum edges
 fn = "../data/allComplexes.txt"
 corum = read_tsv(fn)
@@ -58,17 +96,18 @@ for (ii in 1:nrow(corum)) {
 }
 corum.edges = corum.edges[1:cc]
 
+print("get interactome edges...")
 # get interactome edges
 fn = "../data/interactomes.txt"
 interactomes = read_tsv(fn)
 interactomes$edges = apply(interactomes[,1:2],1,paste,collapse="-")
 
+print("get cluster edges...")
 # get cluster edges
 nn = 10^6
 edges = character(nn)
 cc = 0
 for (ii in 1:nrow(clusters)) {
-  print(ii)
   prots = unlist(strsplit(clusters$cluster[ii], ";"))
   
   for (jj in 1:length(prots)) {
@@ -88,6 +127,7 @@ edges.in.interactome = edges %in% interactomes$edges
 
 
 
+print("do annotation analysis...")
 # now do annotation analysis
 
 # unique IDs
@@ -170,6 +210,7 @@ for (ii in 1:length(Igood)) {
 
 
 
+print("do co-expression analysis...")
 # now do co-expression analysis
 require(grex)
 
@@ -211,46 +252,47 @@ edges.RR[edges.RR==0] = NA
 
 
 
+
+#print("plotting...")
 # plot
-
 # GO
-I.novel = (!edges.in.interactome) & both.entrez==1
-I.known = (edges.in.interactome) & both.entrez==1
-N.novel = sum(I.novel)
-N.known = sum(I.known)
-onts = c("BP","CC","MF")
-df = data.frame(ont=character(6), implied.or.not=character(6),
-                fraction.gt0=numeric(6), mean=numeric(6),
-                stringsAsFactors = F)
-for (ii in 1:length(onts)) {
-  df$ont[ii] = onts[ii]
-  df$implied.or.not[ii] = "Implied"
-  df$fraction.gt0[ii] = sum(N.terms[,ii]>0 & I.novel, na.rm=T) / N.novel
-  df$mean[ii] = mean(N.terms[I.novel,ii], na.rm=T)
-  
-  df$ont[ii+3] = onts[ii]
-  df$implied.or.not[ii+3] = "Interactome"
-  df$fraction.gt0[ii+3] = sum(N.terms[,ii]>0 & I.known, na.rm=T) / N.known
-  df$mean[ii+3] = mean(N.terms[I.known,ii], na.rm=T)
-}
-ggplot(df, aes(x=ont, y=fraction.gt0)) + 
-  geom_bar(stat = "identity",position = "dodge",aes(fill = implied.or.not))
-ggsave("/Users/Mercy/Academics/Foster/ClusterExplore/figures/impliedEdges_fraction1GO.png")
+# I.novel = (!edges.in.interactome) & both.entrez==1
+# I.known = (edges.in.interactome) & both.entrez==1
+# N.novel = sum(I.novel)
+# N.known = sum(I.known)
+# onts = c("BP","CC","MF")
+# df = data.frame(ont=character(6), implied.or.not=character(6),
+#                 fraction.gt0=numeric(6), mean=numeric(6),
+#                 stringsAsFactors = F)
+# for (ii in 1:length(onts)) {
+#   df$ont[ii] = onts[ii]
+#   df$implied.or.not[ii] = "Implied"
+#   df$fraction.gt0[ii] = sum(N.terms[,ii]>0 & I.novel, na.rm=T) / N.novel
+#   df$mean[ii] = mean(N.terms[I.novel,ii], na.rm=T)
+#   
+#   df$ont[ii+3] = onts[ii]
+#   df$implied.or.not[ii+3] = "Interactome"
+#   df$fraction.gt0[ii+3] = sum(N.terms[,ii]>0 & I.known, na.rm=T) / N.known
+#   df$mean[ii+3] = mean(N.terms[I.known,ii], na.rm=T)
+# }
+# ggplot(df, aes(x=ont, y=fraction.gt0)) + 
+#   geom_bar(stat = "identity",position = "dodge",aes(fill = implied.or.not))
+# ggsave("../figures/impliedEdges_fraction1GO.png")
+# 
+# ggplot(df, aes(x=ont, y=mean)) + 
+#   geom_bar(stat = "identity",position = "dodge",aes(fill = implied.or.not))
+# ggsave("../figures/impliedEdges_avgsharedGO.png")
+# 
+# 
+# # Co-expression
+# df = data.frame(R=edges.RR, implied.or.not=!edges.in.interactome, stringsAsFactors = F)
+# ggplot(df, aes(x=R, fill=implied.or.not)) + geom_density(alpha = 0.3)
+# ggsave("../figures/impliedEdges_coexpress.png")
 
-ggplot(df, aes(x=ont, y=mean)) + 
-  geom_bar(stat = "identity",position = "dodge",aes(fill = implied.or.not))
-ggsave("/Users/Mercy/Academics/Foster/ClusterExplore/figures/impliedEdges_avgsharedGO.png")
 
 
-# Co-expression
-df = data.frame(R=edges.RR, implied.or.not=!edges.in.interactome, stringsAsFactors = F)
-ggplot(df, aes(x=R, fill=implied.or.not)) + geom_density(alpha = 0.3)
-ggsave("/Users/Mercy/Academics/Foster/ClusterExplore/figures/impliedEdges_coexpress.png")
-
-
-
+print("write data...")
 # write to file
-
 df2write = data.frame(edges=edges, 
                       RR=edges.RR, 
                       both.entrez, 
