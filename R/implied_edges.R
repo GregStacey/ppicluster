@@ -215,7 +215,7 @@ print("do co-expression analysis...")
 require(grex)
 
 # read gtex data
-fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_tpm.gct.gz"
+fn = "../data/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_tpm.gct.gz"
 gtex = read.table(fn, sep="\t", quote="", stringsAsFactors = F, skip = 3)
 gtex$ensembl = sapply(strsplit(gtex$V1, split=".", fixed=T), "[", 1)
 
@@ -300,7 +300,7 @@ df2write = data.frame(edges=edges,
                       N.terms.BP=N.terms$BP,
                       N.terms.CC=N.terms$CC,
                       N.terms.MF=N.terms$MF, stringsAsFactors = F)
-fn = paste("/Users/Mercy/Academics/Foster/ClusterExplore/data/impliedEdges_",
+fn = paste("../data/impliedEdges_",
            noise_type,"_",noise_mag,".txt", sep="")
 write_tsv(df2write, fn)
 
