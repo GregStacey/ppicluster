@@ -8,5 +8,5 @@
 
 module load r/3.4.3
 
-Rscript hierarch_kmeans.R
+Rscript hierach_kmeans.R
 
