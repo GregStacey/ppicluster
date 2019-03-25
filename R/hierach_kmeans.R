@@ -136,6 +136,6 @@ for (ii in 1:length(unqdatasets)) {
 
 # write clusters2
 clusters2 = clusters2[1:cc,]
-fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/cluster2.txt"
+fn = "../data/cluster2.txt"
 write_tsv(clusters2, fn)
 
