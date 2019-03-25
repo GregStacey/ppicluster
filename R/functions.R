@@ -5,6 +5,7 @@ require(magrittr)
 require(readr)
 require(reshape2)
 require(viridis)
+require(cluster)
 
 
 # define functions
