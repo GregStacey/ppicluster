@@ -1,0 +1,355 @@
+
+require(tidyverse)
+require(ggplot2)
+require(magrittr)
+require(readr)
+require(reshape2)
+require(viridis)
+
+
+# define functions
+calcA = function(this.cluster, clusters) {
+  # assignment reproducibility
+  # essentially the maximum Jaccard index
+  #
+  # this.cluster = single string, with semicolon-delimited IDs
+  # clusters = vector of strings, all semicolon-delimited IDs
+  
+  this.cluster = unlist(strsplit(this.cluster, ";"))
+  JJ = numeric(length(clusters))
+  for (ii in 1:length(clusters)) {
+    that.cluster = unlist(strsplit(clusters[ii], ";"))
+    JJ[ii] = length(intersect(this.cluster, that.cluster)) / 
+      length(unique(c(this.cluster, that.cluster)))
+  }
+  A = max(JJ, na.rm=T)
+  return(A)
+}
+
+
+calcE = function(cluster0_int, interactome0_int, this.interactome) {
+  # edge reproducibility
+  #
+  # cluster0 = integer vector (cluster of interest)
+  # interactome0 = integer pairs (interactome from which cluster0 comes)
+  # this.interactome = integer pairs (noised interactome)
+  
+  # count edges in cluster of interest
+  I0 = interactome0_int$protA %in% cluster0_int & interactome0_int$protB %in% cluster0_int
+  N0 = sum(I)
+  
+  # count fraction of edges dropped 
+  I = this.interactome$protA %in% cluster0_int & this.interactome$protB %in% cluster0_int
+  tmp0 = interactome0_int$protA*10^6 + interactome0_int$protB
+  tmp = this.interactome$protA*10^6 + this.interactome$protB
+  ff = sum(tmp0[I0] %in% tmp[I]) / sum(I0)
+  
+  # count fraction of edges dropped for entire interactome
+  FF = sum(tmp0 %in% tmp) / length(I0)
+  
+  E = ff / FF
+  return(E)
+}
+
+
+geomacc = function(predComplex, refComplex){
+  Na = length(refComplex)
+  Nb = length(predComplex)
+  
+  Ni = numeric(Na)
+  TT = matrix(nrow = Na, ncol = Nb)
+  for (ii in 1:Na) {
+    c1 = unlist(strsplit(refComplex[ii], ";"))
+    Ni[ii] = length(c1)
+    for (jj in 1:Nb) {
+      c0 = unlist(strsplit(predComplex[jj], ";"))
+      TT[ii,jj] = length(intersect(c1, c0));
+    }
+  }
+  
+  Trefmax = apply(TT,1,max)
+  Sn = sum(Trefmax) / sum(Ni)
+  
+  Tpredmax = apply(TT,2,max)
+  PPV = sum(Tpredmax) / sum(sum(TT))
+  
+  ga = sqrt(Sn * PPV)
+  return(ga)
+}
+
+
+matchingratio = function(predComplex, refComplex){
+  Na = length(refComplex)
+  Nb = length(predComplex)
+  
+  TT = matrix(nrow = Na, ncol = Nb)
+  for (ii in 1:Na) {
+    c1 = unlist(strsplit(refComplex[ii], ";"))
+    for (jj in 1:Nb) {
+      c0 = unlist(strsplit(predComplex[jj], ";"))
+      
+      overlap = length(intersect(c1, c0)) ^2
+      TT[ii,jj] = overlap / length(c1) / length(c0);
+    }
+  }
+  
+  if (Na<Nb) TT = t(TT)
+  
+  sortMatrix = matrix(nrow = nrow(TT), ncol = ncol(TT))
+  for (ii in 1:ncol(TT)) {
+    sortMatrix[,ii] = order(TT[,ii], decreasing = 1)
+  }
+  
+  already_picked = numeric(nrow(TT))
+  edges = numeric(ncol(TT))
+  
+  for (ii in 1:nrow(TT)) {
+    tmp = numeric(ncol(TT))
+    for (jj in 1:ncol(TT)) {
+      tmp[jj] = TT[sortMatrix[ii,jj], jj]
+    }
+    Iorder = order(tmp, decreasing = 1)
+    
+    for (jj in 1:ncol(TT)) {
+      Ipred = Iorder[jj]
+      Iref = sortMatrix[ii, Ipred]
+      
+      if (!edges[Ipred]==0) next()
+      
+      if (already_picked[Iref]==0) {
+        edges[Ipred] = Iref
+        already_picked[Iref] = 1
+      }
+    }
+  }
+  
+  mmr = 0;
+  for (ii in 1:min(Na,Nb)) {
+    if (edges[ii]>0) {
+      mmr = mmr + TT[edges[ii], ii]
+    }
+  }
+  mmr = mmr / Na
+  
+  return(mmr)
+}
+
+
+
+normMI = function(predComplex, refComplex){
+  Na = length(refComplex)
+  Nb = length(predComplex)
+  
+  return(nmi)
+}
+
+
+
+hairball = function(adjmat, this.cluster, allProts){
+  # convert to graph
+  g = graph_from_adjacency_matrix(adjmat, mode = 'undirected', weighted=T)
+  I.orig = (allProts %in% this.cluster)
+  
+  # add information to each node 
+  nodes = allProts
+  palette = colorRamp(ggsci::pal_gsea()(n = 12))(seq(100) / 100)
+  colors = palette[E(g)$weight * 255]
+  V(g)$color[I.orig] = "black"
+  V(g)$color[!I.orig] = "white"
+  V(g)$size[I.orig] = .25
+  V(g)$size[!I.orig] = 0
+  E(g)$alpha = E(g)$weight
+  E(g)$size = E(g)$weight
+  I.orig = which(I.orig)
+  I.orig.pairs = numeric(length(I.orig) * (length(I.orig)-1) / 2)
+  cc = 0
+  for (ii in 1:length(I.orig)) {
+    for (jj in 1:length(I.orig)) {
+      if (ii>=jj) next
+      cc = cc+1
+      I.orig.pairs[cc] = I.orig[ii]
+      cc = cc+1
+      I.orig.pairs[cc] = I.orig[jj]
+    }
+  }
+  E(g)$color = 0
+  E(g, P = I.orig.pairs)$color = 1
+  
+  layout = layout.lgl(g)
+  N = ggnetwork(g, layout = layout)
+  N$cluster0 = as.numeric(N$vertex.names %in% I.orig)
+  # add two extra line to prevent normalizing
+  N$size.x = N$size.x / 4
+  x = N[nrow(N),]
+  N = rbind(N,x)
+  N = rbind(N,x)
+  iend = nrow(N)
+  N[iend,c("weight","size.x","color.y","alpha","cluster0")] = 1
+  N[iend-1,c("weight","size.x","color.y","alpha","cluster0")] = 0
+  N[iend,c("x","y","xend","yend")] = 0
+  N$x[iend] = 0.125
+  
+  p = ggplot(N, aes(x = x, y = y, xend = xend, yend = yend)) + 
+    geom_edges(aes(size=size.x, color=color.y, alpha=alpha)) + 
+    geom_nodes(aes(color=cluster0, size = cluster0)) +
+    theme_void() + theme(legend.position="none")
+  return(p)
+}
+
+
+hiclust = function(ints, nclust){
+  unqprots = unique(c(ints$protA, ints$protB))
+  nn = length(unqprots)
+  
+  # create adjacency matrix in the style of `dist` object
+  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
+  I.row = match(ints$protA, unqprots) # row
+  I.col = match(ints$protB, unqprots) # column
+  
+  if (FALSE) { # long way
+    # dummy dist object
+    x = matrix(runif(nn * nn), nrow = nn, ncol=10)
+    d.long = dist(x)
+    attr(d.long, 'Upper') = T
+    d.long[1:length(d.long)] = 1
+    cc = 0
+    for (ii in 1:nn) { # column
+      ia = which(I.col==ii)
+      for (jj in 1:nn) { # row
+        if (ii>=jj) next
+        cc = cc+1
+        ib = which(I.row==jj)
+        if (length(intersect(ia,ib))==1) {
+          d.long[cc] = 0
+        }
+      }
+    }
+    hc = hclust(d.long)
+    clusts = cutree(hc,5)
+    
+  } else { # short hard way
+    I.fill = numeric(length(I.row))
+    for (ii in 1:length(I.row)) {
+      a = I.row[ii]
+      b = I.col[ii]
+      # ensure I.col < I.row, i.e. upper triangular
+      if (I.row[ii] < I.col[ii]) {
+        a = I.col[ii]
+        b = I.row[ii]
+      }
+      
+      I.fill[ii] = a - 1
+      if (b>1) {
+        colsum = 0
+        for (jj in 1:(b-1)) {
+          colsum = colsum + (nn-jj) - 1
+        }
+        I.fill[ii] = colsum + a - 1
+      }
+    }
+    
+    # dummy dist object
+    x = matrix(runif(nn * 10), nrow = nn, ncol=10)
+    d = dist(x)
+    attr(d, 'Upper') = T
+    d[1:length(d)] = 1
+    d[I.fill] = 0
+    hc = hclust(d)
+    clusts = cutree(hc,nclust)
+  }
+  
+  # compile `clusts` into lists of proteins
+  unqclusts = unique(clusts)
+  Nmembers = numeric(length(unqclusts))
+  clusts.prots = character(length(unqclusts))
+  for (ii in 1:length(unqclusts)) {
+    I = clusts==unqclusts[ii]
+    clusts.prots[ii] = paste(unqprots[I], collapse=";")
+    Nmembers[ii] = sum(I)
+  }
+  clusts.prots = clusts.prots[Nmembers>=3]
+  
+  return(clusts.prots)
+}
+
+
+
+
+pamclust = function(ints, nclust){
+  unqprots = unique(c(ints$protA, ints$protB))
+  nn = length(unqprots)
+  
+  # create adjacency matrix in the style of `dist` object
+  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
+  I.row = match(ints$protA, unqprots) # row
+  I.col = match(ints$protB, unqprots) # column
+  
+  
+  unqprots = unique(c(ints$protA, ints$protB))
+  nn = length(unqprots)
+  
+  # create adjacency matrix in the style of `dist` object
+  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
+  I.row = match(ints$protA, unqprots) # row
+  I.col = match(ints$protB, unqprots) # column
+  
+  I.fill = numeric(length(I.row))
+  for (ii in 1:length(I.row)) {
+    a = I.row[ii]
+    b = I.col[ii]
+    # ensure I.col < I.row, i.e. upper triangular
+    if (I.row[ii] < I.col[ii]) {
+      a = I.col[ii]
+      b = I.row[ii]
+    }
+    
+    I.fill[ii] = a - 1
+    if (b>1) {
+      colsum = 0
+      for (jj in 1:(b-1)) {
+        colsum = colsum + (nn-jj) - 1
+      }
+      I.fill[ii] = colsum + a - 1
+    }
+  }
+  
+  # dummy dist object
+  x = matrix(runif(nn * 10), nrow = nn, ncol=10)
+  d = dist(x)
+  attr(d, 'Upper') = T
+  d[1:length(d)] = 1
+  d[I.fill] = 0
+  
+  
+  clusts = pam(d, nclust)
+  
+  # distmat = as.matrix(matrix(nrow=nn, ncol=nn))
+  # distmat[is.na(distmat)] = 1
+  # for (ii in 1:length(I.row)) {
+  #   distmat[I.row[ii], I.col[ii]] = runif(1)*.0001
+  #   distmat[I.col[ii], I.row[ii]] = runif(1)*.0001
+  # }
+  
+  # MDS
+  #fit = cmdscale(distmat,eig=TRUE, k=5)
+  #fit = isoMDS(distmat, k=2)
+  
+  # PAM
+  #clusts = pam(distmat, nclust)
+  
+  # fastkmed
+  #clusts = fastkmed(distmat, ncluster = nclust, iterate = 50)
+  
+  # compile `clusts` into lists of proteins
+  unqclusts = unique(clusts$clustering)
+  Nmembers = numeric(length(unqclusts))
+  clusts.prots = character(length(unqclusts))
+  for (ii in 1:length(unqclusts)) {
+    I = clusts$cluster==unqclusts[ii]
+    clusts.prots[ii] = paste(unqprots[I], collapse=";")
+    Nmembers[ii] = sum(I)
+  }
+  clusts.prots = clusts.prots[Nmembers>=3]
+  
+  return(clusts.prots)
+}
