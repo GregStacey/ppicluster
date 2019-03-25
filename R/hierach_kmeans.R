@@ -128,14 +128,19 @@ for (ii in 1:length(unqdatasets)) {
     
     cc = cc+length(I.append)
     print(length(clusts))
+    
+    # write clusters2 in case of crash
+    clusters2write = clusters2[1:cc,]
+    fn = "../data/cluster2.txt"
+    write_tsv(clusters2write, fn)
   }
 }
 
 
-
-
-# write clusters2
+# write clusters2 final
 clusters2 = clusters2[1:cc,]
 fn = "../data/cluster2.txt"
 write_tsv(clusters2, fn)
+
+
 
