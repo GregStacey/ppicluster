@@ -74,20 +74,20 @@ for (iter in 1:iterMax) {
     for (jj in 1:length(hi.cluster)) {
       cc = cc+1
       clusters2$iter[cc] = iter
-      clusters2$noise_mag = noise.range[ii]
-      clusters2$algorithm = "hierarchical"
-      clusters2$cluster = hi.cluster[jj]
+      clusters2$noise_mag[cc] = noise.range[ii]
+      clusters2$algorithm[cc] = "hierarchical"
+      clusters2$cluster[cc] = hi.cluster[jj]
     }
     
     # pam
-    #pam.cluster = pamclust(ints.shuffle, 1500)
-    #for (jj in 1:length(hi.cluster)) {
-    #  cc = cc+1
-    #  clusters2$iter[cc] = iter
-    #  clusters2$noise_mag = noise.range[ii]
-    #  clusters2$algorithm = "pam"
-    #  clusters2$cluster = hi.cluster[jj]
-    #}    
+    pam.cluster = pamclust(ints.shuffle, 1500)
+    for (jj in 1:length(hi.cluster)) {
+     cc = cc+1
+     clusters2$iter[cc] = iter
+     clusters2$noise_mag[cc] = noise.range[ii]
+     clusters2$algorithm[cc] = "pam"
+     clusters2$cluster[cc] = hi.cluster[jj]
+    }
   }
 }
 clusters2 = clusters2[1:cc,]
@@ -131,7 +131,7 @@ for (kk in 1:length(unqmags)) {
     I0 = clusters$algorithm==unqalgs[jj] & clusters$noise_mag==unqmags[kk]
     ref.clusters = clusters$cluster[I0 & clusters$iter==1]
     for (ii in 1:length(unqiters)) {
-      print(paste("        iter",ii))
+      print(paste("        iter",unqmags[kk]))
       I = which(I0 & clusters$iter==unqiters[ii])
       these.clusters = clusters$cluster[I]
       for (mm in 1:length(I)) {
@@ -143,4 +143,5 @@ for (kk in 1:length(unqmags)) {
 # write
 fn = "../data/clusters_full_netw.txt"
 write_tsv(clusters, path=fn)
+
 
