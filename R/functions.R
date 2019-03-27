@@ -6,6 +6,8 @@ require(readr)
 require(reshape2)
 require(viridis)
 require(cluster)
+require(tidyr)
+require(dplyr)
 
 
 # define functions
@@ -354,3 +356,51 @@ pamclust = function(ints, nclust){
   
   return(clusts.prots)
 }
+
+
+
+
+shufflecorum = function(ints.corum, ff){
+  
+  unqprots = sort(unique(c(ints.corum[,1], ints.corum[,2])))
+  unqprots = unqprots[!unqprots==""]
+
+  #
+  ints.shuffle = ints.corum
+  N.replace = round(nrow(ints.corum) * ff)
+  I.replace = sample(nrow(ints.corum), N.replace)
+  
+  # indices of unshuffled
+  ia0 = match(ints.corum$protA, unqprots)
+  ib0 = match(ints.corum$protB, unqprots)
+  
+  # indices of shuffled
+  ia = ia0
+  ib = ib0
+  ia[I.replace] = sample(length(unqprots), N.replace, replace = T)
+  ib[I.replace] = sample(length(unqprots), N.replace, replace = T)
+  
+  # ensure no self-interactions
+  while (sum(ia==ib)>0) {
+    I = ia==ib
+    ib[I] = sample(length(unqprots), sum(I), replace = T)
+  }
+  
+  # sort protein pairs alphabetically
+  for (ii in 1:length(I)) {
+    tmp = sort(c(ia[ii], ib[ii]))
+    ia[ii] = tmp[1]
+    ib[ii] = tmp[2]
+  }
+  
+  #
+  ints.shuffle$protA = unqprots[ia]
+  ints.shuffle$protB = unqprots[ib]
+  
+  # quality control: make sure you shuffled N.replace interactions
+  N.diff = sum(!ia0==ia | !ib0==ib)
+  if (abs(N.replace - N.diff)>5) disp(paste("shuffling missed", N.replace-N.diff, "interactions"))
+  
+  return(ints.shuffle) 
+}
+

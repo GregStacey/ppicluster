@@ -1,4 +1,7 @@
 # Add extra clustering algorithms to MCL, CL1, and MCL+CL1
+# This function is only doing noised-to-unnoised.
+# It is not comparing one iteration of noise to another.
+
 
 source("functions.R")
 
