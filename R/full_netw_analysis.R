@@ -86,7 +86,7 @@ for (iter in 1:iterMax) {
      clusters2$iter[cc] = iter
      clusters2$noise_mag[cc] = noise.range[ii]
      clusters2$algorithm[cc] = "pam"
-     clusters2$cluster[cc] = hi.cluster[jj]
+     clusters2$cluster[cc] = pam.cluster[jj]
     }
   }
 }
