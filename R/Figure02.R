@@ -2,7 +2,7 @@
 require(ggplot2)
 require(viridis)
 require(scatterpie)
-source("/Users/Mercy/Academics/Foster/ClusterExplore/R/functions.R")
+source("functions.R")
 
 blank_theme = theme(axis.title.x=element_blank(),
                     axis.text.x=element_blank(),

@@ -1,16 +1,16 @@
 
-source("/Users/Mercy/Academics/Foster/ClusterExplore/R/functions.R")
+source("functions.R")
 
 # load chromatograms
-fn = "/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Input/Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.csv"
+fn = "../data/Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.csv"
 chroms = as.data.frame(read_csv(fn))
 tmp = names(chroms)
 tmp[1] = "protid"
 names(chroms) = tmp
 
 # load clusters
-fn1 = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_wshuffle_moredata.txt"
-fn2 = "/Users/Mercy/Academics/Foster/ClusterExplore/data/cluster3.txt"
+fn1 = "../data/clusters_wshuffle_moredata.txt"
+fn2 = "../data/cluster3.txt"
 data.c1 = as.data.frame(read_tsv(fn1))
 data.c2 = as.data.frame(read_tsv(fn2))
 data.c = rbind(data.c1, data.c2)
@@ -19,7 +19,7 @@ data.c$noise_mag = as.numeric(data.c$noise_mag)
 data.c = data.c[!data.c$data_type%in%"corum",]
 
 # load interactomes
-fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/interactomes_moredata.txt"
+fn = "../data/interactomes_moredata.txt"
 ints.c = as.data.frame(read_tsv(fn))
 ints.c$ppi = paste(ints.c$protA, ints.c$protB, sep="-")
 
@@ -29,7 +29,7 @@ unqmags = sort(unique(data.c$noise_mag))
 unqmags = unqmags[unqmags<=1]
 
 # calculate Ai
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/intJ_vs_clustJ_v03.Rda"
+fn = "../data/intJ_vs_clustJ_v03.Rda"
 if (F){
   load(fn)
 } else {
@@ -124,7 +124,7 @@ dm$nclust = as.numeric(dm$nclust)
 
 # A. Proteasome chromatograms
 # read proteasomal proteins
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/uniprot-proteasome+26s.tab"
+fn = "../data/uniprot-proteasome+26s.tab"
 uniprot = as.data.frame(read_tsv(fn))
 I.26s = grepl("26S proteasome",uniprot$`Protein names`)
 I = chroms$protid %in% uniprot$Entry[I.26s]
@@ -164,7 +164,7 @@ for (ii in 1:length(unqnoise)) {
 
 ggplot(df.prot[df.prot$Replicate==1,], aes(x=fraction,y=log(value),group=protid)) + geom_line(alpha=.35) +
   facet_wrap(~variable) + theme_bw() + xlab("Fraction") + ylab("log(Protein amount)")
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3A_v01.pdf"
+fn = "../figures/fig_3A_v01.pdf"
 ggsave(fn,width=10, height=3)
 
 
@@ -176,9 +176,9 @@ ggplot(df, aes(x=noise_mag*100, y=clustJ, color=experiment)) +
   ylab("Cluster similarity, J") + xlab("Noise magnitude, %") + 
   geom_line(data=dm, aes(x=x*100, y=y,color=experiment), size=2, alpha=.6) +
   theme_bw() + xlim(0,50) + theme(legend.position = "none")
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v02.pdf"
+fn = "../figures/fig_3B_v02.pdf"
 ggsave(fn,width=10, height=3)
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v02.png"
+fn = "../figures/fig_3B_v02.png"
 ggsave(fn,width=10, height=3)
 
 
@@ -192,5 +192,5 @@ ggplot(df[I,], aes(x=intJ, y=clustJ, color=experiment)) +
   ylab("Cluster similarity, J") + xlab("Interactome similarity, Jaccard") + 
   geom_line(data=dm[dm$nclust>10,], aes(x=intJ, y=y,color=experiment), size=2, alpha=.6) +
   theme_bw()
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3C_v02.pdf"
+fn = "../figures/fig_3C_v02.pdf"
 ggsave(fn,width=10, height=3)

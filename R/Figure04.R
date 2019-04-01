@@ -1,11 +1,11 @@
 
 require(ggplot2)
-source("/Users/Mercy/Academics/Foster/ClusterExplore/R/functions.R")
+source("functions.R")
 
-load("/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_Ai_vs_fdr.Rda")
-load("/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_Ai_vs_fdr_df_z.Rda")
+load("../data/clusters_Ai_vs_fdr.Rda")
+load("../data/clusters_Ai_vs_fdr_df_z.Rda")
 if (0) {
-  fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_Ai_vs_fdr.txt"
+  fn = "../data/clusters_Ai_vs_fdr.txt"
   clusters = as.data.frame(read_tsv(fn))
   clusters$noise_mag = as.numeric(clusters$noise_mag)
   clusters$size = unlist(lapply(sapply(clusters$cluster, FUN=strsplit, ";"), length))
@@ -39,7 +39,7 @@ if (0) {
     
     clusters$Ar[I.iter1[ii]] = mean(Ar, na.rm=T)
   }
-  save(clusters, file = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_Ai_vs_fdr.Rda")
+  save(clusters, file = "../data/clusters_Ai_vs_fdr.Rda")
   
   
   # calculate NULL Ai
@@ -73,7 +73,7 @@ if (0) {
     }
   }
   df.z = df.z[1:cc,]
-  save(df.z, file = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_Ai_vs_fdr_df_z.Rda")
+  save(df.z, file = "../data/clusters_Ai_vs_fdr_df_z.Rda")
 }
 
 
@@ -124,7 +124,7 @@ ggplot(clusters[I.iter1,], aes(x=noise_mag, y=Ar, color=size.factor)) +
   geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4")# + 
 #annotate("text",x=.7,y=Ar_null_n3+.015, label="N=3", alpha=.75) +
 #annotate("text",x=.7,y=Ar_null_n12+.015, label="N=12", alpha=.75)
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4A_01_v01.pdf"
+fn = "../figures/fig_4A_01_v01.pdf"
 ggsave(fn,width=10, height=3)
 
 
@@ -140,7 +140,7 @@ ggplot(clusters[I.iter1,], aes(x=log10(size), y=Ar, color=noise.factor)) +
   geom_hline(yintercept=Ar_null_n3, linetype="dashed", alpha=.65, colour="#F8766D") +
   geom_hline(yintercept=Ar_null_n6, linetype="dashed", alpha=.65, colour="#7CAE00")+
   geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4")# + facet_grid(~algorithm)
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4B_01_v01.pdf"
+fn = "../figures/fig_4B_01_v01.pdf"
 ggsave(fn,width=10, height=4)
 
 
@@ -150,8 +150,15 @@ ggplot(clusters[I&I.iter1,], aes(factor(noise_mag), y=Ar)) +  theme_bw() +
   geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(algorithm ~ size.factor) +
   ylab("Complex reproducibility, A") + xlab("Interactome FDR") + 
   coord_cartesian(ylim=c(0,1))
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4X_01_v01.pdf"
+fn = "../figures/fig_4X_01_v01.pdf"
 ggsave(fn,width=10, height=6)
+
+
+
+
+
+
+
 
 
 
