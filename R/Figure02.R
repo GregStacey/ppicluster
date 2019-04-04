@@ -1,6 +1,4 @@
 
-require(ggplot2)
-require(viridis)
 require(scatterpie)
 source("functions.R")
 
@@ -11,11 +9,11 @@ blank_theme = theme(axis.title.x=element_blank(),
                     axis.text.y=element_blank(),
                     axis.ticks.y=element_blank(), legend.position="none")
 
-fnsave = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_wshuffle_coexp.Rda"
+fnsave = "../data/clusters_wshuffle_coexp.Rda"
 load(fnsave)
 clusters$noise_mag = as.numeric(clusters$noise_mag)
 
-fnsave = "/Users/Mercy/Academics/Foster/ClusterExplore/data/cluster3.txt"
+fnsave = "../data/cluster3.txt"
 clusters2 = as.data.frame(read_tsv(fnsave))
 clusters2$noise_mag = as.numeric(clusters2$noise_mag)
 clusters2 = clusters2[clusters2$data_type=="corum",]

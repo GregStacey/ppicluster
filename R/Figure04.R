@@ -2,109 +2,80 @@
 require(ggplot2)
 source("functions.R")
 
-load("../data/clusters_Ai_vs_fdr.Rda")
-load("../data/clusters_Ai_vs_fdr_df_z.Rda")
-if (0) {
-  fn = "../data/clusters_Ai_vs_fdr.txt"
-  clusters = as.data.frame(read_tsv(fn))
-  clusters$noise_mag = as.numeric(clusters$noise_mag)
-  clusters$size = unlist(lapply(sapply(clusters$cluster, FUN=strsplit, ";"), length))
-  clusters$size.factor = character(nrow(clusters))
-  clusters$size.factor[clusters$size<=3] = "N<=3"
-  clusters$size.factor[clusters$size<=6 & clusters$size>3] = "3<N<=6"
-  clusters$size.factor[clusters$size<=12 & clusters$size>6] = "6<N<=12"
-  clusters$size.factor[clusters$size>12] = "N>12"
-  clusters$size.factor = factor(clusters$size.factor, levels= c("N<=3", "3<N<=6", "6<N<=12", "N>12"))
-  
-  # all unique proteins
-  rdntprots = unlist(sapply(clusters$cluster, FUN=strsplit, ";"))
-  unqprots = unique(rdntprots)
-  
-  # calculate Ai for each cluster in iter=1
-  clusters$Ar = numeric(nrow(clusters))
-  I.iter1 = which(clusters$iter==1)
-  for (ii in 1:length(I.iter1)) {
-    print(paste("progress =", ii, "/", length(I.iter1)))
-    this.cluster = unlist(strsplit(clusters$cluster[I.iter1[ii]], ";"))
-    this.algorithm = clusters$algorithm[I.iter1[ii]]
-    this.fdr = clusters$noise_mag[I.iter1[ii]]
-    
-    # calculate Ai, complex reproducibility
-    unqIters = 2:10
-    Ar = numeric(length(unqIters))
-    for (jj in 1:length(unqIters)) {
-      I = clusters$algorithm %in% this.algorithm & clusters$noise_mag==this.fdr & clusters$iter==unqIters[jj]
-      Ar[jj] = calcA(this.cluster, clusters$cluster[I])
-    }
-    
-    clusters$Ar[I.iter1[ii]] = mean(Ar, na.rm=T)
-  }
-  save(clusters, file = "../data/clusters_Ai_vs_fdr.Rda")
-  
-  
-  # calculate NULL Ai
-  sizeRange = c(3,6,12)
-  iterMax = 25
-  df.z = data.frame(size = numeric(10^4), Ar = numeric(10^4), 
-                    iter = numeric(10^4), algorithm = numeric(10^4),
-                    noise_mag = numeric(10^4), stringsAsFactors = F)
-  unqAlgs = unique(clusters$algorithm)
-  unqNoise = unique(clusters$noise_mag)
-  cc = 0
-  for (ii in 1:length(sizeRange)) {
-    this.size = sizeRange[ii]
-    for (jj in 1:length(unqAlgs)) {
-      this.alg = unqAlgs[jj]
-      for (kk in 1:length(unqNoise)) {
-        this.noise = unqNoise[kk]
-        I = clusters$algorithm%in%this.alg & clusters$noise_mag==this.noise
-        for (mm in 1:iterMax) {
-          cc = cc+1
-          print(cc)
-          cluster0.fake = rdntprots[sample(length(rdntprots), this.size)]
-          Ar_null = calcA(cluster0.fake, data$cluster[I])
-          df.z$size[cc] = this.size
-          df.z$Ar[cc] = Ar_null
-          df.z$iter[cc] = mm
-          df.z$algorithm[cc] = this.alg
-          df.z$noise_mag[cc] = this.noise
-        }
-      }
+#fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v03.Rda"
+#load(fn) # sim, Ji
+fn = "../data/clusters_full_netw_hierarchNtest.txt"
+Ji = as.data.frame(read_tsv(fn))
+
+# make cluster.size, remove all clusters with size<3
+Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
+Ji = Ji[Ji$cluster.size>2,]
+
+# make size.factor
+Ji$noise_mag = as.numeric(Ji$noise_mag)
+Ji$size.factor = character(nrow(Ji))
+Ji$size.factor[Ji$cluster.size<=3] = "N<=3"
+Ji$size.factor[Ji$cluster.size<=6 & Ji$cluster.size>3] = "3<N<=6"
+Ji$size.factor[Ji$cluster.size<=12 & Ji$cluster.size>6] = "6<N<=12"
+Ji$size.factor[Ji$cluster.size>12] = "N>12"
+Ji$size.factor = factor(Ji$size.factor, levels= c("N<=3", "3<N<=6", "6<N<=12", "N>12"))
+
+# make size.prctile
+Ji$size.prctile = numeric(nrow(Ji))
+for (ii in 1:length(unique(Ji$noise_mag))) {
+  for (jj in 1:length(unique(Ji$algorithm))) {
+    for (kk in 1:length(unique(Ji$iter))) {
+      I = Ji$noise_mag==sort(unique(Ji$noise_mag))[ii] & 
+        Ji$algorithm==sort(unique(Ji$algorithm))[jj] & 
+        Ji$iter==sort(unique(Ji$iter))[kk]
+      Ji$size.prctile[I] = rank(Ji$cluster.size[I]) / sum(I)
+      #Ji$size.prctile[I] = quantile(Ji$cluster.size[I], seq(from=0, to=1, length=sum(I)))
     }
   }
-  df.z = df.z[1:cc,]
-  save(df.z, file = "../data/clusters_Ai_vs_fdr_df_z.Rda")
 }
 
+# make noise.factor
+Ji$noise.factor = factor("fpr=0", levels = c("fpr=0", "fpr<=0.05","0.05<fpr<=0.20","0.2<fpr<=0.5","0.50<fpr"))
+Ji$noise.factor[Ji$noise_mag<=0.05] = as.factor("fpr<=0.05")
+Ji$noise.factor[Ji$noise_mag==0] = as.factor("fpr=0")
+Ji$noise.factor[Ji$noise_mag>0.05 & Ji$noise_mag<=0.2] = "0.05<fpr<=0.20"
+Ji$noise.factor[Ji$noise_mag>0.2 & Ji$noise_mag<=0.5] = "0.2<fpr<=0.5"
+Ji$noise.factor[Ji$noise_mag>=0.5] = "0.50<fpr"
+
+fn = "../data/clusters_Ai_vs_fdr_df_z.Rda"
+load(fn) # df.z
 
 
 # get averages for figures
 nn = 10^3
-dm = data.frame(x = numeric(nn), 
-                y = numeric(nn),
+dm = data.frame(noise_mag = numeric(nn), 
+                Ji1 = numeric(nn),
+                Ji2 = numeric(nn),
                 algorithm = character(nn),
                 size.factor = character(nn),
                 stringsAsFactors = F)
 cc = 0
-for (ii in 1:length(unique(clusters$noise_mag))) {
-  this.noise = sort(unique(clusters$noise_mag))[ii]
-  for (jj in 1:length(unique(clusters$algorithm))) {
-    this.algorithm = sort(unique(clusters$algorithm))[jj]
-    for (kk in 1:length(unique(clusters$size.factor))) {
-      this.size = sort(unique(clusters$size.factor))[kk]
+for (ii in 1:length(unique(Ji$noise_mag))) {
+  this.noise = sort(unique(Ji$noise_mag))[ii]
+  for (jj in 1:length(unique(Ji$algorithm))) {
+    this.algorithm = sort(unique(Ji$algorithm))[jj]
+    for (kk in 1:length(unique(Ji$size.factor))) {
+      this.size = sort(unique(Ji$size.factor))[kk]
+      I = Ji$noise_mag==this.noise & 
+        Ji$algorithm==this.algorithm & 
+        Ji$size.factor==this.size
+      if (sum(I)<10) next
       cc = cc+1
-      I = clusters$noise_mag==this.noise & 
-        clusters$algorithm%in%this.algorithm & 
-        clusters$size.factor%in%this.size & clusters$iter==1
-      if (sum(I)==0) next
-      dm[cc,] = c(this.noise, mean(clusters$Ar[I], na.rm=T), this.algorithm, this.size)
+      dm[cc,] = c(this.noise, mean(Ji$Ji1[I], na.rm=T), mean(Ji$Ji2[I], na.rm=T), this.algorithm, this.size)
     }
   }
 }
 dm = dm[1:cc,]
-dm$x = as.numeric(dm$x)
-dm$y = as.numeric(dm$y)
-tmp = sort(unique(clusters$size.factor))
+dm = dm[!is.na(dm$size.factor),]
+dm$noise_mag = as.numeric(dm$noise_mag)
+dm$Ji1 = as.numeric(dm$Ji1)
+dm$Ji2 = as.numeric(dm$Ji2)
+tmp = sort(unique(Ji$size.factor))
 dm$size.factor = tmp[as.numeric(dm$size.factor)]
 
 
@@ -113,49 +84,70 @@ Ar_null_n6 = mean(df.z$Ar[df.z$size==6],na.rm=T)
 Ar_null_n12 = mean(df.z$Ar[df.z$size==12],na.rm=T)
 
 
-I.iter1 = clusters$iter==1
-ggplot(clusters[I.iter1,], aes(x=noise_mag, y=Ar, color=size.factor)) + 
-  geom_point(alpha=0.25) +  facet_wrap(~algorithm) +
+ggplot(Ji[Ji$iter>1,], aes(x=noise_mag, y=Ji2, color=size.factor)) + 
+  geom_point(alpha=0.05) + facet_wrap(~algorithm) +
   ylab("Complex reproducibility, A") + xlab("Interactome FDR") + 
-  geom_line(data=dm, aes(x=x, y=y,color=size.factor), size=2, alpha=.6) +
-  coord_cartesian(ylim=c(0,1)) + theme_bw() +
+  geom_line(data=dm, size=2, alpha=.6) +
+  coord_cartesian(ylim=c(0,1), xlim=c(0,0.5)) + theme_bw() +
   geom_hline(yintercept=Ar_null_n3, linetype="dashed", alpha=.65, colour="#F8766D") +
   geom_hline(yintercept=Ar_null_n6, linetype="dashed", alpha=.65, colour="#7CAE00")+
-  geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4")# + 
-#annotate("text",x=.7,y=Ar_null_n3+.015, label="N=3", alpha=.75) +
-#annotate("text",x=.7,y=Ar_null_n12+.015, label="N=12", alpha=.75)
-fn = "../figures/fig_4A_01_v01.pdf"
-ggsave(fn,width=10, height=3)
+  geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4")
+fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4A_01_v01.pdf"
+#ggsave(fn,width=10, height=3)
 
 
-clusters$noise.factor = factor("fpr=0", levels = c("fpr=0", "fpr<=0.05","0.05<fpr<=0.50","0.50<fpr"))
-clusters$noise.factor[clusters$noise_mag<=0.05] = as.factor("fpr<=0.05")
-clusters$noise.factor[clusters$noise_mag==0] = as.factor("fpr=0")
-clusters$noise.factor[clusters$noise_mag>0.05 & clusters$noise_mag<=0.5] = "0.05<fpr<=0.50"
-clusters$noise.factor[clusters$noise_mag>=0.5] = "0.50<fpr"
-ggplot(clusters[I.iter1,], aes(x=log10(size), y=Ar, color=noise.factor)) + 
-  geom_jitter(alpha=0.15, width=0.015) + 
+ggplot(Ji[Ji$cluster.size<150 & Ji$iter>1,], aes(x=log10(cluster.size), y=Ji2)) + 
+  geom_jitter(alpha=0.05, width=0.03, height=0.03) + facet_grid(noise.factor~algorithm) +
   geom_smooth() + scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1)) +
-  coord_cartesian(ylim = c(-.001,1.001)) + theme_bw() + facet_wrap(~algorithm) +
+  coord_cartesian(ylim = c(-.001,1.001)) + theme_bw() + 
   geom_hline(yintercept=Ar_null_n3, linetype="dashed", alpha=.65, colour="#F8766D") +
   geom_hline(yintercept=Ar_null_n6, linetype="dashed", alpha=.65, colour="#7CAE00")+
-  geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4")# + facet_grid(~algorithm)
-fn = "../figures/fig_4B_01_v01.pdf"
-ggsave(fn,width=10, height=4)
+  geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4")
+fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4B_01_v01.pdf"
+#ggsave(fn,width=10, height=4)
 
 
 # zoom in on fdr=0.01
-I = clusters$noise_mag %in% 0 | clusters$noise_mag %in% 0.01 | clusters$noise_mag %in% 0.02
-ggplot(clusters[I&I.iter1,], aes(factor(noise_mag), y=Ar)) +  theme_bw() +
+I = Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02
+ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) +  theme_bw() +
   geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(algorithm ~ size.factor) +
   ylab("Complex reproducibility, A") + xlab("Interactome FDR") + 
   coord_cartesian(ylim=c(0,1))
-fn = "../figures/fig_4X_01_v01.pdf"
-ggsave(fn,width=10, height=6)
+fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4X_01_v01.pdf"
+#ggsave(fn,width=10, height=6)
+
+
+# bar graph of smallest 20% of clusters vs top 80% (or something)
+tmp = Ji
+tmp$size.split = factor(nrow(tmp), ordered = T)
+levels(tmp$size.split) = c("low", "high")
+tmp$size.split[tmp$cluster.size<=15] = "low"
+tmp$size.split[tmp$cluster.size>15] = "high"
+#tmp$size.split[tmp$size.prctile<=0.05] = "low"
+#tmp$size.split[tmp$size.prctile>0.05] = "high"
+ggplot(tmp, aes(y=Ji2, fill=size.split, x=algorithm)) + geom_boxplot()
+
+
+# size distributions
+ggplot(Ji[Ji$iter>1,], aes(y=log10(cluster.size), x=algorithm)) + geom_violin()
+
+
+# stats
+I = Ji$iter>1
+glm(Ji2 ~ noise_mag + algorithm + cluster.size, gaussian, Ji[I,])
 
 
 
 
+
+
+
+
+ggplot(Ji[Ji$algorithm=="hierarchical" & Ji$cluster.size<500,], 
+       aes(x=log10(jitter(cluster.size,factor=0.1)), y=Ji2)) + 
+  geom_point(alpha=0.05) + facet_grid(noise.factor~iter) + 
+  geom_smooth(method=lm, formula = y~x) +
+  coord_cartesian(ylim=c(0,1))
 
 
 
@@ -166,7 +158,8 @@ ggsave(fn,width=10, height=6)
 # reproduce Ji-size relationship for a toy dataset, then pick that dataset apart
 
 # load chromatograms
-fn = "/Users/Mercy/Academics/Foster/NickCodeData/GregPCP-SILAC/Input/Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.csv"
+fn = "/Users/Mercy/Academics/Foster/NickCodeData/
+GregPCP-SILAC/Input/Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.csv"
 chroms = as.data.frame(read_csv(fn))
 tmp = names(chroms)
 tmp[1] = "protid"
@@ -221,8 +214,8 @@ clusts0 = cutree(hc0,nclust)
 I0 = order.hclust(hc0)
 # make 10% noised copy
 chroms.mat1 = chroms.mat * exp(matrix(0.1 * rnorm(nrow(chroms.mat) * ncol(chroms.mat)), 
-                                       nrow = nrow(chroms.mat),
-                                       ncol = ncol(chroms.mat)))
+                                      nrow = nrow(chroms.mat),
+                                      ncol = ncol(chroms.mat)))
 d1 = dist(chroms.mat1)
 hc1 = hclust(d1)
 clusts1 = cutree(hc1,nclust)
