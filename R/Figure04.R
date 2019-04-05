@@ -4,7 +4,7 @@ source("functions.R")
 
 #fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v03.Rda"
 #load(fn) # sim, Ji
-fn = "../data/clusters_full_netw_hierarchNtest.txt"
+fn = "../data/clusters_full_netw2.txt"
 Ji = as.data.frame(read_tsv(fn))
 
 # make cluster.size, remove all clusters with size<3
@@ -144,7 +144,7 @@ glm(Ji2 ~ noise_mag + algorithm + cluster.size, gaussian, Ji[I,])
 
 
 ggplot(Ji[Ji$algorithm=="hierarchical" & Ji$cluster.size<500,], 
-       aes(x=log10(jitter(cluster.size,factor=0.1)), y=Ji2)) + 
+       aes(x=log10(jitter(cluster.size,factor=0.1)), y=Ji1)) + 
   geom_point(alpha=0.05) + facet_grid(noise.factor~iter) + 
   geom_smooth(method=lm, formula = y~x) +
   coord_cartesian(ylim=c(0,1))

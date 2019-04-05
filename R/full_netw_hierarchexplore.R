@@ -50,14 +50,8 @@ ints.corum = distinct(ints.corum)
 # 
 noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 
-# load Matlab results
-# 10 iterations, MCL, CO, CO+MCL
-fn = "../data/clusters_Ai_vs_fdr.txt"
-clusters0 = as.data.frame(read_tsv(fn))
-clusters0$hi.size = NA
-
 # make dummy dataframe to fill
-clusters2 = data.frame(iter = numeric(10^6),
+clusters = data.frame(iter = numeric(10^6),
                        noise_mag = numeric(10^6),
                        algorithm = character(10^6),
                        cluster = character(10^6), 
@@ -66,9 +60,10 @@ clusters2 = data.frame(iter = numeric(10^6),
 clust.sizes = c(500, 800, 1000, 1200, 1500, 2000, 2500)
 
 # add 10 iterations of PAM and hierarchical
-iterMax = 4
+iterMax = 5
 cc = 0
 for (ci in 1:length(clust.sizes)) {
+  print(clust.sizes[ci])
   for (iter in 1:iterMax) {
     for (ii in 1:length(noise.range)) {
       # get shuffled corum
@@ -78,29 +73,19 @@ for (ci in 1:length(clust.sizes)) {
       hi.cluster = hiclust(ints.shuffle, clust.sizes[ci])
       for (jj in 1:length(hi.cluster)) {
         cc = cc+1
-        clusters2$iter[cc] = iter
-        clusters2$noise_mag[cc] = noise.range[ii]
-        clusters2$algorithm[cc] = "hierarchical"
-        clusters2$cluster[cc] = hi.cluster[jj]
-        clusters2$hi.size[cc] = clust.sizes[ci]
+        clusters$iter[cc] = iter
+        clusters$noise_mag[cc] = noise.range[ii]
+        clusters$algorithm[cc] = "hierarchical"
+        clusters$cluster[cc] = hi.cluster[jj]
+        clusters$hi.size[cc] = clust.sizes[ci]
       }
       
-      # pam
-      #pam.cluster = pamclust(ints.shuffle, 1500)
-      #for (jj in 1:length(hi.cluster)) {
-      #  cc = cc+1
-      #  clusters2$iter[cc] = iter
-      #  clusters2$noise_mag[cc] = noise.range[ii]
-      #  clusters2$algorithm[cc] = "pam"
-      #  clusters2$cluster[cc] = pam.cluster[jj]
-      #}
     }
   }
 }
-clusters2 = clusters2[1:cc,]
+clusters = clusters[1:cc,]
 
 # combine everything
-clusters = rbind(clusters0, clusters2)
 unqiters = unique(clusters$iter)
 unqmags = unique(clusters$noise_mag)
 unqalgs = unique(clusters$algorithm)
@@ -129,7 +114,7 @@ for (ci in 1:length(unqsize)) {
 }
 
 # write
-fn = "../data/clusters_full_netw.txt"
+fn = "../data/clusters_full_hexplore.txt"
 write_tsv(clusters, path=fn)
 
 # calculate Ji2 all clusters (Compare each cluster to its iter=1 version)
@@ -153,7 +138,7 @@ for (ci in 1:length(unqsize)) {
   }
 }
 # write
-fn = "../data/clusters_full_netw.txt"
+fn = "../data/clusters_full_hexplore.txt"
 write_tsv(clusters, path=fn)
 
 
