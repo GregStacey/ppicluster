@@ -4,7 +4,7 @@ source("functions.R")
 
 #fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v03.Rda"
 #load(fn) # sim, Ji
-fn = "../data/clusters_full_netw2.txt"
+fn = "../data/clusters_full_hexplore.txt"
 Ji = as.data.frame(read_tsv(fn))
 
 # make cluster.size, remove all clusters with size<3
@@ -142,15 +142,24 @@ glm(Ji2 ~ noise_mag + algorithm + cluster.size, gaussian, Ji[I,])
 
 
 
-
-ggplot(Ji[Ji$algorithm=="hierarchical" & Ji$cluster.size<500,], 
-       aes(x=log10(jitter(cluster.size,factor=0.1)), y=Ji1)) + 
-  geom_point(alpha=0.05) + facet_grid(noise.factor~iter) + 
+I = Ji$algorithm=="hierarchical" & Ji$cluster.size<500 & Ji$iter>1
+ggplot(Ji[I,], 
+       aes(x=log10(jitter(cluster.size,factor=0.1)), y=Ji2)) + 
+  geom_point(alpha=0.05) + facet_grid(noise.factor~hi.size) + 
   geom_smooth(method=lm, formula = y~x) +
   coord_cartesian(ylim=c(0,1))
 
+I = Ji$algorithm=="hierarchical" & Ji$cluster.size<500 & Ji$iter>1 & Ji$hi.size==2000
+ggplot(Ji[I,],aes(x=jitter(noise_mag,factor=3), y=Ji2, color=size.factor)) + 
+  geom_point(alpha=0.05) + facet_wrap(~algorithm) + 
+  geom_smooth(se=F, formula=y~exp(x)) + coord_cartesian(ylim=c(0,1))
 
+ggplot(Ji[I,,], aes(x=log10(cluster.size), y=Ji2)) + 
+  geom_jitter(alpha=0.05, width=0.03, height=0.03) + facet_grid(noise.factor~algorithm) +
+  geom_smooth(method=lm) + scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1)) +
+  coord_cartesian(ylim = c(-.001,1.001)) 
 
+glm(Ji2 ~ noise_mag + cluster.size, gaussian, Ji[I,])
 
 
 
