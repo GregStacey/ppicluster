@@ -206,16 +206,16 @@ sim$Ji1 = sim$Ji
 
 
 # 2B ##### ------------------------------------------- #####
-# line plots of A_i vs noise
+# line plots of J_i vs noise
 
-I = !sim$measure=="NMI"
-ggplot(sim[I,], aes(x=noise_mag, y=Ji1, color=measure)) + geom_line() + 
+I = sim$measure=="ai"
+ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
-  geom_point(data = Ji, alpha=0.025, color="red") +
-  ylab("Similarity to un-noised clusters") + xlab("Interactome FPR")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v04.pdf"
+  geom_point(data = Ji, alpha=0.025, color="black") +
+  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v05.pdf"
 ggsave(fn,width=10, height=3)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v04.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v05.png"
 ggsave(fn,width=10, height=3)
 
 
