@@ -30,8 +30,9 @@ unqmags = unqmags[unqmags<=1]
 
 # calculate Ai
 fn = "../data/intJ_vs_clustJ_v03.Rda"
-if (F){
+if (T){
   load(fn)
+  df = df[!df$algorithm == "hierarchical",]
 } else {
   nn = 10^6
   df = data.frame(dataset = character(nn), algorithm = character(nn), noise_mag=numeric(nn),
@@ -83,10 +84,15 @@ if (F){
 
 df$experiment = as.numeric(unlist(sapply(sapply(df$dataset, strsplit, "_"), "[", 2)))
 groups = list(c(1,2,3,4,5,6,7,8),c(9,10,11,12,13,14),c(15,16,17,18,19,20),c(21,22,23,24,25,26,27,28))
-df$experiment[df$experiment%in%groups[[1]]] = "group1"
-df$experiment[df$experiment%in%groups[[2]]] = "group2"
-df$experiment[df$experiment%in%groups[[3]]] = "group3"
-df$experiment[df$experiment%in%groups[[4]]] = "group4"
+df$experiment[df$experiment%in%groups[[1]]] = "DS1"
+df$experiment[df$experiment%in%groups[[2]]] = "DS2"
+df$experiment[df$experiment%in%groups[[3]]] = "DS3"
+df$experiment[df$experiment%in%groups[[4]]] = "DS4"
+df$algorithm[df$algorithm=="co"] = "CO"
+df$algorithm[df$algorithm=="co_mcl"] = "CO+MCL"
+df$algorithm[df$algorithm=="mcl"] = "MCL"
+df$algorithm[df$algorithm=="pam"] = "k-Med"
+
 
 # get averages for figures
 nn = 10^3
@@ -173,12 +179,13 @@ ggsave(fn,width=10, height=3)
 # B. Ai vs chromnoise
 ggplot(df, aes(x=noise_mag*100, y=clustJ, color=experiment)) + 
   geom_point(alpha=0.01) +  facet_grid(~algorithm) +
-  ylab("Cluster similarity, J") + xlab("Noise magnitude, %") + 
+  ylab("Similarity to un-noised (Ji)") + xlab("Noise magnitude, %") + 
   geom_line(data=dm, aes(x=x*100, y=y,color=experiment), size=2, alpha=.6) +
-  theme_bw() + xlim(0,50) + theme(legend.position = "none")
-fn = "../figures/fig_3B_v02.pdf"
+  theme_bw() + xlim(0,50) + theme(legend.position = "none") +
+  scale_color_brewer(palette="Set1")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v03.pdf"
 ggsave(fn,width=10, height=3)
-fn = "../figures/fig_3B_v02.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v03.png"
 ggsave(fn,width=10, height=3)
 
 

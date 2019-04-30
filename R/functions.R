@@ -8,7 +8,16 @@ require(viridis)
 require(cluster)
 require(tidyr)
 require(dplyr)
+require(NMI)
+require(fossil)
+require(FlowSOM)
 
+blank_theme = theme(axis.title.x=element_blank(),
+                    axis.text.x=element_blank(),
+                    axis.ticks.x=element_blank(),
+                    axis.title.y=element_blank(),
+                    axis.text.y=element_blank(),
+                    axis.ticks.y=element_blank(), legend.position="none")
 
 # define functions
 calcA = function(this.cluster, clusters) {
@@ -403,4 +412,6 @@ shufflecorum = function(ints.corum, ff){
   
   return(ints.shuffle) 
 }
+
+
 

@@ -2,10 +2,16 @@
 require(ggplot2)
 source("functions.R")
 
-#fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v03.Rda"
+#fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v04.Rda"
 #load(fn) # sim, Ji
-fn = "../data/clusters_full_hexplore.txt"
+fn = "../data/clusters_full_netw.txt"
 Ji = as.data.frame(read_tsv(fn))
+Ji = Ji[!Ji$algorithm=="hierarchical",]
+Ji$measure = Ji$algorithm
+Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
+Ji$algorithm[Ji$algorithm=="co"] = "CO"
+Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
+Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
 
 # make cluster.size, remove all clusters with size<3
 Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
@@ -77,6 +83,7 @@ dm$Ji1 = as.numeric(dm$Ji1)
 dm$Ji2 = as.numeric(dm$Ji2)
 tmp = sort(unique(Ji$size.factor))
 dm$size.factor = tmp[as.numeric(dm$size.factor)]
+dm = dm[!dm$algorithm=="hierarchical",]
 
 
 Ar_null_n3 = mean(df.z$Ar[df.z$size==3],na.rm=T)
@@ -85,26 +92,31 @@ Ar_null_n12 = mean(df.z$Ar[df.z$size==12],na.rm=T)
 
 
 ggplot(Ji[Ji$iter>1,], aes(x=noise_mag, y=Ji2, color=size.factor)) + 
-  geom_point(alpha=0.05) + facet_wrap(~algorithm) +
-  ylab("Complex reproducibility, A") + xlab("Interactome FDR") + 
+  geom_point(alpha=0.01) + facet_grid(~algorithm) +
+  ylab("Complex reproducibility, Ji") + xlab("Interactome FDR") + 
   geom_line(data=dm, size=2, alpha=.6) +
-  coord_cartesian(ylim=c(0,1), xlim=c(0,0.5)) + theme_bw() +
+  coord_cartesian(ylim=c(0,1), xlim=c(0,1)) + theme_bw() +
   geom_hline(yintercept=Ar_null_n3, linetype="dashed", alpha=.65, colour="#F8766D") +
   geom_hline(yintercept=Ar_null_n6, linetype="dashed", alpha=.65, colour="#7CAE00")+
   geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4")
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4A_01_v01.pdf"
-#ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4A_v02.png"
+ggsave(fn,width=10, height=3)
 
 
-ggplot(Ji[Ji$cluster.size<150 & Ji$iter>1,], aes(x=log10(cluster.size), y=Ji2)) + 
-  geom_jitter(alpha=0.05, width=0.03, height=0.03) + facet_grid(noise.factor~algorithm) +
-  geom_smooth() + scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1)) +
-  coord_cartesian(ylim = c(-.001,1.001)) + theme_bw() + 
+ggplot(Ji[Ji$noise_mag>0 & Ji$iter>1,], aes(x=log10(cluster.size), y=Ji2, color=noise.factor)) + 
+  geom_point(alpha=0.05) + facet_grid(~algorithm) +
+  geom_smooth(method="lm") + 
+  scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1)) + 
+  scale_x_continuous(breaks=log10(c(3,10,25,50,100,200)), labels = c(3,10,25,50,100,200)) +
+  coord_cartesian(ylim = c(-.001,1.001), xlim=c(log10(2.6),log10(200))) + theme_bw() + 
   geom_hline(yintercept=Ar_null_n3, linetype="dashed", alpha=.65, colour="#F8766D") +
-  geom_hline(yintercept=Ar_null_n6, linetype="dashed", alpha=.65, colour="#7CAE00")+
-  geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4")
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4B_01_v01.pdf"
-#ggsave(fn,width=10, height=4)
+  geom_hline(yintercept=Ar_null_n6, linetype="dashed", alpha=.65, colour="#7CAE00") +
+  geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4") +
+  scale_color_brewer(palette = "Spectral") +
+  ylab("Similarity to iter=1 (Ji)") + 
+  xlab("Cluster size")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4B_v02.png"
+ggsave(fn,width=10, height=3)
 
 
 # zoom in on fdr=0.01
@@ -113,7 +125,7 @@ ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) +  theme_bw() +
   geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(algorithm ~ size.factor) +
   ylab("Complex reproducibility, A") + xlab("Interactome FDR") + 
   coord_cartesian(ylim=c(0,1))
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4X_01_v01.pdf"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4X_01_v01.pdf"
 #ggsave(fn,width=10, height=6)
 
 
@@ -167,7 +179,7 @@ glm(Ji2 ~ noise_mag + cluster.size, gaussian, Ji[I,])
 # reproduce Ji-size relationship for a toy dataset, then pick that dataset apart
 
 # load chromatograms
-fn = "/Users/Mercy/Academics/Foster/NickCodeData/
+fn = "/Users/gregstacey/Academics/Foster/NickCodeData/
 GregPCP-SILAC/Input/Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.csv"
 chroms = as.data.frame(read_csv(fn))
 tmp = names(chroms)
@@ -177,13 +189,13 @@ names(chroms) = tmp
 chroms = chroms[chroms$Replicate==2,]
 
 # read proteasomal proteins
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/uniprot-proteasome+26s.tab"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/uniprot-proteasome+26s.tab"
 uniprot = as.data.frame(read_tsv(fn))
 I.26s = grepl("26S proteasome",uniprot$`Protein names`)
 I.prot = (chroms$protid %in% uniprot$Entry[I.26s])
 
 # read other complexes
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/allComplexes.txt"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/allComplexes.txt"
 corum = as.data.frame(read_tsv(fn))
 Icct = which(grepl("CCT",corum$ComplexName) & grepl("uman", corum$Organism))
 prots.cct = unlist(strsplit(corum$`subunits(UniProt IDs)`[Icct], ";"))

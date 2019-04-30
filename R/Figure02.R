@@ -2,12 +2,6 @@
 require(scatterpie)
 source("functions.R")
 
-blank_theme = theme(axis.title.x=element_blank(),
-                    axis.text.x=element_blank(),
-                    axis.ticks.x=element_blank(),
-                    axis.title.y=element_blank(),
-                    axis.text.y=element_blank(),
-                    axis.ticks.y=element_blank(), legend.position="none")
 
 fnsave = "../data/clusters_wshuffle_coexp.Rda"
 load(fnsave)
@@ -34,9 +28,7 @@ set0 = data$cluster[data$noise_mag==0]
 unqnoise = unique(data$noise_mag)
 for (uu in 1:length(unqnoise)) {
   set1 = data$cluster[data$noise_mag==unqnoise[uu]]
-  
-  pci = matrix(nrow=length(set1), ncol=length(set0))
-  pci.sort = matrix(nrow=length(set1), ncol=length(set0))
+  pci = matrix(nrow=length(set1), ncol=3)#length(set0))
   for (ii in 1:length(set1)) {
     
     # find best-matching cluster
@@ -51,49 +43,19 @@ for (uu in 1:length(unqnoise)) {
     cluster0 = unlist(strsplit(set0[I.max], ";"))
     nn.jacc = length(unique(c(cluster0, cluster1)))
     nn.intersect = length(intersect(cluster0, cluster1))
+    nn.notintersect.set1 = length(cluster1) - nn.intersect
+    nn.notintersect.set0 = length(cluster0) - nn.intersect
     
-    # where are the rest of the proteins?
-    non.overlapping = cluster1[!cluster1 %in% cluster0]
-    N.overlap = numeric(length(set0))
-    if (length(non.overlapping>0)) {
-      for (jj in 1:length(non.overlapping)) {
-        I = which(grepl(non.overlapping[jj], set0))
-        if (length(I)>=1) {
-          I = sample(I,1)
-          N.overlap[I] = N.overlap[I] + 1
-        }
-      }
-    }
-    
-    # store in pci
-    pci[ii,] = N.overlap
-    pci[ii,I.max] = JJ[I.max] * nn.jacc
-    
-    # order
-    pci.sort[ii,] = sort(pci[ii,], decreasing = T)
-    # inject columns: 
-    pci.sort[ii,(-1:0)+ncol(pci.sort)] = pci.sort[ii,1] + 1
-    pci.sort[ii,] = sort(pci.sort[ii,], decreasing = T)
-    #   column j=1: unmatched fraction of cluster 0
-    pci.sort[ii,1] = length(cluster0) - nn.intersect
-    #   column j=2: unmatched fraction of cluster 1
-    pci.sort[ii,2] = length(cluster1) - sum(pci.sort[ii,3:ncol(pci.sort)])
-    
-    # normalize
-    pci[ii,] = pci[ii,] / nn.jacc
-    pci.sort[ii,] = pci.sort[ii,] / nn.jacc
+    pci[ii,] = c(nn.intersect, nn.notintersect.set1, nn.notintersect.set0)
   }
   pci = as.data.frame(pci)
   pci$cluster = 1:nrow(pci)
   pci$size = unlist(lapply(lapply(lapply(set1, strsplit, ";"), "[[", 1), length))
-  pci.sort = as.data.frame(pci.sort)
-  pci$cluster = 1:nrow(pci.sort)
-  pci.sort$size = unlist(lapply(lapply(lapply(set1, strsplit, ";"), "[[", 1), length))
 
   # tile x and y
   # assume that cluster with sqrt(size) needs a box of width=m*sqrt(size)
   gridx = 250
-  df = pci.sort[,]
+  df = pci[,]
   df = df[order(df$size, decreasing = T),]
   mm = 3
   df$tile.size = round(mm * sqrt(df$size)/5)*5 * .85 + 2
@@ -109,57 +71,59 @@ for (uu in 1:length(unqnoise)) {
     }
     df$y[ii] = y0
   }
-  df = df[,c(1:25,ncol(df) + seq(from=-3, to=0, by=1))]
+  df = df[,c(1:3,ncol(df) + seq(from=-3, to=0, by=1))]
   df[df==0] = 10^-4
   
-  # plot
-  ggplot() + geom_scatterpie(aes(x=x, y=y, r=sqrt(size)), data=df, cols=names(df)[1:25]) + 
-    coord_fixed() + theme_void() + theme(legend.position="none")
-  sf = paste("/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_", uu, ".pdf", sep="")
+  plot
+  ggplot() + geom_scatterpie(aes(x=x, y=y, r=sqrt(size)), data=df, cols=names(df)[1:3]) +
+   scale_fill_manual(values=c("#4dac26","#d01c8b","#dddddd")) +
+   coord_fixed() + theme_void() + theme(legend.position="none")
+  sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_", uu, ".pdf", sep="")
   ggsave(sf, width=10, height=5)
-  sf = paste("/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_", uu, ".png", sep="")
+  sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_", uu, ".png", sep="")
   ggsave(sf, width=10, height=5, dpi=1000)
   
   # zoom in
-  ggplot() + geom_scatterpie(aes(x=x, y=y, r=sqrt(size)), data=df, cols=names(df)[1:25]) + 
+  ggplot() + geom_scatterpie(aes(x=x, y=y, r=sqrt(size)), data=df, cols=names(df)[1:3]) + 
+    scale_fill_manual(values=c("#4dac26","#d01c8b","#dddddd")) +
     coord_fixed() + theme_void() + theme(legend.position="none") + coord_cartesian(xlim = c(80, 130))
-  sf = paste("/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_zoom_", uu, ".pdf", sep="")
-  ggsave(sf, width=2, height=5)
-  sf = paste("/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_zoom_", uu, ".png", sep="")
-  ggsave(sf, width=2, height=5, dpi=1000)
+  sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_zoom_", uu, ".pdf", sep="")
+  ggsave(sf, width=2, height = 5)
+  sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_zoom_", uu, ".png", sep="")
+  ggsave(sf, width=2, height = 5, dpi=1000)
 }
 
 
 
-
-# 2B ##### ------------------------------------------- #####
-# line plots of A_i vs noise
-
-sf = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v03.Rda"
+sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v04.Rda"
 if (F){
   load(sf)
 } else {
-  I = clusters$data_type%in%"corum" & clusters$noise_type%in%"network_shuffle"
-  data = clusters[I,]
-  unqalg = unique(data$algorithm)
-  unqnoise = unique(data$noise_mag)
+  fn = "../data/clusters_full_netw.txt"
+  Ji = as.data.frame(read_tsv(fn))
+  
+  # make cluster.size, remove all clusters with size<3
+  Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
+  Ji = Ji[Ji$cluster.size>2,]
+  
+  I = !Ji$algorithm == "hierarchical" & Ji$iter==1
+  Ji = Ji[I,]
+  unqalg = unique(Ji$algorithm)
+  unqnoise = unique(Ji$noise_mag)
   sim = data.frame(measure = character(10^4),
                    algorithm = character(10^4),
                    noise_mag = character(10^4),
-                   value = numeric(10^4), stringsAsFactors = F)
-  Ji = data.frame(ji = numeric(10^6), algorithm = character(10^6), 
-                  cluster.size = numeric(10^6), noise_mag=numeric(10^6),
-                  stringsAsFactors = F)
+                   Ji1 = numeric(10^4), stringsAsFactors = F)
   cc = 0
   cc2 = 0
   for (ii in 1:length(unqnoise)) {
     print(unqnoise[ii])
-    for (jj in 3:length(unqalg)) {
+    for (jj in 1:length(unqalg)) {
       print(paste("  ",unqalg[jj]))
-      I0 = data$noise_mag == 0 & data$algorithm%in%unqalg[jj]
-      I1 = data$noise_mag == unqnoise[ii] & data$algorithm%in%unqalg[jj]
-      set0 = data$cluster[I0]
-      set1 = data$cluster[I1]
+      I0 = Ji$noise_mag == 0 & Ji$algorithm%in%unqalg[jj]
+      I1 = Ji$noise_mag == unqnoise[ii] & Ji$algorithm%in%unqalg[jj]
+      set0 = Ji$cluster[I0]
+      set1 = Ji$cluster[I1]
       if (sum(I1)==0 | sum(I0)==0) next
       
       # geomacc
@@ -167,105 +131,145 @@ if (F){
       sim$measure[cc] = "ga"
       sim$algorithm[cc] = unqalg[jj]
       sim$noise_mag[cc] = unqnoise[ii]
-      sim$value[cc] = geomacc(set0, set1)
+      sim$Ji1[cc] = geomacc(set0, set1)
       
       # matching ratio
       cc = cc+1
       sim$measure[cc] = "mmr"
       sim$algorithm[cc] = unqalg[jj]
       sim$noise_mag[cc] = unqnoise[ii]
-      sim$value[cc] = matchingratio(set0, set1)
+      sim$Ji1[cc] = matchingratio(set0, set1)
       
       # nmi
+      cc = cc+1
+      unqprots = c(unlist(lapply(set0,strsplit,";")),unlist(lapply(set1,strsplit,";")))
+      # prepare set0
+      df0 = data.frame(X=1:length(unqprots),Y=numeric(length(unqprots)))
+      for (kk in 1:length(unqprots)) {
+        ia = grep(unqprots[kk], set0)
+        if (length(ia)==0) next
+        df0$Y[kk] = ia[1]
+      }
+      df0 = df0[!df0$Y==0,]
+      # prepare set1
+      df1 = data.frame(X=1:length(unqprots),Y=numeric(length(unqprots)))
+      for (kk in 1:length(unqprots)) {
+        ia = grep(unqprots[kk], set1)
+        if (length(ia)==0) next
+        df1$Y[kk] = ia[1]
+      }
+      df1 = df1[!df1$Y==0,]
+      sim$measure[cc] = "NMI"
+      sim$algorithm[cc] = unqalg[jj]
+      sim$noise_mag[cc] = unqnoise[ii]
+      sim$Ji1[cc] = NMI(df0, df1)[[1]]
       
-      # Ai
+      
+      # Ji1
       cc = cc+1
       sim$measure[cc] = "ai"
       sim$algorithm[cc] = unqalg[jj]
       sim$noise_mag[cc] = unqnoise[ii]
-      tmp = numeric(length(set1))
-      for (kk in 1:length(tmp)) {
-        cc2 = cc2+1
-        tmp[kk] = calcA(set1[kk], set0)
-        Ji$ji[cc2] = tmp[kk]
-        Ji$algorithm[cc2] = unqalg[jj]
-        Ji$noise_mag[cc2] = unqnoise[ii]
-        Ji$cluster.size[cc2] = length(unlist(strsplit(set1[kk], ";")))
-      }
-      sim$value[cc] = mean(tmp)
+      # tmp = numeric(length(set1))
+      # for (kk in 1:length(tmp)) {
+      #   cc2 = cc2+1
+      #   tmp[kk] = calcA(set1[kk], set0)
+      #   Ji$ji[cc2] = tmp[kk]
+      #   Ji$algorithm[cc2] = unqalg[jj]
+      #   Ji$noise_mag[cc2] = unqnoise[ii]
+      #   Ji$cluster.size[cc2] = length(unlist(strsplit(set1[kk], ";")))
+      # }
+      sim$Ji1[cc] = mean(Ji$Ji1[I1])
     }
   }
   sim = sim[1:cc,]
   sim$noise_mag = as.numeric(sim$noise_mag)
-  sim$value[sim$value==0] = NA
-  Ji = Ji[1:cc2,]
+  sim$Ji[sim$Ji==0] = NA
   Ji$noise_mag = as.numeric(Ji$noise_mag)
 
   save(list=c("sim","Ji"), file = sf)
 }
 
-# TO DO:
-# add Ai scatter, e.g. using `clusters` from Figure03
-# clusters2 = clusters
-# names(clusters2) = c("iter", "noise_mag", "algorithm", "cluster" ,"value", "size", "size.factor", "noise.factor")
-# clusters2$measure = "ai"
-#   + geom_point(data=clusters2, alpha = 0.05)
-
 Ji$measure = Ji$algorithm
-Ji$value = Ji$ji
-ggplot(sim, aes(x=noise_mag, y=value, color=measure)) + geom_line() + 
+Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
+Ji$algorithm[Ji$algorithm=="co"] = "CO"
+Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
+Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
+sim$algorithm[sim$algorithm=="co_mcl"] = "CO+MCL"
+sim$algorithm[sim$algorithm=="co"] = "CO"
+sim$algorithm[sim$algorithm=="mcl"] = "MCL"
+sim$algorithm[sim$algorithm=="pam"] = "k-Med"
+sim$Ji1 = sim$Ji
+
+
+
+
+
+# 2B ##### ------------------------------------------- #####
+# line plots of A_i vs noise
+
+I = !sim$measure=="NMI"
+ggplot(sim[I,], aes(x=noise_mag, y=Ji1, color=measure)) + geom_line() + 
   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
-  geom_point(data = Ji, alpha=0.015, color="red")
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v03.pdf"
+  geom_point(data = Ji, alpha=0.025, color="red") +
+  ylab("Similarity to un-noised clusters") + xlab("Interactome FPR")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v04.pdf"
+ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v04.png"
 ggsave(fn,width=10, height=3)
 
 
 
 # 2C ##### ------------------------------------------- #####
-# violin plots of A_i vs noise
+# violin plots of Ji1 vs noise
 
-
-sf = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/data/fig2C_v03.Rda"
-if (T){
-  load(sf)
-} else {
-  I = clusters$data_type%in%"corum" & clusters$noise_type%in%"network_shuffle" & clusters$noise_mag<=0.02
-  data = clusters[I,]
-  unqalg = unique(data$algorithm)
-  unqnoise = c(0, 0.01, 0.02)
-  ai = data.frame(algorithm = character(10^4),
-                  noise_mag = character(10^4),
-                  ai = numeric(10^4), stringsAsFactors = F)
-  ai$ai[ai$ai==0] = NA
-  cc = 0
-  for (ii in 1:length(unqnoise)) {
-    print(unqnoise[ii])
-    for (jj in 1:length(unqalg)) {
-      I0 = data$noise_mag == 0 & data$algorithm%in%unqalg[jj]
-      I1 = data$noise_mag == unqnoise[ii] & data$algorithm%in%unqalg[jj]
-      set0 = data$cluster[I0]
-      set1 = data$cluster[I1]
-      
-      # Ai
-      tmp = numeric(length(set1))
-      for (kk in 1:length(tmp)) {
-        cc = cc+1
-        ai$algorithm[cc] = unqalg[jj]
-        ai$noise_mag[cc] = unqnoise[ii]
-        ai$ai[cc] = calcA(set1[kk], set0)
-      }
-    }
-  }
-  ai = ai[1:cc,]
-  ai$noise_mag = as.numeric(ai$noise_mag)
-  
-  save("ai", file = sf)
-}
-
-I = ai$noise_mag %in% 0 | ai$noise_mag %in% 0.01 | ai$noise_mag %in% 0.02
-ggplot(ai[I,], aes(factor(noise_mag), y=ai)) + 
+I = Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02
+ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
   geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(~algorithm) +
-  ylab("Complex reproducibility, A") + xlab("Interactome FDR") + 
+  ylab("Similarity to un-noised (Ji)") + xlab("Interactome FPR") + 
   coord_cartesian(ylim=c(0,1)) + theme_bw()
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v02.pdf"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v03.pdf"
 ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v03.png"
+ggsave(fn,width=10, height=3)
+
+
+# 2D ##### ------------------------------------------- #####
+# noise-amplification
+
+I = sim$measure=="ai"
+sim$noise.amplification = (1-sim$Ji1) / sim$noise_mag
+ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() + 
+  facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
+  geom_hline(yintercept = 1, linetype="dashed") +
+  ylab("Error amplification by clustering") + xlab("Interactome FPR") +
+  scale_y_continuous(breaks = c(1,10,20),
+                     labels=c("1x","10x", "20x"))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v01.pdf"
+ggsave(fn,width=10, height=3)
+
+
+
+
+cn = data.frame(year = 2008:2013,
+                US = c(799, 724,677,593,544,541),
+                Canada = c(157, 164, 199, 206, 197, 197),
+                International = c(186, 184, 242, 206, 146, 145))
+df = melt(cn, id.vars = "year")
+ggplot(df, aes(x=year, y=value, color=variable)) + geom_line() +
+  xlab("Year") + ylab("Number of\nCoffee News franchises") + ggtitle("Why did I make this")
+ggsave("/Users/gregstacey/Desktop//coffee_news_trends.png",
+       width=5, height=3)
+
+
+cn.pc = data.frame(year = 2008:2013,
+                US = c(799, 724,677,593,544,541) / 346,
+                Canada = c(157, 164, 199, 206, 197, 197) / 37)
+df = melt(cn.pc, id.vars = "year")
+ggplot(df, aes(x=year, y=value, color=variable)) + geom_line() +
+  xlab("Year") + ylab("Number of\nCoffee News franchises,\nper million pop.") + 
+  ggtitle("Okay this is cool") + ylim(c(0,6))
+ggsave("/Users/gregstacey/Desktop//coffee_news_trends.png",
+       width=5, height=3)
+
+
