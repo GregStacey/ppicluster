@@ -116,11 +116,16 @@ for (ii in 1:length(unqnoise)) {
         }
         
       } # end cluster
+      
+      # write in case of crash
+      fn = "../data/clusters_full_netw_wEnr.txt"
+      write_tsv(Ji, path=fn)
+      
     } # end ontology
   } # end algorithm
 } # end noise
 
-# write
+# write finally
 fn = "../data/clusters_full_netw_wEnr.txt"
 write_tsv(Ji, path=fn)
 
