@@ -11,6 +11,7 @@ require(dplyr)
 require(NMI)
 require(fossil)
 require(FlowSOM)
+require(VennDiagram)
 
 blank_theme = theme(axis.title.x=element_blank(),
                     axis.text.x=element_blank(),
@@ -414,4 +415,61 @@ shufflecorum = function(ints.corum, ff){
 }
 
 
+
+consensus.adjmat = function(this.cluster, clusters){
+  unqIters = unique(clusters$iter)
+  
+  this.cluster = unlist(strsplit(this.cluster, ";"))
+  this.size = length(this.cluster)
+  this.size = formatC(this.size, width=3, flag="0")
+  if (length(this.cluster)>150) next
+  
+  # find its best match in the other iters
+  tmp = numeric(10)
+  bestMatches = character(length(unqIters))
+  for (mm in 1:length(unqIters)) {
+    set0 = clusters$cluster[clusters$iter==unqIters[mm]]
+    JJ = numeric(length(set0))
+    for (uu in 1:length(set0)) {
+      that.cluster = unlist(strsplit(set0[uu], ";"))
+      JJ[uu] = length(intersect(this.cluster, that.cluster)) / 
+        length(unique(c(this.cluster, that.cluster)))
+    }
+    tmp[mm] = max(JJ)
+    I.match = which.max(JJ)
+    bestMatches[mm] = set0[I.match]
+  }
+  
+  # make consensus adjacency matrix
+  allProts = unique(c(this.cluster, unlist(lapply(bestMatches, strsplit, ";"))))
+  adjmat = matrix(numeric(length(allProts)^2), nrow=length(allProts), ncol=length(allProts))
+  df.adjmat = data.frame(prots = character(0),
+                         variable = character(0),
+                         value = numeric(0), iter=numeric(0), stringsAsFactors = F)
+  bestMatches = c(paste(this.cluster,collapse=";"), bestMatches)
+  Ar = numeric(length(bestMatches))
+  for (mm in 1:length(bestMatches)) {
+    that.cluster = unlist(strsplit(bestMatches[mm], ";"))
+    for (uu in 1:length(that.cluster)) {
+      ia = which(allProts %in% that.cluster[uu])
+      for (vv in 1:length(that.cluster)) {
+        if (uu>=vv) next
+        ib = which(allProts %in% that.cluster[vv])
+        adjmat[ia,ib] = adjmat[ia,ib]+1
+        adjmat[ib,ia] = adjmat[ib,ia]+1
+      }
+    }
+    
+    Ar[mm] = calcA(this.cluster, paste(that.cluster, collapse=";"))
+    df.tmp = as.data.frame(adjmat)
+    df.tmp$prots = allProts
+    df.tmp2 = melt(df.tmp, id.vars="prots")
+    df.tmp2$iter = mm
+    df.tmp2$value = df.tmp2$value * length(bestMatches) / mm
+    df.adjmat = rbind(df.adjmat, df.tmp2)
+  }
+  df.adjmat$prots = factor(df.adjmat$prots, levels = allProts)
+  
+  return(df.adjmat)
+}
 

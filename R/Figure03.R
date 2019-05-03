@@ -28,7 +28,7 @@ unqdatasets = unique(data.c$data_type)
 unqmags = sort(unique(data.c$noise_mag))
 unqmags = unqmags[unqmags<=1]
 
-# calculate Ai
+# calculate Ji
 fn = "../data/intJ_vs_clustJ_v03.Rda"
 if (T){
   load(fn)
@@ -126,6 +126,39 @@ dm$intJ = as.numeric(dm$intJ)
 dm$nclust = as.numeric(dm$nclust)
 
 
+# calculate R^2 as function of chrom_noise
+noise.range = seq(from=0, to=1.25, by=0.01)
+chrom.mat0 = as.matrix(chroms[,3:57])
+good.data = !is.na(chrom.mat0)
+n.data = rowSums(good.data)
+n.data[sample(length(n.data), round(length(n.data)*.9))] = 0
+nn = sum(n.data>5)
+chrom.mat0 = chrom.mat0[n.data>5,]
+good.data = good.data[n.data>5,]
+df.chromcor = data.frame(chromnoise = numeric(10^6), 
+                         rr = numeric(10^6),
+                         avg.rr = numeric(10^6))
+for (ii in 1:length(noise.range)) {
+  print(noise.range[ii])
+  noise.mat = matrix(rnorm(nrow(chrom.mat0) * ncol(chrom.mat0)), 
+                     nrow = nrow(chrom.mat0), ncol = ncol(chrom.mat0))
+  chrom.mat = chrom.mat0 * exp(noise.mat * noise.range[ii])
+  
+  RR = numeric(nrow(chrom.mat))
+  for (jj in 1:nrow(chrom.mat)) {
+    RR[jj] = cor(log(chrom.mat0[jj,good.data[jj,]]), 
+                 log(chrom.mat[jj,good.data[jj,]]))
+  }
+  RR = RR ^ 2
+  
+  I = ((ii-1)*nn+1) : (ii*nn)
+  df.chromcor$rr[I] = RR
+  df.chromcor$avg.rr[I] = mean(RR, na.rm=T)
+  df.chromcor$chromnoise[I] = noise.range[ii]
+}
+df.chromcor = df.chromcor[1:max(I),]
+
+
 
 
 # A. Proteasome chromatograms
@@ -152,19 +185,30 @@ df.prot = df.prot[df.prot$Replicate==1,]
 unqprots = unique(df.prot$protid)
 unqnoise = unique(df.prot$variable)
 for (ii in 1:length(unqnoise)) {
-  Rmat = matrix(nrow = length(unqprots), ncol = length(unqprots))
+  RR = rep(NA, length(unqprots))
   for (jj in 1:length(unqprots)) {
-    ia = which(df.prot$protid==unqprots[jj] & df.prot$variable==unqnoise[ii])
-    for (kk in 1:length(unqprots)) {
-      if (jj>=kk) next
-      ib = which(df.prot$protid==unqprots[kk] & df.prot$variable==unqnoise[ii])
-      I = !is.na(df.prot$value[ia]) & !is.na(df.prot$value[ib])
-      if (sum(I)<3) next
-      Rmat[jj,kk] = cor.test(log(df.prot$value[ia]), log(df.prot$value[ib]), na.rm=T)$estimate
-    }
+    I0 = which(df.prot$protid == unqprots[jj] & df.prot$variable==unqnoise[1])
+    I1 = which(df.prot$protid == unqprots[jj] & df.prot$variable==unqnoise[ii])
+    
+    ia = !is.na(df.prot$value[I0])
+    if (sum(ia)<3) next
+    RR[jj] = cor.test(log(df.prot$value[I0[ia]]), log(df.prot$value[I1[ia]]))$estimate
   }
-  Rmat[Rmat==0] = NA
-  print(paste(unqnoise[ii], mean(Rmat, na.rm=T)^2))
+  print(paste(unqnoise[ii], mean(RR^2, na.rm=T)))
+  
+  # Rmat = matrix(nrow = length(unqprots), ncol = length(unqprots))
+  # for (jj in 1:length(unqprots)) {
+  #   ia = which(df.prot$protid==unqprots[jj] & df.prot$variable==unqnoise[ii])
+  #   for (kk in 1:length(unqprots)) {
+  #     if (jj>=kk) next
+  #     ib = which(df.prot$protid==unqprots[kk] & df.prot$variable==unqnoise[ii])
+  #     I = !is.na(df.prot$value[ia]) & !is.na(df.prot$value[ib])
+  #     if (sum(I)<3) next
+  #     Rmat[jj,kk] = cor.test(log(df.prot$value[ia]), log(df.prot$value[ib]), na.rm=T)$estimate
+  #   }
+  # }
+  # Rmat[Rmat==0] = NA
+  # print(paste(unqnoise[ii], mean(Rmat, na.rm=T)^2))
 }
 
 
@@ -176,13 +220,13 @@ ggsave(fn,width=10, height=3)
 
 
 
-# B. Ai vs chromnoise
+# B. Ji vs chromnoise
 ggplot(df, aes(x=noise_mag*100, y=clustJ, color=experiment)) + 
   geom_point(alpha=0.01) +  facet_grid(~algorithm) +
   ylab("Similarity to un-noised (Ji)") + xlab("Noise magnitude, %") + 
   geom_line(data=dm, aes(x=x*100, y=y,color=experiment), size=2, alpha=.6) +
-  theme_bw() + xlim(0,50) + theme(legend.position = "none") +
-  scale_color_brewer(palette="Set1")
+  theme_bw() + xlim(0,50) + theme(legend.position = "none") + scale_colour_grey()
+  #scale_color_brewer(palette="Set1")
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v03.pdf"
 ggsave(fn,width=10, height=3)
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v03.png"
@@ -190,7 +234,18 @@ ggsave(fn,width=10, height=3)
 
 
 
-# C. compare interactome changes to cluster changes
+# C. chromatogram
+ggplot(df.chromcor, aes(x=chromnoise*100, y=rr)) + 
+  geom_jitter(width = 1, alpha=.002) + geom_line(aes(x=chromnoise*100, y=avg.rr)) +
+  xlab("Noise magnitude, %") + ylab("Noised vs un-noised chromatogram\ncorrelation (Pearson R)") +
+  theme_bw()
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3C_v03.pdf"
+ggsave(fn,width=4, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3C_v03.png"
+ggsave(fn,width=4, height=3)
+
+
+# X. compare interactome changes to cluster changes
 I = which(df$nint>1000 & df$nint0>1000 & df$nclust>10)
 I2 = dm$experiment%in%"group1" & dm$intJ<0.1 & dm$y>0.5
 dm$y[I2] = NA
