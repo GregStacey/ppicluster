@@ -60,7 +60,8 @@ if (T) {
     df$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df.m = melt(df, id.vars = "n.shuffle")
-  save(df4, file="../data/suppFig01_v02.Rda")
+  df2save = list(df)
+  save(df2save, file="../data/suppFig01_v02.Rda")
   
   
   # 2. Number of clusters
@@ -106,7 +107,8 @@ if (T) {
     df2$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df2.m = melt(df2, id.vars = "n.clusters")
-  save(df4, file="../data/suppFig01_v02.Rda")
+  df2save = list(df, df2)
+  save(df2save, file="../data/suppFig01_v02.Rda")
   
   
   # 3. Number of moonlighting proteins
@@ -153,7 +155,8 @@ if (T) {
     df3$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df3.m = melt(df3, id.vars = "n.moonlight")
-  save(df4, file="../data/suppFig01_v02.Rda")
+  df2save = list(df, df2, df3)
+  save(df2save, file="../data/suppFig01_v02.Rda")
   
   
   # 4. Novel clusters in set 2
@@ -201,7 +204,8 @@ if (T) {
   df4$F.measure = NA
   df4.m = melt(df4, id.vars = "n.novel")
   
-  save(df4, file="../data/suppFig01_v02.Rda")
+  df2save = list(df, df2, df3, df4)
+  save(df2save, file="../data/suppFig01_v02.Rda")
 }
 
 
