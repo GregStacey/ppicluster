@@ -16,8 +16,8 @@ install.packages("FlowSOM", repos='http://cran.us.r-project.org')
 
 source("functions.R")
 
-fn = "/Users/gregstacey/Academics/Foster/ClusterExplore/data/suppFig01.Rda"
-if (T) {
+fn = "../data/suppFig01.Rda"
+if (F) {
   load(fn)
 } else {
   # 1. Shuffling
