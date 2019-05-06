@@ -18,7 +18,8 @@ if (T) {
                   J = numeric(length(tmp)), 
                   NMI = numeric(length(tmp)),
                   ARI = numeric(length(tmp)),
-                  `F-measure` = numeric(length(tmp)), stringsAsFactors = F)
+                  `F-measure` = numeric(length(tmp)),
+                  MIz = numeric(length(tmp)),stringsAsFactors = F)
   clust0 = data.frame(prots = 1:1000, clusters = rep(1:100, 10))
   tmp0 = character(100)
   for (ii in 1:length(tmp0)) {
@@ -46,6 +47,7 @@ if (T) {
     df$NMI[ii] = NMI(clust0, clust1)[[1]]
     df$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
     df$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    df$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df.m = melt(df, id.vars = "n.shuffle")
 
@@ -58,7 +60,8 @@ if (T) {
                    J = numeric(length(tmp)), 
                    NMI = numeric(length(tmp)),
                    ARI = numeric(length(tmp)),
-                   `F-measure` = numeric(length(tmp)), stringsAsFactors = F)
+                   `F-measure` = numeric(length(tmp)), 
+                   MIz = numeric(length(tmp)), stringsAsFactors = F)
   for (ii in 1:nrow(df2)) {
     print(round(ii/nrow(df2)*100)/100)
     
@@ -89,6 +92,7 @@ if (T) {
     df2$NMI[ii] = NMI(clust0, clust1)[[1]]
     df2$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
     df2$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    df2$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df2.m = melt(df2, id.vars = "n.clusters")
 
@@ -101,6 +105,7 @@ if (T) {
                    J = numeric(length(tmp)), 
                    NMI = numeric(length(tmp)),
                    ARI = numeric(length(tmp)),
+                   MIz = numeric(length(tmp)),
                    `F-measure` = numeric(length(tmp)), stringsAsFactors = F)
   prots.orig = 1:1000
   for (ii in 1:nrow(df3)) {
@@ -133,6 +138,7 @@ if (T) {
     df3$NMI[ii] = NMI(clust0, clust1)[[1]]
     df3$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
     df3$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    df3$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df3.m = melt(df3, id.vars = "n.moonlight")
   
@@ -145,6 +151,7 @@ if (T) {
                    J = numeric(length(tmp)), 
                    NMI = numeric(length(tmp)),
                    ARI = numeric(length(tmp)),
+                   MIz = numeric(length(tmp)),
                    `F-measure` = numeric(length(tmp)), stringsAsFactors = F)
   # clust0 as usual
   clust0 = data.frame(prots = 1:1000, clusters = rep(1:100, 10))
@@ -176,89 +183,92 @@ if (T) {
     df4$NMI[ii] = NMI(clust0, clust1)[[1]]
     df4$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
     #df4$F.measure[ii] = FMeasure(clust0.fm$clusters, clust1$clusters, silent=T)
+    df4$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df4$F.measure = NA
   df4.m = melt(df4, id.vars = "n.novel")
+  
+  save(df4, file="../data/suppFig02.Rda")
 }
 
 
-
-# A - random
-x = seq(from=0, to=1, by=0.01)
-df.fake1 = data.frame(x=x, 
-                      y=exp(-x * 3)*.9 + .1)
-ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
-  ylab("Similarity") + xlab("Fraction random in 2") + theme_bw()+
-  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A_v01.pdf"
-ggsave(fn,width=3, height=2.4)
-
-df.m = melt(df, id.vars = "n.shuffle")
-ggplot(df.m, aes(x=n.shuffle/1000, y=value, color=variable)) + geom_line() +
-  ylab("Similarity") + xlab("Fraction random in 2") + theme_bw() +
-  theme(legend.position = "none") +
-  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A2_v01.pdf"
-ggsave(fn,width=3, height=2.4)
-
-
-
-# B - number
-x = seq(from=0, to=1000, by=10)
-df.fake1 = data.frame(x=x, 
-                      y=rep(0.5, length=length(x)))
-ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
-  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
-  coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B_v01.pdf"
-ggsave(fn,width=3, height=2.4)
-
-df.m = melt(df2, id.vars = "n.clusters")
-ggplot(df.m, aes(x=n.clusters, y=value, color=variable)) + geom_line() +
-  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
-  theme(legend.position = "none") +
-  coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B2_v01.pdf"
-ggsave(fn,width=3, height=2.4)
-
-
-
-# C - moonlighting
-x = seq(from=0, to=1, by=0.01)
-df.fake1 = data.frame(x=x, 
-                      y=rep(1, length=length(x)))
-ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
-  ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
-  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C_v01.pdf"
-ggsave(fn,width=3, height=2.4)
-
-df.m = melt(df3, id.vars = "n.moonlight")
-ggplot(df.m, aes(x=n.moonlight/1000, y=value, color=variable)) + geom_line() +
-  ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
-  scale_colour_manual(values = c("#F8766D", "#B79F00", "#00BA38", "#00BFC4", "#619CFF","#00BA38")) +
-  theme(legend.position = "none") +
-  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C2_v01.pdf"
-ggsave(fn,width=3, height=2.4)
-
-
-
-# D - novel members
-x = seq(from=0, to=1, by=0.01)
-y = exp(-x * 2)
-df.fake1 = data.frame(x=x, 
-                      y = (y - min(y)) / (max(y) - min(y)))
-ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
-  ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw()+
-  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D_v01.pdf"
-ggsave(fn,width=3, height=2.4)
-
-df.m = melt(df4, id.vars = "n.novel")
-ggplot(df.m, aes(x=n.novel/1000, y=value, color=variable)) + geom_line() +
-  ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw() +
-  theme(legend.position = "none") +
-  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D2_v01.pdf"
-ggsave(fn,width=3, height=2.4)
+# 
+# # A - random
+# x = seq(from=0, to=1, by=0.01)
+# df.fake1 = data.frame(x=x, 
+#                       y=exp(-x * 3)*.9 + .1)
+# ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+#   ylab("Similarity") + xlab("Fraction random in 2") + theme_bw()+
+#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A_v01.pdf"
+# ggsave(fn,width=3, height=2.4)
+# 
+# df.m = melt(df, id.vars = "n.shuffle")
+# ggplot(df.m, aes(x=n.shuffle/1000, y=value, color=variable)) + geom_line() +
+#   ylab("Similarity") + xlab("Fraction random in 2") + theme_bw() +
+#   theme(legend.position = "none") +
+#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A2_v01.pdf"
+# ggsave(fn,width=3, height=2.4)
+# 
+# 
+# 
+# # B - number
+# x = seq(from=0, to=1000, by=10)
+# df.fake1 = data.frame(x=x, 
+#                       y=rep(0.5, length=length(x)))
+# ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+#   ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
+#   coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B_v01.pdf"
+# ggsave(fn,width=3, height=2.4)
+# 
+# df.m = melt(df2, id.vars = "n.clusters")
+# ggplot(df.m, aes(x=n.clusters, y=value, color=variable)) + geom_line() +
+#   ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
+#   theme(legend.position = "none") +
+#   coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B2_v01.pdf"
+# ggsave(fn,width=3, height=2.4)
+# 
+# 
+# 
+# # C - moonlighting
+# x = seq(from=0, to=1, by=0.01)
+# df.fake1 = data.frame(x=x, 
+#                       y=rep(1, length=length(x)))
+# ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+#   ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
+#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C_v01.pdf"
+# ggsave(fn,width=3, height=2.4)
+# 
+# df.m = melt(df3, id.vars = "n.moonlight")
+# ggplot(df.m, aes(x=n.moonlight/1000, y=value, color=variable)) + geom_line() +
+#   ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
+#   scale_colour_manual(values = c("#F8766D", "#B79F00", "#00BA38", "#00BFC4", "#619CFF","#00BA38")) +
+#   theme(legend.position = "none") +
+#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C2_v01.pdf"
+# ggsave(fn,width=3, height=2.4)
+# 
+# 
+# 
+# # D - novel members
+# x = seq(from=0, to=1, by=0.01)
+# y = exp(-x * 2)
+# df.fake1 = data.frame(x=x, 
+#                       y = (y - min(y)) / (max(y) - min(y)))
+# ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+#   ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw()+
+#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D_v01.pdf"
+# ggsave(fn,width=3, height=2.4)
+# 
+# df.m = melt(df4, id.vars = "n.novel")
+# ggplot(df.m, aes(x=n.novel/1000, y=value, color=variable)) + geom_line() +
+#   ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw() +
+#   theme(legend.position = "none") +
+#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D2_v01.pdf"
+# ggsave(fn,width=3, height=2.4)

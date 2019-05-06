@@ -3,6 +3,25 @@ source("unctions.R")
 
 fn = "../data/clusters_full_netw.txt"
 Ji = as.data.frame(read_tsv(fn))
+Ji = Ji[!Ji$algorithm=="hierarchical",]
+Ji$measure = Ji$algorithm
+Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
+Ji$algorithm[Ji$algorithm=="co"] = "CO"
+Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
+Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
+
+# make cluster.size, remove all clusters with size<3
+Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
+Ji = Ji[Ji$cluster.size>2,]
+
+# make size.factor
+Ji$noise_mag = as.numeric(Ji$noise_mag)
+Ji$size.factor = character(nrow(Ji))
+Ji$size.factor[Ji$cluster.size<=3] = "N<=3"
+Ji$size.factor[Ji$cluster.size<=6 & Ji$cluster.size>3] = "3<N<=6"
+Ji$size.factor[Ji$cluster.size<=12 & Ji$cluster.size>6] = "6<N<=12"
+Ji$size.factor[Ji$cluster.size>12] = "N>12"
+Ji$size.factor = factor(Ji$size.factor, levels= c("N<=3", "3<N<=6", "6<N<=12", "N>12"))
 
 # 5A. % reproducible vs FPR
 nn = 10^3
@@ -24,7 +43,7 @@ for (ii in 1:length(unique(Ji$noise_mag))) {
         Ji$algorithm%in%this.algorithm & 
         Ji$size.factor%in%this.size & Ji$iter>1
       dm[cc,] = c(this.noise, mean(Ji$Ji2[I], na.rm=T), 
-                  sum(Ji$Ji2[I]>0.65, na.rm=T) / sum(!is.na(Ji$Ji2[I])),
+                  sum(Ji$Ji2[I]>0.5, na.rm=T) / sum(!is.na(Ji$Ji2[I])),
                   this.algorithm, this.size)
     }
   }
@@ -40,31 +59,10 @@ dm = dm[!is.na(dm$y2),]
 
 ggplot(dm, aes(x=x, y=y2, color=size.factor)) + 
   geom_line(alpha=0.6, size=2) +  facet_grid(~algorithm) +
-  xlab("Interactome FPR") + ylab("Fraction of clusters\nreproducible (Ai>0.65)") + 
-  coord_cartesian(ylim=c(0,1)) + theme_bw() 
+  xlab("Interactome FPR") + ylab("Fraction of clusters\nreproducible (Ji>0.6)") + 
+  coord_cartesian(ylim=c(0,1)) + theme_bw() + scale_color_grey() + 
+  theme(legend.position = "none")
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5A_v01.png"
 ggsave(fn,width=10, height=3)
-
-
-
-I = Ji$iter>1 & Ji$algorithm=="CO"
-a0 = summary(glm(formula = Ji2 ~ noise_mag  + cluster.size, data = Ji[I,]))
-a = summary(glm(formula = Ji2 ~ noise_mag, data = Ji[I,]))
-c("CO",1 - a$deviance/a$null.deviance,1 - a0$deviance/a0$null.deviance)
-
-I = Ji$iter>1 & Ji$algorithm=="CO+MCL" 
-a0 = summary(glm(formula = Ji2 ~ noise_mag  + cluster.size, data = Ji[I,]))
-a = summary(glm(formula = Ji2 ~ noise_mag, data = Ji[I,]))
-c("CO+MCL",1 - a$deviance/a$null.deviance,1 - a0$deviance/a0$null.deviance)
-
-I = Ji$iter>1 & Ji$algorithm=="k-Med" 
-a0 = summary(glm(formula = Ji2 ~ noise_mag  + cluster.size, data = Ji[I,]))
-a = summary(glm(formula = Ji2 ~ noise_mag, data = Ji[I,]))
-c("k-Med",1 - a$deviance/a$null.deviance,1 - a0$deviance/a0$null.deviance)
-
-I = Ji$iter>1 & Ji$algorithm=="MCL" 
-a0 = summary(glm(formula = Ji2 ~ noise_mag  + cluster.size, data = Ji[I,]))
-a = summary(glm(formula = Ji2 ~ noise_mag, data = Ji[I,]))
-c("MCL",1 - a$deviance/a$null.deviance,1 - a0$deviance/a0$null.deviance)
 
 

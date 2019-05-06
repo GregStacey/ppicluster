@@ -148,16 +148,6 @@ matchingratio = function(predComplex, refComplex){
 }
 
 
-
-normMI = function(predComplex, refComplex){
-  Na = length(refComplex)
-  Nb = length(predComplex)
-  
-  return(nmi)
-}
-
-
-
 hairball = function(adjmat, this.cluster, allProts){
   # convert to graph
   g = graph_from_adjacency_matrix(adjmat, mode = 'undirected', weighted=T)
@@ -472,4 +462,20 @@ consensus.adjmat = function(this.cluster, clusters){
   
   return(df.adjmat)
 }
+
+
+calcMIz = function(X,Y, iterMax) {
+  
+  nn = length(X)
+  zz = numeric(iterMax)
+  for (iter in 1:iterMax) {
+    # shuffle one of the labels
+    I = sample(nn, nn)
+    zz[iter] = mutinformation(X[I],Y[I2])
+  }
+  miz = (mutinformation(X,Y) - mean(zz)) / sd(zz)
+  
+  return(miz)
+}
+
 
