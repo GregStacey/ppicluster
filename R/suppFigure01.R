@@ -6,6 +6,8 @@
 #   2. Insensitive to number of clusters
 #   3. Handles moonlighting proteins
 
+source("functions.R")
+
 fn = "/Users/gregstacey/Academics/Foster/ClusterExplore/data/suppFig01.Rda"
 if (T) {
   load(fn)

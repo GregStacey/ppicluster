@@ -12,6 +12,7 @@ require(NMI)
 require(fossil)
 require(FlowSOM)
 require(VennDiagram)
+require(infotheo)
 
 blank_theme = theme(axis.title.x=element_blank(),
                     axis.text.x=element_blank(),
