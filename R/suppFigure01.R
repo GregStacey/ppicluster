@@ -6,6 +6,14 @@
 #   2. Insensitive to number of clusters
 #   3. Handles moonlighting proteins
 
+
+install.packages("NMI", repos='http://cran.us.r-project.org')
+install.packages("sp", repos='http://cran.us.r-project.org')
+install.packages("maps", repos='http://cran.us.r-project.org')
+install.packages("fossil", repos='http://cran.us.r-project.org')
+install.packages("infotheo", repos='http://cran.us.r-project.org')
+install.packages("FlowSOM", repos='http://cran.us.r-project.org')
+
 source("functions.R")
 
 fn = "/Users/gregstacey/Academics/Foster/ClusterExplore/data/suppFig01.Rda"
@@ -52,7 +60,8 @@ if (T) {
     df$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df.m = melt(df, id.vars = "n.shuffle")
-
+  save(df4, file="../data/suppFig01_v02.Rda")
+  
   
   # 2. Number of clusters
   tmp = seq(from=10, to=1000, by=5)
@@ -97,7 +106,8 @@ if (T) {
     df2$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df2.m = melt(df2, id.vars = "n.clusters")
-
+  save(df4, file="../data/suppFig01_v02.Rda")
+  
   
   # 3. Number of moonlighting proteins
   tmp = seq(from=1, to=1000, by=5)
@@ -143,10 +153,11 @@ if (T) {
     df3$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df3.m = melt(df3, id.vars = "n.moonlight")
+  save(df4, file="../data/suppFig01_v02.Rda")
   
   
   # 4. Novel clusters in set 2
-  tmp = seq(from=0, to=1000, by=5)
+  tmp = seq(from=0, to=995, by=5)
   df4 = data.frame(n.novel = tmp,
                    GA = numeric(length(tmp)),
                    MMR = numeric(length(tmp)),
@@ -190,7 +201,7 @@ if (T) {
   df4$F.measure = NA
   df4.m = melt(df4, id.vars = "n.novel")
   
-  save(df4, file="../data/suppFig02.Rda")
+  save(df4, file="../data/suppFig01_v02.Rda")
 }
 
 

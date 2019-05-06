@@ -472,7 +472,7 @@ calcMIz = function(X,Y, iterMax) {
   for (iter in 1:iterMax) {
     # shuffle one of the labels
     I = sample(nn, nn)
-    zz[iter] = mutinformation(X[I],Y[I2])
+    zz[iter] = mutinformation(X[I],Y)
   }
   miz = (mutinformation(X,Y) - mean(zz)) / sd(zz)
   
