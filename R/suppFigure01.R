@@ -47,16 +47,16 @@ if (F) {
       tmp1[jj] = paste(as.character(clust1$prots[clust1$clusters==jj]), collapse=";")
     }
     
-    df$GA[ii] = geomacc(tmp0, tmp1)
-    df$MMR[ii] = matchingratio(tmp0, tmp1)
-    tmp = numeric(length(tmp0))
-    for (jj in 1:length(tmp)) {
-      tmp[jj] = calcA(tmp1[jj], tmp0)
-    }
-    df$J[ii] = mean(tmp, na.rm=T)
-    df$NMI[ii] = NMI(clust0, clust1)[[1]]
-    df$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
-    df$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    #df$GA[ii] = geomacc(tmp0, tmp1)
+    #df$MMR[ii] = matchingratio(tmp0, tmp1)
+    #tmp = numeric(length(tmp0))
+    #for (jj in 1:length(tmp)) {
+    #  tmp[jj] = calcA(tmp1[jj], tmp0)
+    #}
+    #df$J[ii] = mean(tmp, na.rm=T)
+    #df$NMI[ii] = NMI(clust0, clust1)[[1]]
+    #df$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
+    #df$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
     df$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df.m = melt(df, id.vars = "n.shuffle")
@@ -94,16 +94,16 @@ if (F) {
     }
     tmp1 = tmp1[!tmp1==""]
     
-    df2$GA[ii] = geomacc(tmp0, tmp1)
-    df2$MMR[ii] = matchingratio(tmp0, tmp1)
-    tmp = numeric(length(tmp0))
-    for (jj in 1:length(tmp)) {
-      tmp[jj] = calcA(tmp1[jj], tmp0)
-    }
-    df2$J[ii] = mean(tmp, na.rm=T)
-    df2$NMI[ii] = NMI(clust0, clust1)[[1]]
-    df2$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
-    df2$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    #df2$GA[ii] = geomacc(tmp0, tmp1)
+    #df2$MMR[ii] = matchingratio(tmp0, tmp1)
+    #tmp = numeric(length(tmp0))
+    #for (jj in 1:length(tmp)) {
+    #  tmp[jj] = calcA(tmp1[jj], tmp0)
+    #}
+    #df2$J[ii] = mean(tmp, na.rm=T)
+    #df2$NMI[ii] = NMI(clust0, clust1)[[1]]
+    #df2$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
+    #df2$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
     df2$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df2.m = melt(df2, id.vars = "n.clusters")
@@ -142,16 +142,16 @@ if (F) {
     clust1 = clust0
     tmp1 = tmp0
     
-    df3$GA[ii] = geomacc(tmp0, tmp1)
-    df3$MMR[ii] = matchingratio(tmp0, tmp1)
-    tmp = numeric(length(tmp0))
-    for (jj in 1:length(tmp)) {
-      tmp[jj] = calcA(tmp1[jj], tmp0)
-    }
-    df3$J[ii] = mean(tmp, na.rm=T)
-    df3$NMI[ii] = NMI(clust0, clust1)[[1]]
-    df3$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
-    df3$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    #df3$GA[ii] = geomacc(tmp0, tmp1)
+    #df3$MMR[ii] = matchingratio(tmp0, tmp1)
+    #tmp = numeric(length(tmp0))
+    #for (jj in 1:length(tmp)) {
+    #  tmp[jj] = calcA(tmp1[jj], tmp0)
+    #}
+    #df3$J[ii] = mean(tmp, na.rm=T)
+    #df3$NMI[ii] = NMI(clust0, clust1)[[1]]
+    #df3$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
+    #df3$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
     df3$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df3.m = melt(df3, id.vars = "n.moonlight")
@@ -189,15 +189,15 @@ if (F) {
       tmp1[jj] = paste(as.character(clust1$prots[I2]), collapse=";")
     }
 
-    df4$GA[ii] = geomacc(tmp0, tmp1)
-    df4$MMR[ii] = matchingratio(tmp1, tmp0)
-    tmp = numeric(length(tmp0))
-    for (jj in 1:length(tmp)) {
-      tmp[jj] = calcA(tmp1[jj], tmp0)
-    }
-    df4$J[ii] = mean(tmp, na.rm=T)
-    df4$NMI[ii] = NMI(clust0, clust1)[[1]]
-    df4$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
+    #df4$GA[ii] = geomacc(tmp0, tmp1)
+    #df4$MMR[ii] = matchingratio(tmp1, tmp0)
+    #tmp = numeric(length(tmp0))
+    #for (jj in 1:length(tmp)) {
+    #  tmp[jj] = calcA(tmp1[jj], tmp0)
+    #}
+    #df4$J[ii] = mean(tmp, na.rm=T)
+    #df4$NMI[ii] = NMI(clust0, clust1)[[1]]
+    #df4$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
     #df4$F.measure[ii] = FMeasure(clust0.fm$clusters, clust1$clusters, silent=T)
     df4$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
