@@ -28,7 +28,7 @@ clusters2 = data.frame(network = numeric(10^6),
                        algorithm = character(10^6),
                        cluster = character(10^6), stringsAsFactors = F)
 
-# add 1 iteration of PAM + Louvain
+# add 1 iteration of PAM + walktrap
 cc = 0
 networks = c("stitch5", "facebook")
 n.clusters = c(193, 500)
@@ -52,7 +52,7 @@ for (uu in 1:length(fns)) {
     # walktrap
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
     walk.cluster = walktrap.community(graph.object)
-    for (jj in 1:length(louvain.cluster)) {
+    for (jj in 1:length(walk.cluster)) {
       cc = cc+1
       clusters2$iter[cc] = iter
       clusters2$noise_mag[cc] = noise.range[ii]
