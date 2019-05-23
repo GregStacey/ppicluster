@@ -63,7 +63,7 @@ for (uu in 1:length(fns)) {
     
     # write in case of crash
     fn = "../data/clusters_facebook_netw_pamwalk.txt"
-    write_tsv(clusters[1:cc,], path=fn)
+    write_tsv(clusters2[1:cc,], path=fn)
   }
 }
 clusters2 = clusters2[1:cc,]
