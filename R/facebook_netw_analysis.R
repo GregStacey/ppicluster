@@ -55,7 +55,7 @@ for (uu in 1:length(fns)) {
     for (jj in 1:length(walk.cluster)) {
       if (length(walk.cluster[[jj]]) < 3) next
       cc = cc+1
-      clusters2$iter[cc] = iter
+      clusters2$network[cc] = networks[uu]
       clusters2$noise_mag[cc] = noise.range[ii]
       clusters2$algorithm[cc] = "walk"
       clusters2$cluster[cc] = paste(walk.cluster[[jj]], collapse=";")

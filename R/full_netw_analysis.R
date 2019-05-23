@@ -85,7 +85,7 @@ for (iter in 1:iterMax) {
     
     # pam
     pam.cluster = pamclust(ints.shuffle, 1500)
-    for (jj in 1:length(hi.cluster)) {
+    for (jj in 1:length(pam.cluster)) {
      cc = cc+1
      clusters2$iter[cc] = iter
      clusters2$noise_mag[cc] = noise.range[ii]
