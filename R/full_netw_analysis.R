@@ -61,7 +61,7 @@ clusters2 = data.frame(iter = numeric(10^6),
                        algorithm = character(10^6),
                        cluster = character(10^6), stringsAsFactors = F)
 
-# add 10 iterations of PAM and hierarchical
+# add 10 iterations of PAM and walktrap
 iterMax = 10
 cc = 0
 for (iter in 1:iterMax) {
@@ -69,14 +69,15 @@ for (iter in 1:iterMax) {
     # get shuffled corum
     ints.shuffle = shufflecorum(ints.corum, noise.range[ii])
     
-    # hierarchical
-    hi.cluster = hiclust(ints.shuffle, 2000)
-    for (jj in 1:length(hi.cluster)) {
+    # walktrap
+    graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
+    walk.cluster = walktrap.community(graph.object)
+    for (jj in 1:length(louvain.cluster)) {
       cc = cc+1
       clusters2$iter[cc] = iter
       clusters2$noise_mag[cc] = noise.range[ii]
-      clusters2$algorithm[cc] = "hierarchical"
-      clusters2$cluster[cc] = hi.cluster[jj]
+      clusters2$algorithm[cc] = "walk"
+      clusters2$cluster[cc] = paste(walk.cluster[[jj]], collapse=";")
     }
     
     # pam

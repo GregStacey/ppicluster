@@ -28,7 +28,7 @@ clusters2 = data.frame(network = numeric(10^6),
                        algorithm = character(10^6),
                        cluster = character(10^6), stringsAsFactors = F)
 
-# add 1 iteration of PAM
+# add 1 iteration of PAM + Louvain
 cc = 0
 networks = c("stitch5", "facebook")
 n.clusters = c(193, 500)
@@ -36,17 +36,28 @@ for (uu in 1:length(fns)) {
   for (ii in 1:length(noise.range)) {
     print(paste("clustering",networks[uu],"at noise=", noise.range[ii]))
 
-        # get shuffled corum
+    # get shuffled corum
     ints.shuffle = shufflecorum(ints[[uu]], noise.range[ii])
     
     # pam
     pam.cluster = pamclust(ints.shuffle, n.clusters[uu])
-    for (jj in 1:length(hi.cluster)) {
+    for (jj in 1:length(pam.cluster)) {
       cc = cc+1
       clusters2$network[cc] = networks[uu]
       clusters2$noise_mag[cc] = noise.range[ii]
       clusters2$algorithm[cc] = "pam"
       clusters2$cluster[cc] = pam.cluster[jj]
+    }
+    
+    # walktrap
+    graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
+    walk.cluster = walktrap.community(graph.object)
+    for (jj in 1:length(louvain.cluster)) {
+      cc = cc+1
+      clusters2$iter[cc] = iter
+      clusters2$noise_mag[cc] = noise.range[ii]
+      clusters2$algorithm[cc] = "walk"
+      clusters2$cluster[cc] = paste(walk.cluster[[jj]], collapse=";")
     }
   }
 }
