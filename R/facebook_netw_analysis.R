@@ -34,7 +34,9 @@ networks = c("stitch5", "facebook")
 n.clusters = c(193, 500)
 for (uu in 1:length(fns)) {
   for (ii in 1:length(noise.range)) {
-    # get shuffled corum
+    print(paste("clustering",networks[uu],"at noise=", noise.range[ii]))
+
+        # get shuffled corum
     ints.shuffle = shufflecorum(ints[[uu]], noise.range[ii])
     
     # pam
