@@ -396,12 +396,12 @@ shufflecorum = function(ints.corum, ff){
   N.diff = sum(!ia0==ia | !ib0==ib)
   if (abs(N.replace - N.diff)>5) print(paste("shuffling missed", N.replace-N.diff, "interactions"))
   
-  # sort protein pairs alphabetically
-  for (ii in 1:length(I)) {
-    tmp = sort(c(ia[ii], ib[ii]))
-    ia[ii] = tmp[1]
-    ib[ii] = tmp[2]
-  }
+  # # sort protein pairs alphabetically
+  # for (ii in 1:length(I)) {
+  #   tmp = sort(c(ia[ii], ib[ii]))
+  #   ia[ii] = tmp[1]
+  #   ib[ii] = tmp[2]
+  # }
   
   return(ints.shuffle) 
 }

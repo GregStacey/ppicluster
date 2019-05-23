@@ -1,7 +1,7 @@
 
 source("functions.R")
 
-fn = "../data/clusters_full_netw.txt"
+fn = "../data/clusters_full_netw_walktrap.txt"
 Ji = as.data.frame(read_tsv(fn))
 Ji = Ji[!Ji$algorithm=="hierarchical",]
 Ji$measure = Ji$algorithm
@@ -60,10 +60,10 @@ dm = dm[!is.na(dm$y2),]
 
 ggplot(dm, aes(x=x, y=y2, color=size.factor)) + 
   geom_line(alpha=0.6, size=2) +  facet_grid(~algorithm) +
-  xlab("Interactome FPR") + ylab("Fraction of clusters\nreproducible (Ji>0.5)") + 
+  xlab("Interactome FPR") + ylab("Fraction of clusters\nthat are reproducible (Ji>0.5)") + 
   coord_cartesian(ylim=c(0,1)) + theme_bw() + scale_color_grey() + 
   theme(legend.position = "none")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5A_v01.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5A_v02.png"
 ggsave(fn,width=10, height=3)
 
 

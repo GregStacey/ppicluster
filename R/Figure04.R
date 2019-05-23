@@ -2,9 +2,9 @@
 require(ggplot2)
 source("functions.R")
 
-#fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v04.Rda"
+#fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v05.Rda"
 #load(fn) # sim, Ji
-fn = "../data/clusters_full_netw.txt"
+fn = "../data/clusters_full_netw_walktrap.txt"
 Ji = as.data.frame(read_tsv(fn))
 Ji = Ji[!Ji$algorithm=="hierarchical",]
 Ji$measure = Ji$algorithm
@@ -12,6 +12,7 @@ Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
 Ji$algorithm[Ji$algorithm=="co"] = "CO"
 Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
 Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
+Ji$algorithm[Ji$algorithm=="walk"] = "walktrap"
 
 # make cluster.size, remove all clusters with size<3
 Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
@@ -104,7 +105,7 @@ ggplot(Ji[Ji$noise_mag>0 & Ji$iter>1,], aes(x=log10(cluster.size), y=Ji2, color=
   scale_color_brewer(palette = "Spectral") +
   ylab("Similarity to iter=1 (Ji)") + 
   xlab("Cluster size")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4C_v02.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4C_v03.png"
 ggsave(fn,width=10, height=3)
 
 

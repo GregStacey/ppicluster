@@ -28,9 +28,47 @@ unqdatasets = unique(data.c$data_type)
 unqmags = sort(unique(data.c$noise_mag))
 unqmags = unqmags[unqmags<=1]
 
+fn.walk = "../data/data_c_walktrap.txt"
+if (T) {
+  load(fn.walk)
+} else {
+  # walktrap cluster
+  # add 10 iterations of PAM and walktrap
+  data.c.add = data.frame(data_type = character(10^5), noise_type = character(10^5),
+                          noise_mag = numeric(10^5), algorithm = character(10^5),
+                          cluster = character(10^5), stringsAsFactors = F)
+  cc = 0
+  for (ii in 1:length(unqmags)) {
+    for (jj in 1:length(unqdatasets)) {
+      print(paste("walktrap clustering dataset",unqdatasets[jj],"at noise=", unqmags[ii]))
+      
+      # get shuffled network
+      I = ints.c$noise_mag==unqmags[ii] & ints.c$dataset==unqdatasets[jj] & !ints.c$protA==ints.c$protB
+      if (sum(I)<190) next
+      these.ints = ints.c[I,c("protA", "protB")]
+      ints.shuffle = shufflecorum(these.ints, unqmags[ii])
+      
+      # walktrap
+      graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
+      walk.cluster = walktrap.community(graph.object)
+      for (kk in 1:length(walk.cluster)) {
+        if (length(walk.cluster[[kk]]) < 3) next
+        cc = cc+1
+        data.c.add$data_type[cc] = unqdatasets[jj]
+        data.c.add$noise_type[cc] = "chrom"
+        data.c.add$noise_mag[cc] = unqmags[ii]
+        data.c.add$algorithm[cc] = "walk"
+        data.c.add$cluster[cc] = paste(walk.cluster[[kk]], collapse=";")
+      }
+    }
+  }
+  data.c.add = data.c.add[1:cc,]
+}
+data.c = rbind(data.c, data.c.add)
+
 # calculate Ji
 fn = "../data/intJ_vs_clustJ_v03.Rda"
-if (T){
+if (F){
   load(fn)
   df = df[!df$algorithm == "hierarchical",]
 } else {
@@ -73,7 +111,6 @@ if (T){
           df$intJ[cc] = this.intJ
           df$clust.size[cc] = length(unlist(strsplit(cluster[mm], ";")))
         }
-        
       }
     }
   }
@@ -92,6 +129,7 @@ df$algorithm[df$algorithm=="co"] = "CO"
 df$algorithm[df$algorithm=="co_mcl"] = "CO+MCL"
 df$algorithm[df$algorithm=="mcl"] = "MCL"
 df$algorithm[df$algorithm=="pam"] = "k-Med"
+df$algorithm[df$algorithm=="walk"] = "walktrap"
 
 
 # get averages for figures
@@ -226,10 +264,10 @@ ggplot(df, aes(x=noise_mag*100, y=clustJ, color=experiment)) +
   ylab("Similarity to un-noised (Ji)") + xlab("Noise magnitude, %") + 
   geom_line(data=dm, aes(x=x*100, y=y,color=experiment), size=2, alpha=.6) +
   theme_bw() + xlim(0,50) + theme(legend.position = "none") + scale_colour_grey()
-  #scale_color_brewer(palette="Set1")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v03.pdf"
+#scale_color_brewer(palette="Set1")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v04.pdf"
 ggsave(fn,width=10, height=3)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v03.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v04.png"
 ggsave(fn,width=10, height=3)
 
 

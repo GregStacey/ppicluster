@@ -13,6 +13,7 @@ for (ii in 1:length(fns)) {
   ints[[ii]] = as.data.frame(read_delim(fns[ii], delim=seps[ii], quote = ""))
   colnames(ints[[ii]]) = c("protA","protB")
 }
+ints[[2]] = ints[[2]] + 1
 
 # 
 noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
@@ -31,7 +32,7 @@ clusters2 = data.frame(network = numeric(10^6),
 # add 1 iteration of PAM + walktrap
 cc = 0
 networks = c("stitch5", "facebook")
-n.clusters = c(193, 500)
+n.clusters = c(193, 1500)
 for (uu in 1:length(fns)) {
   for (ii in 1:length(noise.range)) {
     print(paste("clustering",networks[uu],"at noise=", noise.range[ii]))

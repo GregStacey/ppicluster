@@ -11,7 +11,6 @@ fnsave = "../data/cluster3.txt"
 clusters2 = as.data.frame(read_tsv(fnsave))
 clusters2$noise_mag = as.numeric(clusters2$noise_mag)
 clusters2 = clusters2[clusters2$data_type=="corum",]
-
 clusters = rbind(clusters[,1:5], clusters2)
 
 
@@ -95,11 +94,12 @@ for (uu in 1:length(unqnoise)) {
 
 
 
-sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v04.Rda"
+sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v05.Rda"
 if (F){
   load(sf)
 } else {
-  fn = "../data/clusters_full_netw.txt"
+  #fn = "../data/clusters_full_netw.txt"
+  fn = "../data/clusters_full_netw_walktrap.txt"
   Ji = as.data.frame(read_tsv(fn))
   
   # make cluster.size, remove all clusters with size<3
@@ -126,43 +126,43 @@ if (F){
       set1 = Ji$cluster[I1]
       if (sum(I1)==0 | sum(I0)==0) next
       
-      # geomacc
-      cc = cc+1
-      sim$measure[cc] = "ga"
-      sim$algorithm[cc] = unqalg[jj]
-      sim$noise_mag[cc] = unqnoise[ii]
-      sim$Ji1[cc] = geomacc(set0, set1)
-      
-      # matching ratio
-      cc = cc+1
-      sim$measure[cc] = "mmr"
-      sim$algorithm[cc] = unqalg[jj]
-      sim$noise_mag[cc] = unqnoise[ii]
-      sim$Ji1[cc] = matchingratio(set0, set1)
-      
-      # nmi
-      cc = cc+1
-      unqprots = c(unlist(lapply(set0,strsplit,";")),unlist(lapply(set1,strsplit,";")))
-      # prepare set0
-      df0 = data.frame(X=1:length(unqprots),Y=numeric(length(unqprots)))
-      for (kk in 1:length(unqprots)) {
-        ia = grep(unqprots[kk], set0)
-        if (length(ia)==0) next
-        df0$Y[kk] = ia[1]
-      }
-      df0 = df0[!df0$Y==0,]
-      # prepare set1
-      df1 = data.frame(X=1:length(unqprots),Y=numeric(length(unqprots)))
-      for (kk in 1:length(unqprots)) {
-        ia = grep(unqprots[kk], set1)
-        if (length(ia)==0) next
-        df1$Y[kk] = ia[1]
-      }
-      df1 = df1[!df1$Y==0,]
-      sim$measure[cc] = "NMI"
-      sim$algorithm[cc] = unqalg[jj]
-      sim$noise_mag[cc] = unqnoise[ii]
-      sim$Ji1[cc] = NMI(df0, df1)[[1]]
+      # # geomacc
+      # cc = cc+1
+      # sim$measure[cc] = "ga"
+      # sim$algorithm[cc] = unqalg[jj]
+      # sim$noise_mag[cc] = unqnoise[ii]
+      # sim$Ji1[cc] = geomacc(set0, set1)
+      # 
+      # # matching ratio
+      # cc = cc+1
+      # sim$measure[cc] = "mmr"
+      # sim$algorithm[cc] = unqalg[jj]
+      # sim$noise_mag[cc] = unqnoise[ii]
+      # sim$Ji1[cc] = matchingratio(set0, set1)
+      # 
+      # # nmi
+      # cc = cc+1
+      # unqprots = c(unlist(lapply(set0,strsplit,";")),unlist(lapply(set1,strsplit,";")))
+      # # prepare set0
+      # df0 = data.frame(X=1:length(unqprots),Y=numeric(length(unqprots)))
+      # for (kk in 1:length(unqprots)) {
+      #   ia = grep(unqprots[kk], set0)
+      #   if (length(ia)==0) next
+      #   df0$Y[kk] = ia[1]
+      # }
+      # df0 = df0[!df0$Y==0,]
+      # # prepare set1
+      # df1 = data.frame(X=1:length(unqprots),Y=numeric(length(unqprots)))
+      # for (kk in 1:length(unqprots)) {
+      #   ia = grep(unqprots[kk], set1)
+      #   if (length(ia)==0) next
+      #   df1$Y[kk] = ia[1]
+      # }
+      # df1 = df1[!df1$Y==0,]
+      # sim$measure[cc] = "NMI"
+      # sim$algorithm[cc] = unqalg[jj]
+      # sim$noise_mag[cc] = unqnoise[ii]
+      # sim$Ji1[cc] = NMI(df0, df1)[[1]]
       
       
       # Ji1
@@ -213,7 +213,7 @@ ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() +
   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
   geom_point(data = Ji, alpha=0.025, color="black") +
   ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v06.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v07.png"
 ggsave(fn,width=10, height=3)
 
 
@@ -226,9 +226,9 @@ ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) +
   geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(~algorithm) +
   ylab("Similarity to un-noised (Ji)") + xlab("Interactome FPR") + 
   coord_cartesian(ylim=c(0,1)) + theme_bw()
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v03.pdf"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v04.pdf"
 ggsave(fn,width=10, height=3)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v03.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v04.png"
 ggsave(fn,width=10, height=3)
 
 
@@ -243,7 +243,7 @@ ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() +
   ylab("Error amplification by clustering") + xlab("Interactome FPR") +
   scale_y_continuous(breaks = c(1,10,20),
                      labels=c("1x","10x", "20x"))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v01.pdf"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v02.pdf"
 ggsave(fn,width=10, height=3)
 
 
