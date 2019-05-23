@@ -73,6 +73,7 @@ for (iter in 1:iterMax) {
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
     walk.cluster = walktrap.community(graph.object)
     for (jj in 1:length(louvain.cluster)) {
+      if (length(walk.cluster[[jj]]) < 3) next
       cc = cc+1
       clusters2$iter[cc] = iter
       clusters2$noise_mag[cc] = noise.range[ii]
@@ -120,7 +121,7 @@ for (ii in 1:length(unqiters)) {
 }
 
 # write
-fn = "../data/clusters_full_netw.txt"
+fn = "../data/clusters_full_netw_walktrap.txt"
 write_tsv(clusters, path=fn)
 
 # calculate Ji2 all clusters (Compare each cluster to its iter=1 version)
@@ -142,7 +143,7 @@ for (kk in 1:length(unqmags)) {
   }
 }
 # write
-fn = "../data/clusters_full_netw.txt"
+fn = "../data/clusters_full_netw_walktrap.txt"
 write_tsv(clusters, path=fn)
 
 

@@ -53,12 +53,17 @@ for (uu in 1:length(fns)) {
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
     walk.cluster = walktrap.community(graph.object)
     for (jj in 1:length(walk.cluster)) {
+      if (length(walk.cluster[[jj]]) < 3) next
       cc = cc+1
       clusters2$iter[cc] = iter
       clusters2$noise_mag[cc] = noise.range[ii]
       clusters2$algorithm[cc] = "walk"
       clusters2$cluster[cc] = paste(walk.cluster[[jj]], collapse=";")
     }
+    
+    # write in case of crash
+    fn = "../data/clusters_facebook_netw_pamwalk.txt"
+    write_tsv(clusters[1:cc,], path=fn)
   }
 }
 clusters2 = clusters2[1:cc,]
@@ -72,7 +77,7 @@ unqalgs = unique(clusters$algorithm)
 
 
 # write in case of crash
-fn = "../data/clusters_facebook_netw_justpam.txt"
+fn = "../data/clusters_facebook_netw_pamwalk.txt"
 write_tsv(clusters, path=fn)
 
 
@@ -96,7 +101,7 @@ for (ii in 1:length(unqiters)) {
 }
 
 # write
-fn = "../data/clusters_facebook_netw_justpam.txt"
+fn = "../data/clusters_facebook_netw_pamwalk.txt"
 write_tsv(clusters, path=fn)
 
 
