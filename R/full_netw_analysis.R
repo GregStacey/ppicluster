@@ -72,7 +72,7 @@ for (iter in 1:iterMax) {
     # walktrap
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
     walk.cluster = walktrap.community(graph.object)
-    for (jj in 1:length(louvain.cluster)) {
+    for (jj in 1:length(walk.cluster)) {
       if (length(walk.cluster[[jj]]) < 3) next
       cc = cc+1
       clusters2$iter[cc] = iter
