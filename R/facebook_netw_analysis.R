@@ -41,6 +41,7 @@ for (uu in 1:length(fns)) {
     ints.shuffle = shufflecorum(ints[[uu]], noise.range[ii])
     
     # pam
+    print("pam")
     pam.cluster = pamclust(ints.shuffle, n.clusters[uu])
     for (jj in 1:length(pam.cluster)) {
       cc = cc+1
@@ -51,6 +52,7 @@ for (uu in 1:length(fns)) {
     }
     
     # walktrap
+    print("walk")
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
     walk.cluster = walktrap.community(graph.object)
     for (jj in 1:length(walk.cluster)) {
@@ -72,7 +74,6 @@ clusters2 = clusters2[1:cc,]
 # combine everything
 #clusters = rbind(clusters0, clusters2)
 clusters = clusters2
-unqiters = unique(clusters$iter)
 unqmags = unique(clusters$noise_mag)
 unqalgs = unique(clusters$algorithm)
 
@@ -84,22 +85,20 @@ write_tsv(clusters, path=fn)
 
 # calculate Ji1 all clusters (Compare each cluster to its unnoised version)
 clusters$Ji1 = numeric(nrow(clusters))
-for (ii in 1:length(unqiters)) {
-  print(paste("Ji1: iter",ii))
-  for (jj in 1:length(unqalgs)) {
-    print(paste("      algorithm",unqalgs[jj]))
-    I0 = clusters$iter==unqiters[ii] & clusters$algorithm==unqalgs[jj]
-    ref.clusters = clusters$cluster[I0 & clusters$noise_mag==0]
-    for (kk in 1:length(unqmags)) {
-      print(paste("        noise",unqmags[kk]))
-      I = which(I0 & clusters$noise_mag==unqmags[kk])
-      these.clusters = clusters$cluster[I]
-      for (mm in 1:length(I)) {
-        clusters$Ji1[I[mm]] = calcA(these.clusters[mm], ref.clusters)
-      }
+for (jj in 1:length(unqalgs)) {
+  print(paste("algorithm",unqalgs[jj]))
+  I0 = clusters$algorithm==unqalgs[jj]
+  ref.clusters = clusters$cluster[I0 & clusters$noise_mag==0]
+  for (kk in 1:length(unqmags)) {
+    print(paste("   noise",unqmags[kk]))
+    I = which(I0 & clusters$noise_mag==unqmags[kk])
+    these.clusters = clusters$cluster[I]
+    for (mm in 1:length(I)) {
+      clusters$Ji1[I[mm]] = calcA(these.clusters[mm], ref.clusters)
     }
   }
 }
+
 
 # write
 fn = "../data/clusters_facebook_netw_pamwalk.txt"
