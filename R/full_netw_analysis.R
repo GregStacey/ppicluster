@@ -66,6 +66,8 @@ iterMax = 10
 cc = 0
 for (iter in 1:iterMax) {
   for (ii in 1:length(noise.range)) {
+    print(paste("clustering iter",iter,"at noise=", noise.range[ii]))
+    
     # get shuffled corum
     ints.shuffle = shufflecorum(ints.corum, noise.range[ii])
     
