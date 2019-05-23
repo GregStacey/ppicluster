@@ -1,5 +1,5 @@
 
-source("unctions.R")
+source("functions.R")
 
 fn = "../data/clusters_full_netw.txt"
 Ji = as.data.frame(read_tsv(fn))
@@ -20,8 +20,9 @@ Ji$size.factor = character(nrow(Ji))
 Ji$size.factor[Ji$cluster.size<=3] = "N<=3"
 Ji$size.factor[Ji$cluster.size<=6 & Ji$cluster.size>3] = "3<N<=6"
 Ji$size.factor[Ji$cluster.size<=12 & Ji$cluster.size>6] = "6<N<=12"
-Ji$size.factor[Ji$cluster.size>12] = "N>12"
-Ji$size.factor = factor(Ji$size.factor, levels= c("N<=3", "3<N<=6", "6<N<=12", "N>12"))
+Ji$size.factor[Ji$cluster.size>12 & Ji$cluster.size<50] = "N>12"
+Ji$size.factor[Ji$cluster.size>=50] = "Big"
+Ji$size.factor = factor(Ji$size.factor, levels= c("N<=3", "3<N<=6", "6<N<=12", "N>12", "Big"))
 
 # 5A. % reproducible vs FPR
 nn = 10^3
@@ -59,7 +60,7 @@ dm = dm[!is.na(dm$y2),]
 
 ggplot(dm, aes(x=x, y=y2, color=size.factor)) + 
   geom_line(alpha=0.6, size=2) +  facet_grid(~algorithm) +
-  xlab("Interactome FPR") + ylab("Fraction of clusters\nreproducible (Ji>0.6)") + 
+  xlab("Interactome FPR") + ylab("Fraction of clusters\nreproducible (Ji>0.5)") + 
   coord_cartesian(ylim=c(0,1)) + theme_bw() + scale_color_grey() + 
   theme(legend.position = "none")
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5A_v01.png"

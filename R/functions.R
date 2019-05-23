@@ -387,20 +387,20 @@ shufflecorum = function(ints.corum, ff){
     ib[I] = sample(length(unqprots), sum(I), replace = T)
   }
   
-  # sort protein pairs alphabetically
-  for (ii in 1:length(I)) {
-    tmp = sort(c(ia[ii], ib[ii]))
-    ia[ii] = tmp[1]
-    ib[ii] = tmp[2]
-  }
-  
   #
   ints.shuffle$protA = unqprots[ia]
   ints.shuffle$protB = unqprots[ib]
   
   # quality control: make sure you shuffled N.replace interactions
   N.diff = sum(!ia0==ia | !ib0==ib)
-  if (abs(N.replace - N.diff)>5) disp(paste("shuffling missed", N.replace-N.diff, "interactions"))
+  if (abs(N.replace - N.diff)>5) print(paste("shuffling missed", N.replace-N.diff, "interactions"))
+  
+  # sort protein pairs alphabetically
+  for (ii in 1:length(I)) {
+    tmp = sort(c(ia[ii], ib[ii]))
+    ia[ii] = tmp[1]
+    ib[ii] = tmp[2]
+  }
   
   return(ints.shuffle) 
 }
@@ -465,7 +465,7 @@ consensus.adjmat = function(this.cluster, clusters){
 }
 
 
-calcMIz = function(X,Y, iterMax) {
+calcMIz = function(X,Y, iterMax, error.bars=F) {
   
   nn = length(X)
   zz = numeric(iterMax)
@@ -474,9 +474,21 @@ calcMIz = function(X,Y, iterMax) {
     I = sample(nn, nn)
     zz[iter] = mutinformation(X[I],Y)
   }
-  miz = (mutinformation(X,Y) - mean(zz)) / sd(zz)
+  mi = mutinformation(X,Y)
+  miz = (mi - mean(zz)) / sd(zz)
+
+  if (error.bars) {
+    miz.error = numeric(100)
+    for (ii in 1:100) {
+      this.zz = sample(zz, round(iterMax/2))
+      miz.error[ii] = (mi - mean(this.zz)) / sd(this.zz)
+    }
+    miz = (mi - mean(this.zz)) / sd(zz)
+    return(c(quantile(miz.error, .025), mean(miz.error), quantile(miz.error, .975)))
+  } else {
+    return(miz)
+  }
   
-  return(miz)
 }
 
 

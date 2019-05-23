@@ -7,16 +7,16 @@
 #   3. Handles moonlighting proteins
 
 
-install.packages("NMI", repos='http://cran.us.r-project.org')
-install.packages("sp", repos='http://cran.us.r-project.org')
-install.packages("maps", repos='http://cran.us.r-project.org')
-install.packages("fossil", repos='http://cran.us.r-project.org')
-install.packages("infotheo", repos='http://cran.us.r-project.org')
-install.packages("FlowSOM", repos='http://cran.us.r-project.org')
+#install.packages("NMI", repos='http://cran.us.r-project.org')
+#install.packages("sp", repos='http://cran.us.r-project.org')
+#install.packages("maps", repos='http://cran.us.r-project.org')
+#install.packages("fossil", repos='http://cran.us.r-project.org')
+#install.packages("infotheo", repos='http://cran.us.r-project.org')
+#install.packages("FlowSOM", repos='http://cran.us.r-project.org')
 
 source("functions.R")
 
-fn = "../data/suppFig01.Rda"
+fn = "/Users/gregstacey/Academics/Foster/ClusterExplore/data/suppFig01.Rda"
 if (F) {
   load(fn)
 } else {
@@ -60,9 +60,7 @@ if (F) {
     df$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df.m = melt(df, id.vars = "n.shuffle")
-  df2save = list(df)
-  save(df2save, file="../data/suppFig01_v02.Rda")
-  
+
   
   # 2. Number of clusters
   tmp = seq(from=10, to=1000, by=5)
@@ -70,9 +68,12 @@ if (F) {
                    GA = numeric(length(tmp)),
                    MMR = numeric(length(tmp)),
                    J = numeric(length(tmp)), 
-                   NMI = numeric(length(tmp)),
+                   NMI1 = numeric(length(tmp)),
+                   NMI2 = numeric(length(tmp)),
                    ARI = numeric(length(tmp)),
                    `F-measure` = numeric(length(tmp)), 
+                   MIz.025 = numeric(length(tmp)),
+                   MIz.975 = numeric(length(tmp)),
                    MIz = numeric(length(tmp)), stringsAsFactors = F)
   for (ii in 1:nrow(df2)) {
     print(round(ii/nrow(df2)*100)/100)
@@ -98,18 +99,20 @@ if (F) {
     #df2$MMR[ii] = matchingratio(tmp0, tmp1)
     #tmp = numeric(length(tmp0))
     #for (jj in 1:length(tmp)) {
-    #  tmp[jj] = calcA(tmp1[jj], tmp0)
+    # tmp[jj] = calcA(tmp1[jj], tmp0)
     #}
     #df2$J[ii] = mean(tmp, na.rm=T)
-    #df2$NMI[ii] = NMI(clust0, clust1)[[1]]
+    df2$NMI1[ii] = NMI::NMI(clust0, clust1)[[1]]
+    df2$NMI2[ii] = aricode::NMI(clust0$clusters, clust1$clusters)[[1]]
     #df2$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
     #df2$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
-    df2$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
+    #tmp =  calcMIz(clust0$clusters,clust1$clusters,100, T)
+    #df2$MIz[ii] = tmp[2]
+    #df2$MIz.025[ii] = tmp[1]
+    #df2$MIz.975[ii] = tmp[3]
   }
   df2.m = melt(df2, id.vars = "n.clusters")
-  df2save = list(df, df2)
-  save(df2save, file="../data/suppFig01_v02.Rda")
-  
+
   
   # 3. Number of moonlighting proteins
   tmp = seq(from=1, to=1000, by=5)
@@ -142,12 +145,12 @@ if (F) {
     clust1 = clust0
     tmp1 = tmp0
     
-    #df3$GA[ii] = geomacc(tmp0, tmp1)
-    #df3$MMR[ii] = matchingratio(tmp0, tmp1)
-    #tmp = numeric(length(tmp0))
-    #for (jj in 1:length(tmp)) {
-    #  tmp[jj] = calcA(tmp1[jj], tmp0)
-    #}
+    df3$GA[ii] = geomacc(tmp0, tmp1)
+    df3$MMR[ii] = matchingratio(tmp0, tmp1)
+    tmp = numeric(length(tmp0))
+    for (jj in 1:length(tmp)) {
+      tmp[jj] = calcA(tmp1[jj], tmp0)
+    }
     #df3$J[ii] = mean(tmp, na.rm=T)
     #df3$NMI[ii] = NMI(clust0, clust1)[[1]]
     #df3$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
@@ -155,12 +158,10 @@ if (F) {
     df3$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
   df3.m = melt(df3, id.vars = "n.moonlight")
-  df2save = list(df, df2, df3)
-  save(df2save, file="../data/suppFig01_v02.Rda")
   
   
   # 4. Novel clusters in set 2
-  tmp = seq(from=0, to=995, by=5)
+  tmp = seq(from=0, to=1000, by=5)
   df4 = data.frame(n.novel = tmp,
                    GA = numeric(length(tmp)),
                    MMR = numeric(length(tmp)),
@@ -204,88 +205,125 @@ if (F) {
   df4$F.measure = NA
   df4.m = melt(df4, id.vars = "n.novel")
   
-  df2save = list(df, df2, df3, df4)
-  save(df2save, file="../data/suppFig01_v02.Rda")
 }
 
 
-# 
-# # A - random
-# x = seq(from=0, to=1, by=0.01)
-# df.fake1 = data.frame(x=x, 
-#                       y=exp(-x * 3)*.9 + .1)
-# ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
-#   ylab("Similarity") + xlab("Fraction random in 2") + theme_bw()+
-#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A_v01.pdf"
-# ggsave(fn,width=3, height=2.4)
-# 
-# df.m = melt(df, id.vars = "n.shuffle")
-# ggplot(df.m, aes(x=n.shuffle/1000, y=value, color=variable)) + geom_line() +
-#   ylab("Similarity") + xlab("Fraction random in 2") + theme_bw() +
-#   theme(legend.position = "none") +
-#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A2_v01.pdf"
-# ggsave(fn,width=3, height=2.4)
-# 
-# 
-# 
-# # B - number
-# x = seq(from=0, to=1000, by=10)
-# df.fake1 = data.frame(x=x, 
-#                       y=rep(0.5, length=length(x)))
-# ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
-#   ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
-#   coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B_v01.pdf"
-# ggsave(fn,width=3, height=2.4)
-# 
-# df.m = melt(df2, id.vars = "n.clusters")
-# ggplot(df.m, aes(x=n.clusters, y=value, color=variable)) + geom_line() +
-#   ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
-#   theme(legend.position = "none") +
-#   coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B2_v01.pdf"
-# ggsave(fn,width=3, height=2.4)
-# 
-# 
-# 
-# # C - moonlighting
-# x = seq(from=0, to=1, by=0.01)
-# df.fake1 = data.frame(x=x, 
-#                       y=rep(1, length=length(x)))
-# ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
-#   ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
-#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C_v01.pdf"
-# ggsave(fn,width=3, height=2.4)
-# 
-# df.m = melt(df3, id.vars = "n.moonlight")
-# ggplot(df.m, aes(x=n.moonlight/1000, y=value, color=variable)) + geom_line() +
-#   ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
-#   scale_colour_manual(values = c("#F8766D", "#B79F00", "#00BA38", "#00BFC4", "#619CFF","#00BA38")) +
-#   theme(legend.position = "none") +
-#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C2_v01.pdf"
-# ggsave(fn,width=3, height=2.4)
-# 
-# 
-# 
-# # D - novel members
-# x = seq(from=0, to=1, by=0.01)
-# y = exp(-x * 2)
-# df.fake1 = data.frame(x=x, 
-#                       y = (y - min(y)) / (max(y) - min(y)))
-# ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
-#   ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw()+
-#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D_v01.pdf"
-# ggsave(fn,width=3, height=2.4)
-# 
-# df.m = melt(df4, id.vars = "n.novel")
-# ggplot(df.m, aes(x=n.novel/1000, y=value, color=variable)) + geom_line() +
-#   ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw() +
-#   theme(legend.position = "none") +
-#   coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D2_v01.pdf"
-# ggsave(fn,width=3, height=2.4)
+
+## Mike's MIz
+fn="../data/suppFig01_v02.Rda"
+load(fn)
+
+ggplot(df2save[[1]], aes(x=n.shuffle, y=MIz)) + geom_line()+
+  ylab("Similarity") + xlab("Fraction random in 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_A.png"
+ggsave(fn,width=3, height=2.4)
+
+ggplot(df2save[[2]], aes(x=n.clusters, y=MIz)) + geom_line()+
+  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_B.png"
+ggsave(fn,width=3, height=2.4)
+
+ggplot(df2, aes(x=n.clusters, y=MIz)) + geom_line() +
+  geom_line(data=df2, aes(x=n.clusters, y=MIz.025), alpha=.6) +
+  geom_line(data=df2, aes(x=n.clusters, y=MIz.975), alpha=.6) +
+  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_B_02.png"
+ggsave(fn,width=3, height=2.4)
+  
+ggplot(df2save[[3]], aes(x=n.moonlight, y=MIz)) + geom_line()+
+  ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_C.png"
+ggsave(fn,width=3, height=2.4)
+
+ggplot(df2save[[4]], aes(x=n.novel, y=MIz)) + geom_line()+
+  ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_D.png"
+ggsave(fn,width=3, height=2.4)
+##
+
+
+
+# A - random
+x = seq(from=0, to=1, by=0.01)
+df.fake1 = data.frame(x=x,
+                      y=exp(-x * 3)*.9 + .1)
+ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction random in 2") + theme_bw()+
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+df.m = melt(df, id.vars = "n.shuffle")
+ggplot(df.m, aes(x=n.shuffle/1000, y=value, color=variable)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction random in 2") + theme_bw() +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A2_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+
+
+# B - number
+x = seq(from=0, to=1000, by=10)
+df.fake1 = data.frame(x=x,
+                      y=rep(0.5, length=length(x)))
+ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
+  coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+df.m = melt(df2, id.vars = "n.clusters")
+ggplot(df.m, aes(x=n.clusters, y=value, color=variable)) + geom_line() +
+  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B2_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+
+
+# C - moonlighting
+x = seq(from=0, to=1, by=0.01)
+df.fake1 = data.frame(x=x,
+                      y=rep(1, length=length(x)))
+ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+df.m = melt(df3, id.vars = "n.moonlight")
+ggplot(df.m, aes(x=n.moonlight/1000, y=value, color=variable)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
+  scale_colour_manual(values = c("#F8766D", "#B79F00", "#00BA38", "#00BFC4", "#619CFF","#00BA38")) +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C2_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+
+
+# D - novel members
+x = seq(from=0, to=1, by=0.01)
+y = exp(-x * 2)
+df.fake1 = data.frame(x=x,
+                      y = (y - min(y)) / (max(y) - min(y)))
+ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw()+
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+df.m = melt(df4, id.vars = "n.novel")
+ggplot(df.m, aes(x=n.novel/1000, y=value, color=variable)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw() +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D2_v01.pdf"
+ggsave(fn,width=3, height=2.4)
