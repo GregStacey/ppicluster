@@ -11,6 +11,9 @@ if (T){
   Ji = as.data.frame(read_tsv(fn))
   Ji = Ji[Ji$iter==1,]
   
+  # save unadulterated Ji for later
+  Ji0 = Ji
+  
   # read GO
   fn = "../data/gene2go"
   gene2go = read_tsv(fn)
@@ -129,8 +132,28 @@ if (T){
     } # end algorithm
   } # end noise
   
+  Ji = cbind(Ji0[,c("iter","noise_mag","algorithm","cluster","Ji1","Ji2")],
+             Ji[,c("bp.enriched.p","cc.enriched.p","mf.enriched.p",
+                   "bp.enriched.q","cc.enriched.q","mf.enriched.q")])
+  
   # write finally
   fn = "../data/clusters_full_netw_wEnr.txt"
   write_tsv(Ji, path=fn)
 }
 
+
+
+Ji$nsig.p = numeric(nrow(Ji))
+Ji$nsig.q = numeric(nrow(Ji))
+for (ii in 1:nrow(Ji)) {
+  x1 = length(unlist(strsplit(Ji$bp.enriched.p[ii], ";")))
+  x2 = length(unlist(strsplit(Ji$mf.enriched.p[ii], ";")))
+  x3 = length(unlist(strsplit(Ji$cc.enriched.p[ii], ";")))
+  x4 = length(unlist(strsplit(Ji$bp.enriched.q[ii], ";")))
+  x5 = length(unlist(strsplit(Ji$mf.enriched.q[ii], ";")))
+  x6 = length(unlist(strsplit(Ji$cc.enriched.q[ii], ";")))
+  Ji$nsig.p[ii] = x1+x2+x3
+  Ji$nsig.q[ii] = x4+x5+x6
+}
+
+ggplot(Ji, aes(x=noise_mag, y=nsig.p)) + geom_point()

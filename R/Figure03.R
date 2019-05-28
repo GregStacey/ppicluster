@@ -68,7 +68,7 @@ data.c = rbind(data.c, data.c.add)
 
 # calculate Ji
 fn = "../data/intJ_vs_clustJ_v03.Rda"
-if (F){
+if (T){
   load(fn)
   df = df[!df$algorithm == "hierarchical",]
 } else {
@@ -233,20 +233,6 @@ for (ii in 1:length(unqnoise)) {
     RR[jj] = cor.test(log(df.prot$value[I0[ia]]), log(df.prot$value[I1[ia]]))$estimate
   }
   print(paste(unqnoise[ii], mean(RR^2, na.rm=T)))
-  
-  # Rmat = matrix(nrow = length(unqprots), ncol = length(unqprots))
-  # for (jj in 1:length(unqprots)) {
-  #   ia = which(df.prot$protid==unqprots[jj] & df.prot$variable==unqnoise[ii])
-  #   for (kk in 1:length(unqprots)) {
-  #     if (jj>=kk) next
-  #     ib = which(df.prot$protid==unqprots[kk] & df.prot$variable==unqnoise[ii])
-  #     I = !is.na(df.prot$value[ia]) & !is.na(df.prot$value[ib])
-  #     if (sum(I)<3) next
-  #     Rmat[jj,kk] = cor.test(log(df.prot$value[ia]), log(df.prot$value[ib]), na.rm=T)$estimate
-  #   }
-  # }
-  # Rmat[Rmat==0] = NA
-  # print(paste(unqnoise[ii], mean(Rmat, na.rm=T)^2))
 }
 
 
@@ -254,7 +240,6 @@ ggplot(df.prot[df.prot$Replicate==1,], aes(x=fraction,y=log(value),group=protid)
   facet_wrap(~variable) + theme_bw() + xlab("Fraction") + ylab("log(Protein amount)")
 fn = "../figures/fig_3A_v01.pdf"
 ggsave(fn,width=10, height=3)
-
 
 
 
@@ -274,23 +259,58 @@ ggsave(fn,width=10, height=3)
 
 # C. chromatogram
 ggplot(df.chromcor, aes(x=chromnoise*100, y=rr)) + 
-  geom_jitter(width = 1, alpha=.002) + geom_line(aes(x=chromnoise*100, y=avg.rr)) +
+  geom_point(alpha=.002) + geom_line(aes(x=chromnoise*100, y=avg.rr)) +
   xlab("Noise magnitude, %") + ylab("Noised vs un-noised chromatogram\ncorrelation (Pearson R)") +
   theme_bw()
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3C_v03.pdf"
-ggsave(fn,width=4, height=3)
+ggsave(fn,width=3.4, height=3)
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3C_v03.png"
-ggsave(fn,width=4, height=3)
+ggsave(fn,width=3.4, height=3)
 
 
-# X. compare interactome changes to cluster changes
-I = which(df$nint>1000 & df$nint0>1000 & df$nclust>10)
-I2 = dm$experiment%in%"group1" & dm$intJ<0.1 & dm$y>0.5
-dm$y[I2] = NA
-ggplot(df[I,], aes(x=intJ, y=clustJ, color=experiment)) + 
-  geom_point(alpha=0.05) +  facet_grid(~algorithm) +
-  ylab("Cluster similarity, J") + xlab("Interactome similarity, Jaccard") + 
-  geom_line(data=dm[dm$nclust>10,], aes(x=intJ, y=y,color=experiment), size=2, alpha=.6) +
+
+# D. co-interactome probability vs chromnoise
+
+# make coint prob
+unqsets = unique(ints.c$dataset)
+unqmags = unique(ints.c$noise_mag)
+nn = length(unqsets) * length(unqmags)
+iterMax = 100
+df.intJ = data.frame(dataset = character(nn),
+                     noise_mag = numeric(nn),
+                     avg.coint = numeric(nn), 
+                     avg.intJ = numeric(nn), 
+                     coint = numeric(nn), 
+                     intJ = numeric(nn), stringsAsFactors = F)
+df.intJ[df.intJ==0] = NA
+cc = 0
+for (ii in 1:length(unqsets)) {
+  I0 = ints.c$dataset==unqsets[ii] & ints.c$noise_mag==0
+  ints0 = ints.c$ppi[I0]
+  if (length(ints0)<250) next
+  for (jj in 1:length(unqmags)) {
+    I = ints.c$dataset==unqsets[ii] & ints.c$noise_mag==unqmags[jj]
+    ints = ints.c$ppi[I]
+    if (length(ints)<250) next
+    cc = cc+1
+    df.intJ$coint[cc] = sum(ints0 %in% ints) / length(ints0)
+    df.intJ$intJ[cc] = length(intersect(ints0, ints)) / length(unique(c(ints0, ints)))
+    df.intJ$dataset[cc] = unqsets[ii]
+    df.intJ$noise_mag[cc] = unqmags[jj]
+  }
+}
+for (ii in 1:length(unqmags)) {
+  I = df.intJ$noise_mag==unqmags[ii]
+  df.intJ$avg.coint[I] = mean(df.intJ$coint[I], na.rm=T)
+  df.intJ$avg.intJ[I] = mean(df.intJ$intJ[I], na.rm=T)
+}
+
+ggplot(df.intJ, aes(x=noise_mag, y=coint)) + geom_point(alpha=.1) +
+  geom_line(aes(x=noise_mag, y=avg.coint)) +
+  xlab("Noise magnitude, %") + ylab("Interactome Jaccard") +
   theme_bw()
-fn = "../figures/fig_3C_v02.pdf"
-ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v04.pdf"
+ggsave(fn,width=3.4, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v04.png"
+ggsave(fn,width=3.4, height=3)
+

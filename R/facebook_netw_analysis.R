@@ -76,6 +76,7 @@ clusters2 = clusters2[1:cc,]
 clusters = clusters2
 unqmags = unique(clusters$noise_mag)
 unqalgs = unique(clusters$algorithm)
+unqnets = unique(clusters$network)
 
 
 # write in case of crash
@@ -85,19 +86,22 @@ write_tsv(clusters, path=fn)
 
 # calculate Ji1 all clusters (Compare each cluster to its unnoised version)
 clusters$Ji1 = numeric(nrow(clusters))
-for (jj in 1:length(unqalgs)) {
-  print(paste("algorithm",unqalgs[jj]))
-  I0 = clusters$algorithm==unqalgs[jj]
-  ref.clusters = clusters$cluster[I0 & clusters$noise_mag==0]
-  for (kk in 1:length(unqmags)) {
-    print(paste("   noise",unqmags[kk]))
-    I = which(I0 & clusters$noise_mag==unqmags[kk])
-    these.clusters = clusters$cluster[I]
-    for (mm in 1:length(I)) {
-      clusters$Ji1[I[mm]] = calcA(these.clusters[mm], ref.clusters)
+for (ii in 1:length(unqnets)) {
+  for (jj in 1:length(unqalgs)) {
+    print(paste("algorithm",unqalgs[jj]))
+    I0 = clusters$algorithm==unqalgs[jj] & clusters$network==unqnets[ii]
+    ref.clusters = clusters$cluster[I0 & clusters$noise_mag==0]
+    for (kk in 1:length(unqmags)) {
+      print(paste("   noise",unqmags[kk]))
+      I = which(I0 & clusters$noise_mag==unqmags[kk])
+      these.clusters = clusters$cluster[I]
+      for (mm in 1:length(I)) {
+        clusters$Ji1[I[mm]] = calcA(these.clusters[mm], ref.clusters)
+      }
     }
   }
 }
+
 
 
 # write
