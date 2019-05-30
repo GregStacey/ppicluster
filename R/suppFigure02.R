@@ -92,7 +92,7 @@ if (F){
         next
       }
       
-      print(ii)
+      print(paste(ii, Ji$algorithm[ii], Ji$noise_mag[ii]))
       sumTable = data.frame(GOBPID = character(nn), 
                             Pvalue = numeric(nn),
                             n.u = numeric(nn),n.u.hits = numeric(nn),n.s = numeric(nn),n.s.hits = numeric(nn),
