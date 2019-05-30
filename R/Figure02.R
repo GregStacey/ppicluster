@@ -94,13 +94,29 @@ for (uu in 1:length(unqnoise)) {
 
 
 
-sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v05.Rda"
-if (F){
+sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v06.Rda"
+if (T){
   load(sf)
 } else {
-  #fn = "../data/clusters_full_netw.txt"
-  fn = "../data/clusters_full_netw_walktrap.txt"
+
+  # corum
+  fn = "../data/clusters_full_netw_walktrap2.txt"
+  Ji2 = as.data.frame(read_tsv(fn))
+  Ji2 = Ji2[Ji2$iter==1,]
+  Ji2$network = "corum"
+  Ji2 = Ji2[,c("iter", "network", "noise_mag", "algorithm", "cluster", "Ji1")]
+  
+  # email+chem
+  fn = "../data/clusters_facebook_netw_pamwalk.txt"
   Ji = as.data.frame(read_tsv(fn))
+  Ji = Ji[,c("iter", "network", "noise_mag", "algorithm", "cluster", "Ji1")]
+  
+  # merge
+  Ji = rbind(Ji, Ji2)
+  
+  Ji$network[Ji$network=="chem"] = "DrugBank"
+  Ji$network[Ji$network=="corum"] = "CORUM"
+  Ji$network[Ji$network=="email"] = "email-Eu"
   
   # make cluster.size, remove all clusters with size<3
   Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
@@ -108,78 +124,31 @@ if (F){
   
   I = !Ji$algorithm == "hierarchical" & Ji$iter==1
   Ji = Ji[I,]
+  unqnets = unique(Ji$network)
   unqalg = unique(Ji$algorithm)
   unqnoise = unique(Ji$noise_mag)
-  sim = data.frame(measure = character(10^4),
+  sim = data.frame(network = character(10^4),
+                   measure = character(10^4),
                    algorithm = character(10^4),
                    noise_mag = character(10^4),
                    Ji1 = numeric(10^4), stringsAsFactors = F)
   cc = 0
   cc2 = 0
-  for (ii in 1:length(unqnoise)) {
-    print(unqnoise[ii])
-    for (jj in 1:length(unqalg)) {
-      print(paste("  ",unqalg[jj]))
-      I0 = Ji$noise_mag == 0 & Ji$algorithm%in%unqalg[jj]
-      I1 = Ji$noise_mag == unqnoise[ii] & Ji$algorithm%in%unqalg[jj]
-      set0 = Ji$cluster[I0]
-      set1 = Ji$cluster[I1]
-      if (sum(I1)==0 | sum(I0)==0) next
+  for (uu in 1:length(unqnets)) {
+    for (ii in 1:length(unqnoise)) {
+      for (jj in 1:length(unqalg)) {
       
-      # # geomacc
-      # cc = cc+1
-      # sim$measure[cc] = "ga"
-      # sim$algorithm[cc] = unqalg[jj]
-      # sim$noise_mag[cc] = unqnoise[ii]
-      # sim$Ji1[cc] = geomacc(set0, set1)
-      # 
-      # # matching ratio
-      # cc = cc+1
-      # sim$measure[cc] = "mmr"
-      # sim$algorithm[cc] = unqalg[jj]
-      # sim$noise_mag[cc] = unqnoise[ii]
-      # sim$Ji1[cc] = matchingratio(set0, set1)
-      # 
-      # # nmi
-      # cc = cc+1
-      # unqprots = c(unlist(lapply(set0,strsplit,";")),unlist(lapply(set1,strsplit,";")))
-      # # prepare set0
-      # df0 = data.frame(X=1:length(unqprots),Y=numeric(length(unqprots)))
-      # for (kk in 1:length(unqprots)) {
-      #   ia = grep(unqprots[kk], set0)
-      #   if (length(ia)==0) next
-      #   df0$Y[kk] = ia[1]
-      # }
-      # df0 = df0[!df0$Y==0,]
-      # # prepare set1
-      # df1 = data.frame(X=1:length(unqprots),Y=numeric(length(unqprots)))
-      # for (kk in 1:length(unqprots)) {
-      #   ia = grep(unqprots[kk], set1)
-      #   if (length(ia)==0) next
-      #   df1$Y[kk] = ia[1]
-      # }
-      # df1 = df1[!df1$Y==0,]
-      # sim$measure[cc] = "NMI"
-      # sim$algorithm[cc] = unqalg[jj]
-      # sim$noise_mag[cc] = unqnoise[ii]
-      # sim$Ji1[cc] = NMI(df0, df1)[[1]]
-      
-      
-      # Ji1
-      cc = cc+1
-      sim$measure[cc] = "ai"
-      sim$algorithm[cc] = unqalg[jj]
-      sim$noise_mag[cc] = unqnoise[ii]
-      # tmp = numeric(length(set1))
-      # for (kk in 1:length(tmp)) {
-      #   cc2 = cc2+1
-      #   tmp[kk] = calcA(set1[kk], set0)
-      #   Ji$ji[cc2] = tmp[kk]
-      #   Ji$algorithm[cc2] = unqalg[jj]
-      #   Ji$noise_mag[cc2] = unqnoise[ii]
-      #   Ji$cluster.size[cc2] = length(unlist(strsplit(set1[kk], ";")))
-      # }
-      sim$Ji1[cc] = mean(Ji$Ji1[I1])
+        I1 = Ji$noise_mag == unqnoise[ii] & Ji$algorithm%in%unqalg[jj] & Ji$network==unqnets[uu]
+        if (sum(I1)==0) next
+        
+        # Ji1
+        cc = cc+1
+        sim$measure[cc] = "ai"
+        sim$network[cc] = unqnets[uu]
+        sim$algorithm[cc] = unqalg[jj]
+        sim$noise_mag[cc] = unqnoise[ii]
+        sim$Ji1[cc] = mean(Ji$Ji1[I1])
+      }
     }
   }
   sim = sim[1:cc,]
@@ -195,12 +164,13 @@ Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
 Ji$algorithm[Ji$algorithm=="co"] = "CO"
 Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
 Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
+Ji$algorithm[Ji$algorithm=="walk"] = "walktrap"
 sim$algorithm[sim$algorithm=="co_mcl"] = "CO+MCL"
 sim$algorithm[sim$algorithm=="co"] = "CO"
 sim$algorithm[sim$algorithm=="mcl"] = "MCL"
 sim$algorithm[sim$algorithm=="pam"] = "k-Med"
+sim$algorithm[sim$algorithm=="walk"] = "walktrap"
 sim$Ji1 = sim$Ji
-
 
 
 
@@ -208,34 +178,34 @@ sim$Ji1 = sim$Ji
 # 2B ##### ------------------------------------------- #####
 # line plots of J_i vs noise
 
-I = sim$measure=="ai" & sim$measure=="ai"
+I = sim$measure=="ai" & sim$measure=="ai" & sim$network=="CORUM"
 ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
-  geom_point(data = Ji, alpha=0.025, color="black") +
+  geom_point(data = Ji[Ji$network=="CORUM",], alpha=0.025, color="black") +
   ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v07.png"
-ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v08.png"
+ggsave(fn,width=10, height=2.6)
 
 
 
 # 2C ##### ------------------------------------------- #####
 # violin plots of Ji1 vs noise
 
-I = Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02
+I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network=="CORUM"
 ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
   geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(~algorithm) +
-  ylab("Similarity to un-noised (Ji)") + xlab("Interactome FPR") + 
+  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR") + 
   coord_cartesian(ylim=c(0,1)) + theme_bw()
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v04.pdf"
-ggsave(fn,width=10, height=3)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v04.png"
-ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v06.pdf"
+ggsave(fn,width=10, height=2.6)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v06.png"
+ggsave(fn,width=10, height=2.6)
 
 
 # 2D ##### ------------------------------------------- #####
 # noise-amplification
 
-I = sim$measure=="ai"
+I = sim$measure=="ai"& sim$network=="CORUM"
 sim$noise.amplification = (1-sim$Ji1) / sim$noise_mag
 ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() + 
   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
@@ -243,31 +213,67 @@ ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() +
   ylab("Error amplification by clustering") + xlab("Interactome FPR") +
   scale_y_continuous(breaks = c(1,10,20),
                      labels=c("1x","10x", "20x"))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v02.pdf"
-ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v03.pdf"
+ggsave(fn,width=10, height=2.6)
+
+
+# 2E,F ##### ------------------------------------------- #####
+
+I = sim$measure=="ai" & sim$measure=="ai" & sim$network %in% c("DrugBank","email-Eu") & sim$algorithm=="MCL"
+ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
+  theme_bw() + theme(legend.position="none") + facet_grid(~network) +
+  geom_point(data = Ji[Ji$network%in% c("DrugBank","email-Eu") &Ji$algorithm=="MCL",], alpha=0.1, color="black") +
+  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2E_v01.png"
+ggsave(fn,width=4.2, height=2.6)
+
+I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network%in% c("DrugBank","email-Eu") & 
+  Ji$algorithm=="MCL"
+ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
+  geom_violin() + geom_jitter(width=.02,alpha=.1) + facet_grid(~network) +
+  ylab("Similarity to un-noised (Ji)") + xlab("Interactome FPR") + 
+  coord_cartesian(ylim=c(0,1)) + theme_bw()
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2F_v01.pdf"
+ggsave(fn,width=4.2, height=2.6)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2F_v01.png"
+ggsave(fn,width=4.2, height=2.6)
 
 
 
 
-cn = data.frame(year = 2008:2013,
-                US = c(799, 724,677,593,544,541),
-                Canada = c(157, 164, 199, 206, 197, 197),
-                International = c(186, 184, 242, 206, 146, 145))
-df = melt(cn, id.vars = "year")
-ggplot(df, aes(x=year, y=value, color=variable)) + geom_line() +
-  xlab("Year") + ylab("Number of\nCoffee News franchises") + ggtitle("Why did I make this")
-ggsave("/Users/gregstacey/Desktop//coffee_news_trends.png",
-       width=5, height=3)
-
-
-cn.pc = data.frame(year = 2008:2013,
-                US = c(799, 724,677,593,544,541) / 346,
-                Canada = c(157, 164, 199, 206, 197, 197) / 37)
-df = melt(cn.pc, id.vars = "year")
-ggplot(df, aes(x=year, y=value, color=variable)) + geom_line() +
-  xlab("Year") + ylab("Number of\nCoffee News franchises,\nper million pop.") + 
-  ggtitle("Okay this is cool") + ylim(c(0,6))
-ggsave("/Users/gregstacey/Desktop//coffee_news_trends.png",
-       width=5, height=3)
-
+# supp of drugbank and email sets ##### ------------------------------------------- #####
+for (ss in 1:2) {
+  sets = c("DrugBank","email-Eu")
+  # line plots of J_i vs noise
+  I = sim$measure=="ai" & sim$measure=="ai" & sim$network==sets[ss]
+  ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
+    facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
+    geom_point(data = Ji[Ji$network==sets[ss],], alpha=0.025, color="black") +
+    ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A",ss,".png", sep="")
+  ggsave(fn,width=10, height=2.6)
+  
+  # violin plots of Ji1 vs noise
+  I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network==sets[ss]
+  ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
+    geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(~algorithm) +
+    ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR") + 
+    coord_cartesian(ylim=c(0,1)) + theme_bw()
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B",ss,".png", sep="")
+  ggsave(fn,width=10, height=2.6)
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B",ss,".pdf", sep="")
+  ggsave(fn,width=10, height=2.6)
+  
+  # noise-amplification
+  I = sim$measure=="ai"& sim$network==sets[ss]
+  sim$noise.amplification = (1-sim$Ji1) / sim$noise_mag
+  ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() + 
+    facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
+    geom_hline(yintercept = 1, linetype="dashed") +
+    ylab("Error amplification by clustering") + xlab("Interactome FPR") +
+    scale_y_continuous(breaks = c(1,10,20),
+                       labels=c("1x","10x", "20x"))
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C",ss,".pdf", sep="")
+  ggsave(fn,width=10, height=2.6)
+}
 

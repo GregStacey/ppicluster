@@ -6,22 +6,27 @@
 source("functions.R")
 
 # read chem-protein and facebook networks
-fns = c("../data/ChG-InterDecagon_targets.csv", "../data/facebook_combined.txt")
-seps = c(",", " ")
+fns = c("../data/ChCh-Miner_durgbank-chem-chem.tsv", "../data/email-Eu-core.txt")
+seps = c("\t", " ")
 ints = list()
 for (ii in 1:length(fns)) {
   ints[[ii]] = as.data.frame(read_delim(fns[ii], delim=seps[ii], quote = ""))
   colnames(ints[[ii]]) = c("protA","protB")
+  
+  # remove self-interactions
+  I = ints[[ii]][,1] == ints[[ii]][,2]
+  ints[[ii]] = ints[[ii]][!I,]
 }
 ints[[2]] = ints[[2]] + 1
+
 
 # 
 noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 
 # load Matlab results
-# 10 iterations, MCL, CO, CO+MCL
-#fn = "../data/clusters_facebook.txt"
-#clusters0 = as.data.frame(read_tsv(fn))
+# 1 iterations, MCL, CO, CO+MCL
+fn = "../data/clusters_chem_email.txt"
+clusters0 = as.data.frame(read_tsv(fn))
 
 # make dummy dataframe to fill
 clusters2 = data.frame(network = numeric(10^6),
@@ -31,8 +36,8 @@ clusters2 = data.frame(network = numeric(10^6),
 
 # add 1 iteration of PAM + walktrap
 cc = 0
-networks = c("stitch5", "facebook")
-n.clusters = c(193, 1500)
+networks = c("chem", "email")
+n.clusters = c(193, 200)
 for (uu in 1:length(fns)) {
   for (ii in 1:length(noise.range)) {
     print(paste("clustering",networks[uu],"at noise=", noise.range[ii]))
@@ -54,7 +59,7 @@ for (uu in 1:length(fns)) {
     # walktrap
     print("walk")
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
-    walk.cluster = walktrap.community(graph.object)
+    walk.cluster = walktrap.community(graph.object, steps = 1.5, modularity=T)
     for (jj in 1:length(walk.cluster)) {
       if (length(walk.cluster[[jj]]) < 3) next
       cc = cc+1
@@ -72,8 +77,7 @@ for (uu in 1:length(fns)) {
 clusters2 = clusters2[1:cc,]
 
 # combine everything
-#clusters = rbind(clusters0, clusters2)
-clusters = clusters2
+clusters = rbind(clusters0, clusters2)
 unqmags = unique(clusters$noise_mag)
 unqalgs = unique(clusters$algorithm)
 unqnets = unique(clusters$network)
@@ -105,6 +109,7 @@ for (ii in 1:length(unqnets)) {
 
 
 # write
+clusters$iter = 1
 fn = "../data/clusters_facebook_netw_pamwalk.txt"
 write_tsv(clusters, path=fn)
 

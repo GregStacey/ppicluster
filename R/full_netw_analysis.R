@@ -56,7 +56,8 @@ fn = "../data/clusters_Ai_vs_fdr.txt"
 clusters0 = as.data.frame(read_tsv(fn))
 
 # make dummy dataframe to fill
-clusters2 = data.frame(iter = numeric(10^6),
+clusters2 = data.frame(network = rep("corum", 10^6),
+                       iter = numeric(10^6),
                        noise_mag = numeric(10^6),
                        algorithm = character(10^6),
                        cluster = character(10^6), stringsAsFactors = F)
@@ -104,19 +105,19 @@ unqalgs = unique(clusters$algorithm)
 
 
 # calculate Ji1 all clusters (Compare each cluster to its unnoised version)
-clusters$Ji1 = numeric(nrow(clusters))
+clusters2$Ji1 = numeric(nrow(clusters2))
 for (ii in 1:length(unqiters)) {
   print(paste("Ji1: iter",ii))
   for (jj in 1:length(unqalgs)) {
     print(paste("      algorithm",unqalgs[jj]))
-    I0 = clusters$iter==unqiters[ii] & clusters$algorithm==unqalgs[jj]
-    ref.clusters = clusters$cluster[I0 & clusters$noise_mag==0]
+    I0 = clusters2$iter==unqiters[ii] & clusters2$algorithm==unqalgs[jj]
+    ref.clusters = clusters2$cluster[I0 & clusters2$noise_mag==0]
     for (kk in 1:length(unqmags)) {
       print(paste("        noise",unqmags[kk]))
-      I = which(I0 & clusters$noise_mag==unqmags[kk])
-      these.clusters = clusters$cluster[I]
+      I = which(I0 & clusters2$noise_mag==unqmags[kk])
+      these.clusters = clusters2$cluster[I]
       for (mm in 1:length(I)) {
-        clusters$Ji1[I[mm]] = calcA(these.clusters[mm], ref.clusters)
+        clusters2$Ji1[I[mm]] = calcA(these.clusters[mm], ref.clusters)
       }
     }
   }

@@ -493,3 +493,28 @@ calcMIz = function(X,Y, iterMax, error.bars=F) {
 }
 
 
+# make your own melt function
+meltmat = function(mat, id.vars) {
+  nmes = names(mat)
+  I = !nmes %in% id.vars
+  mat.to.melt = mat[,I]
+  
+  nn = nrow(mat.to.melt)
+  nn2 = nn^2
+  
+  df = data.frame(x=numeric(nn2), y=numeric(nn2), value=numeric(nn2), proteins=numeric(nn2))
+  cc = 0
+  for (ii in 1:nrow(mat.to.melt)) {
+    for (jj in 1:ncol(mat.to.melt)) {
+      cc = cc+1
+      df$x[cc] = ii
+      df$y[cc] = jj
+      df$value[cc] = mat.to.melt[ii,jj]
+      df$proteins[cc] = mat$proteins[ii]
+    }
+  }
+  
+  return(df)
+}
+
+
