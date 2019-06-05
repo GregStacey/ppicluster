@@ -25,7 +25,7 @@ data = clusters[I,]
 set0 = data$cluster[data$noise_mag==0]
 
 unqnoise = unique(data$noise_mag)
-for (uu in 1:length(unqnoise)) {
+for (uu in c(8)) {
   set1 = data$cluster[data$noise_mag==unqnoise[uu]]
   pci = matrix(nrow=length(set1), ncol=3)#length(set0))
   for (ii in 1:length(set1)) {
@@ -73,10 +73,11 @@ for (uu in 1:length(unqnoise)) {
   df = df[,c(1:3,ncol(df) + seq(from=-3, to=0, by=1))]
   df[df==0] = 10^-4
   
-  plot
+  # plot
   ggplot() + geom_scatterpie(aes(x=x, y=y, r=sqrt(size)), data=df, cols=names(df)[1:3]) +
-   scale_fill_manual(values=c("#4dac26","#d01c8b","#dddddd")) +
-   coord_fixed() + theme_void() + theme(legend.position="none")
+    #scale_fill_manual(values=c("#4dac26","#d01c8b","#dddddd")) + # (green, red, grey) = (grey, black, white)
+    scale_fill_manual(values=c("grey", "white","black")) + # (green, red, grey) = (grey, black, white)
+    coord_fixed() + theme_void() + theme(legend.position="none")
   sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_", uu, ".pdf", sep="")
   ggsave(sf, width=10, height=5)
   sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_", uu, ".png", sep="")
@@ -84,7 +85,8 @@ for (uu in 1:length(unqnoise)) {
   
   # zoom in
   ggplot() + geom_scatterpie(aes(x=x, y=y, r=sqrt(size)), data=df, cols=names(df)[1:3]) + 
-    scale_fill_manual(values=c("#4dac26","#d01c8b","#dddddd")) +
+    #scale_fill_manual(values=c("#4dac26","#d01c8b","#dddddd")) +
+    scale_fill_manual(values=c("grey", "white","black")) + # (green, red, grey) = (grey, black, white)
     coord_fixed() + theme_void() + theme(legend.position="none") + coord_cartesian(xlim = c(80, 130))
   sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_zoom_", uu, ".pdf", sep="")
   ggsave(sf, width=2, height = 5)

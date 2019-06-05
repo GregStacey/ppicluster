@@ -434,6 +434,10 @@ consensus.adjmat = function(this.cluster, clusters){
   
   # make consensus adjacency matrix
   allProts = unique(c(this.cluster, unlist(lapply(bestMatches, strsplit, ";"))))
+  # put this.cluster in the middle
+  tmp = allProts[!allProts %in% this.cluster]
+  nn = round(length(tmp)/2)
+  allProts = c(tmp[1:nn], this.cluster, tmp[(nn+1):length(tmp)])
   adjmat = matrix(numeric(length(allProts)^2), nrow=length(allProts), ncol=length(allProts))
   df.adjmat = data.frame(prots = character(0),
                          variable = character(0),

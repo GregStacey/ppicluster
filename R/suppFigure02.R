@@ -1,18 +1,10 @@
 source("functions.R")
 
 
-if (F){
+if (T){
   fn = "../data/clusters_full_netw_wEnr2.txt"
   Ji = as.data.frame(read_tsv(fn))
   Ji = Ji[Ji$iter==1,]
-  
-  fn = "../data/clusters_full_netw2.txt"
-  Ji0 = as.data.frame(read_tsv(fn))
-  Ji0 = Ji0[Ji0$iter==1,]
-  
-  Ji = cbind(Ji0[,c("iter","noise_mag","algorithm","cluster","Ji1","Ji2")],
-             Ji[,c("bp.enriched.p","cc.enriched.p","mf.enriched.p",
-                   "bp.enriched.q","cc.enriched.q","mf.enriched.q")])
 } else {
   
   # load clusters
@@ -150,14 +142,45 @@ if (F){
 Ji$nsig.p = numeric(nrow(Ji))
 Ji$nsig.q = numeric(nrow(Ji))
 for (ii in 1:nrow(Ji)) {
-  x1 = length(unlist(strsplit(Ji$bp.enriched.p[ii], ";")))
-  x2 = length(unlist(strsplit(Ji$mf.enriched.p[ii], ";")))
-  x3 = length(unlist(strsplit(Ji$cc.enriched.p[ii], ";")))
-  x4 = length(unlist(strsplit(Ji$bp.enriched.q[ii], ";")))
-  x5 = length(unlist(strsplit(Ji$mf.enriched.q[ii], ";")))
-  x6 = length(unlist(strsplit(Ji$cc.enriched.q[ii], ";")))
-  Ji$nsig.p[ii] = x1+x2+x3
-  Ji$nsig.q[ii] = x4+x5+x6
+  x1 = (unlist(strsplit(Ji$bp.enriched.p[ii], ";")))
+  x2 = (unlist(strsplit(Ji$mf.enriched.p[ii], ";")))
+  x3 = (unlist(strsplit(Ji$cc.enriched.p[ii], ";")))
+  x4 = (unlist(strsplit(Ji$bp.enriched.q[ii], ";")))
+  x5 = (unlist(strsplit(Ji$mf.enriched.q[ii], ";")))
+  x6 = (unlist(strsplit(Ji$cc.enriched.q[ii], ";")))
+  Ji$nsig.p[ii] = sum(!is.na(c(x1,x2,x3)))
+  Ji$nsig.q[ii] = sum(!is.na(c(x4,x5,x6)))
 }
 
-ggplot(Ji, aes(x=noise_mag, y=nsig.p)) + geom_jitter(alpha=.05)
+# calculate average
+unqalgs = unique(Ji$algorithm)
+unqmags = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 0.75, 1)
+dm = data.frame(algorithm = character(10^3),
+                noise_mag = numeric(10^3),
+                nfrac = numeric(10^3),
+                natleastone = numeric(10^3), stringsAsFactors = F)
+cc = 0
+for (ii in 1:length(unqalgs)) {
+  for (jj in 1:length(unqmags)) {
+    I = Ji$algorithm == unqalgs[ii] & Ji$noise_mag==unqmags[jj]
+    cc = cc+1
+    dm$algorithm[cc] = unqalgs[ii]
+    dm$noise_mag[cc] = unqmags[jj]
+    dm$nfrac[cc] = mean(Ji$nsig.q[I])
+    dm$natleastone[cc] = mean(as.numeric(Ji$nsig.q[I]>1), na.rm=T)
+  }
+}
+dm = dm[1:cc,]
+dm = dm[!is.na(dm$natleastone), ]
+dm$algorithm = factor(dm$algorithm)
+levels(dm$algorithm) = c("CO", "CO+MCL", "walktrap", "MCL", "k-Med")
+
+
+ggplot(dm, aes(x=noise_mag, y=natleastone, color = algorithm)) + 
+  geom_line() + 
+  ylab("Fraction of clusters with at least one\nsignificantly enriched GO term (q<0.05)") + 
+  xlab("Network FPR") +
+  theme_bw()
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/FigureSupp03_v01.pdf"
+ggsave(fn,width=5.5, height=3.6)
+

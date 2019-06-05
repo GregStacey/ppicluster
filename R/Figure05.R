@@ -9,6 +9,7 @@ Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
 Ji$algorithm[Ji$algorithm=="co"] = "CO"
 Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
 Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
+Ji$algorithm[Ji$algorithm=="walk"] = "walktrap"
 
 # make cluster.size, remove all clusters with size<3
 Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
@@ -57,9 +58,37 @@ tmp = sort(unique(Ji$size.factor))
 dm$size.factor = tmp[as.numeric(dm$size.factor)]
 dm = dm[!is.na(dm$y2),]
 
+nn = 10^3
+dm2 = data.frame(x = numeric(nn), 
+                y = numeric(nn),
+                y2 = numeric(nn),
+                algorithm = character(nn),
+                stringsAsFactors = F)
+cc = 0
+for (ii in 1:length(unique(Ji$noise_mag))) {
+  this.noise = sort(unique(Ji$noise_mag))[ii]
+  for (jj in 1:length(unique(Ji$algorithm))) {
+    this.algorithm = sort(unique(Ji$algorithm))[jj]
+
+      cc = cc+1
+      I = Ji$noise_mag==this.noise & 
+        Ji$algorithm%in%this.algorithm & Ji$iter>1
+      dm2[cc,] = c(this.noise, mean(Ji$Ji2[I], na.rm=T), 
+                  sum(Ji$Ji2[I]>0.5, na.rm=T) / sum(!is.na(Ji$Ji2[I])),
+                  this.algorithm)
+  }
+}
+dm2 = dm2[1:cc,]
+dm2$x = as.numeric(dm2$x)
+dm2$y = as.numeric(dm2$y)
+dm2$y2 = as.numeric(dm2$y2)
+dm2 = dm2[!is.na(dm2$y2),]
+dm2$size.factor = 0
+
 
 ggplot(dm, aes(x=x, y=y2, color=size.factor)) + 
   geom_line(alpha=0.6, size=2) +  facet_grid(~algorithm) +
+  geom_line(data=dm2, linetype="dashed", color="black") + 
   xlab("Interactome FPR") + ylab("Fraction of clusters\nthat are reproducible (Ji>0.5)") + 
   coord_cartesian(ylim=c(0,1)) + theme_bw() + scale_color_grey() + 
   theme(legend.position = "none")
