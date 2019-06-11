@@ -175,6 +175,17 @@ sim$algorithm[sim$algorithm=="walk"] = "walktrap"
 sim$Ji1 = sim$Ji
 
 
+# simple counting: 1% shuffle affects how many clusters?
+df = data.frame(nn = numeric(100), ff = numeric(100), new = numeric(100))
+I = Ji$network == "CORUM" & Ji$noise_mag==0.01
+unqalgs = unique(Ji$algorithm)
+for (ii in 1:length(unqalgs)) {
+  I2 = I & Ji$algorithm==unqalgs[ii]
+  df$nn[ii] = sum(Ji$Ji1[I2] < 1, na.rm=T)
+  df$ff[ii] = sum(Ji$Ji1[I2] < 1, na.rm=T) / sum(I2)
+  df$new[ii] = sum(Ji$Ji1[I2] == 0)
+}
+df = df[1:length(unqalgs), ]
 
 
 # 2B ##### ------------------------------------------- #####
@@ -279,3 +290,33 @@ for (ss in 1:2) {
   ggsave(fn,width=10, height=2.6)
 }
 
+
+
+
+# non-optimal parameters
+# ##### ------------------------------------------- #####
+fn = "../data/clusters_wshuffle_notoptimal.txt"
+Jin = as.data.frame(read_tsv(fn))
+unqalgs = unique(Ji$algorithm)
+unqmags = unique(Ji$noise_mag)
+Jin$Ji1 = numeric(nrow(Jin))
+for (ii in 1:length(unqalgs)) {
+  I0 = Ji$algorithm==unqalgs[ii] & Ji$noise_mag==0
+  ref.clusters = Jin$cluster[I0]
+  for (jj in 1:length(unqmags)) {
+    print(paste("        noise",unqmags[jj]))
+    I = which(Ji$algorithm==unqalgs[ii] & Ji$noise_mag==unqmags[jj])
+    these.clusters = Jin$cluster[I]
+    for (mm in 1:length(I)) {
+      Jin$Ji1[I[mm]] = calcA(these.clusters[mm], ref.clusters)
+    }
+  }
+}
+
+for (ii in 1:length(unqalgs)) {
+  I = Jin$noise_mag==0.01 & Jin$algorithm==unqalgs[ii]
+  x = (mean(Jin$Ji1[I]))
+  I = Ji$noise_mag==0.01 & Ji$algorithm==unqalgs[ii] & Ji$network=="CORUM"
+  x2 = (mean(Ji$Ji1[I]))
+  print(paste(x,x2))
+}

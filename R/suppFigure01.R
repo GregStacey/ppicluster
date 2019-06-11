@@ -1,69 +1,52 @@
 
-# A - network connection matrices
+# B - number and size of clusters
 
 source("functions.R")
 
-# read corum
-fn = "../data/allComplexes.txt"
-corum = as.data.frame(read_tsv(fn))
-corum = corum[corum$Organism=="Human",]
+fn = "../data/clusters_full_netw_walktrap.txt"
+Ji = as.data.frame(read_tsv(fn))
+Ji = Ji[!Ji$algorithm=="hierarchical",]
+Ji = Ji[Ji$noise_mag %in% c(0,0.01,0.02,0.05,0.1,0.15,0.25,0.5,1),]
 
-# turn corum into a list of protein pairs
-ints = list()
+Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
+Ji$algorithm[Ji$algorithm=="co"] = "CO"
+Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
+Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
+Ji$algorithm[Ji$algorithm=="walk"] = "walktrap"
 
-ints[[1]] = data.frame(protA = character(10^6),
-                        protB = character(10^6), stringsAsFactors = F)
+# make cluster.size, remove all clusters with size<3
+Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
+Ji = Ji[Ji$cluster.size>2,]
+
+unqiter = unique(Ji$iter)
+unqalgs = c("CO+MCL", "CO", "MCL", "k-Med", "walktrap")
+unqmags = c(0,0.01,0.02,0.05,0.1,0.15,0.25,0.5,1)
+df = data.frame(noise_mag = numeric(10^3),
+                iter = numeric(10^3),
+                nsize = numeric(10^3),
+                nn = numeric(10^3),
+                algorithm = character(10^3), stringsAsFactors = F)
 cc = 0
-for (ii in 1:nrow(corum)) {
-  print(ii)
-  prots = sort(unlist(strsplit(corum$`subunits(UniProt IDs)`[ii], ";")))
-  if (length(prots)<2) next
-  pairs.prots = t(combn(prots, 2))
-  
-  I = (cc+1) : (cc+nrow(pairs.prots))
-  ints[[1]]$protA[I] = pairs.prots[,1]
-  ints[[1]]$protB[I] = pairs.prots[,2]
-  cc = cc+length(I)
-}
-ints[[1]] = ints[[1]][1:cc,]
-ints[[1]] = distinct(ints[[1]])
+for (kk in 1:length(unqmags)) {
+  for (ii in 1:length(unqalgs)) {
+    for (jj in 1:length(unqiter)) {
+      I = Ji$algorithm==unqalgs[ii] & Ji$iter==unqiter[jj] & Ji$noise_mag==unqmags[kk]
 
-
-# read chem-protein and facebook networks
-fns = c("", "../data/ChCh-Miner_durgbank-chem-chem.tsv", "../data/email-Eu-core.txt")
-seps = c("", "\t", " ")
-for (ii in 2:length(fns)) {
-  ints[[ii]] = as.data.frame(read_delim(fns[ii], delim=seps[ii], quote = ""))
-  colnames(ints[[ii]]) = c("protA","protB")
-}
-ints[[3]] = ints[[3]] + 1
-
-
-# convert to adjacency matrices
-df = list()
-for (ii in 1:3) {
-  print(ii)
-  prots = sort(unique(c(ints[[ii]]$protA, ints[[ii]]$protB)))
-  conmat = matrix(nrow=length(prots), ncol=length(prots))
-  ia = match(ints[[ii]]$protA, prots)
-  ib = match(ints[[ii]]$protB, prots)
-  for (jj in 1:length(ia)) {
-    conmat[ia[jj], ib[jj]] = 1
-    conmat[ib[jj], ia[jj]] = 1
+      cc = cc+1
+      df$iter[cc] = unqiter[jj]
+      df$noise_mag[cc] = unqmags[kk]
+      df$nsize[cc] = mean(Ji$cluster.size[I], na.rm=T) # size
+      df$nn[cc] = sum(I) # number
+      df$algorithm[cc] = unqalgs[ii]
+    }
   }
-  
-  conmat.df = as.data.frame(conmat)
-  names(conmat.df) = as.character(1:length(prots))
-  conmat.df$proteins = as.character(1:length(prots))
-  df[[ii]] = meltmat(conmat.df, id.vars = c("proteins"))
-  df[[ii]]$value[is.na(df[[ii]]$value)] = 0
 }
+df = df[1:cc,]
 
 
-ii = 1
-ggplot(df[[ii]], aes(x, y)) +
-  geom_tile(aes(fill = value), color = "white") +
-  scale_fill_gradient(low = "white", high = "steelblue") + 
-  theme_bw() + blank_theme + 
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+# size
+ggplot(df, aes(x=noise_mag, y=nn)) + geom_point(alpha=.5) + facet_grid(~algorithm)
+
+
+# number
 
