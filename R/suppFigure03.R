@@ -4,8 +4,9 @@ require(dils)
 
 # matlab results (chromatograms + network, three algorithms)
 #fn = "../data/clusters_full_netw_walktrap.txt"
+#Ji = as.data.frame(read_tsv(fn))
 fn = "../data/clusters_full_netw_walktrap.Rda"
-Ji = as.data.frame(read_tsv(fn))
+load(fn)
 Ji = Ji[!Ji$algorithm=="hierarchical",]
 Ji = Ji[Ji$noise_mag %in% c(0,0.01,0.02,0.05,0.1,0.15,0.25,0.5,1),]
 
