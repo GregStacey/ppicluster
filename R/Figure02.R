@@ -218,15 +218,19 @@ ggsave(fn,width=10, height=2.6)
 # 2D ##### ------------------------------------------- #####
 # noise-amplification
 
-I = sim$measure=="ai"& sim$network=="CORUM"
-sim$noise.amplification = (1-sim$Ji1) / sim$noise_mag
-ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() + 
-  facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
-  geom_hline(yintercept = 1, linetype="dashed") +
-  ylab("Error amplification by clustering") + xlab("Interactome FPR") +
-  scale_y_continuous(breaks = c(1,10,20),
-                     labels=c("1x","10x", "20x"))
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v03.pdf"
+# I = sim$measure=="ai"& sim$network=="CORUM"
+# sim$noise.amplification = (1-sim$Ji1) / sim$noise_mag
+# ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() + 
+#   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
+#   geom_hline(yintercept = 1, linetype="dashed") +
+#   ylab("Error amplification by clustering") + xlab("Interactome FPR") +
+#   scale_y_continuous(breaks = c(1,10,20),
+#                      labels=c("1x","10x", "20x"))
+
+sf = "../data/dfchange_03.Rda"
+load(sf)
+
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v04.pdf"
 ggsave(fn,width=10, height=2.6)
 
 

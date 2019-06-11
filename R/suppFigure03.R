@@ -3,7 +3,8 @@ source("functions.R")
 require(dils)
 
 # matlab results (chromatograms + network, three algorithms)
-fn = "../data/clusters_full_netw_walktrap.txt"
+#fn = "../data/clusters_full_netw_walktrap.txt"
+fn = "../data/clusters_full_netw_walktrap.Rda"
 Ji = as.data.frame(read_tsv(fn))
 Ji = Ji[!Ji$algorithm=="hierarchical",]
 Ji = Ji[Ji$noise_mag %in% c(0,0.01,0.02,0.05,0.1,0.15,0.25,0.5,1),]
@@ -14,7 +15,8 @@ sf = "../data/dfchange_02.Rda"
 if (F) {
   load(sf)
 } else {
-  df.change = data.frame(noise = numeric(10^4),
+  df.change = data.frame(iter = numeric(10^4), 
+                         noise = numeric(10^4),
                          n.shuffled.interactions = numeric(10^4),
                          algorithm = character(10^4),
                          n.new.clusters = numeric(10^4), 
@@ -82,6 +84,7 @@ if (F) {
         }
         
         cc = cc+1
+        df.change$iter[cc] = unqiter[kk]
         df.change$noise[cc] = unqnoise[uu]
         df.change$n.shuffled.interactions[cc] = round(39563 * unqnoise[uu])
         df.change$algorithm[cc] = unqalgs[mm]
