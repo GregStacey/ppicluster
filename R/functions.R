@@ -14,6 +14,7 @@ require(FlowSOM)
 require(VennDiagram)
 require(infotheo)
 require(igraph)
+require(dils)
 
 blank_theme = theme(axis.title.x=element_blank(),
                     axis.text.x=element_blank(),

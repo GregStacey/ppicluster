@@ -227,8 +227,11 @@ ggsave(fn,width=10, height=2.6)
 #   scale_y_continuous(breaks = c(1,10,20),
 #                      labels=c("1x","10x", "20x"))
 
-sf = "../data/dfchange_03.Rda"
+sf = "../data/dfchange_02.Rda"
 load(sf)
+
+
+ggplot(df.change, aes(x=n.shuffled.interactions, y=n.rearranged.edges)) + geom_point(alpha=0.4)
 
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v04.pdf"
 ggsave(fn,width=10, height=2.6)
