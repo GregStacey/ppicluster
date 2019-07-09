@@ -23,14 +23,26 @@ legend('Original','10% noise','25% noise')
 fn = 'E:\Greg\ClusterReliable\figures/chromNoise.png';
 saveas(gcf,fn)
 
+% make co-int and co-comp if needed
+if 1
+    for ii = 1:28
+        for jj = 1:9
+            this_matrix = data.chromnoise.score{ii,jj};
+            matrix0 = data.chromnoise.score{ii,1};
+            this_net = data.chromnoise.co_mcl.cluster{ii,jj};
+            net0 = data.chromnoise.co_mcl.cluster{ii,1};
+            tmp = comparenetworks(this_net, net0, this_matrix, matrix0);
+        end
+    end
+end
 
 figure,subplot(2,1,1)
-plot(sRange,data.chromnoise.sparse.coint([2 3 4 6 7 8],:)')
+plot(sRange,data.chromnoise.mcl.coint([2 3 4 6 7 8],:)')
 xlim([0 .5])
 ylabel('Co-interactome probability')
 title('Chrom noise, co-int vs co-com')
 subplot(2,1,2)
-plot(sRange,data.chromnoise.sparse.cocom([2 3 4 6 7 8],:)')
+plot(sRange,data.chromnoise.mcl.cocom([2 3 4 6 7 8],:)')
 xlim([0 .5])
 ylabel('Co-complex probability')
 xlabel('Noise added (% amplitude)')
@@ -160,7 +172,6 @@ plot(cRange(1:8), data.corum.remove.mcl.cocom,'b')
 
 %% Make "keep it simple" figure
 
-
 % figure 1 -  chrom noise
 figure
 subplot(1,6,1), hold on
@@ -196,145 +207,213 @@ axis([0 .5 0 1])
 title('NMI')
 subplot(1,6,6)
 axis([0 .5 0 1])
-plot(mRange, data.chromnoise.mcl.ga, 'b')
+plot(mRange, data.chromnoise.mcl.ari([2 3 4 6 7 8],:), 'b')
 title('ARI')
-set(gcf,'units','normalized','position',[.3 .6 .6 .25])
+set(gcf,'units','normalized','position',[.4 .6 .6 .2],...
+    'paperunits','normalized','paperposition',[.4 .6 .9 .15])
+fn = 'E:\Greg\ClusterReliable\figures/chromnoise_vs_stats.png';
+%saveas(gcf,fn)
 
 
 % figure 2 - net noise
 figure
 % row 1 - Craig network noise add
-subplot(4,6,1), hold on
-plot(mRange, data.netnoise.add.co_mcl.mr, 'k')
-plot(mRange, data.netnoise.add.co.mr, 'r')
-plot(mRange, data.netnoise.add.mcl.mr, 'b')
+subplot(6,6,1), hold on
+plot(data.addnoiseRange, data.netnoise.add.co_mcl.mr, 'k')
+plot(data.addnoiseRange, data.netnoise.add.co.mr, 'r')
+plot(data.addnoiseRange, data.netnoise.add.mcl.mr, 'b')
 title('MMR')
 ylabel('Data net add')
-axis([0 1 0 1])
-subplot(4,6,2), hold on
-plot(mRange, data.netnoise.add.co_mcl.ga, 'k')
-plot(mRange, data.netnoise.add.co.ga, 'r')
-plot(mRange, data.netnoise.add.mcl.ga, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,2), hold on
+plot(data.addnoiseRange, data.netnoise.add.co_mcl.ga, 'k')
+plot(data.addnoiseRange, data.netnoise.add.co.ga, 'r')
+plot(data.addnoiseRange, data.netnoise.add.mcl.ga, 'b')
 title('GA')
-axis([0 1 0 1])
-subplot(4,6,3), hold on
-plot(mRange, data.netnoise.add.co_mcl.sn, 'k')
-plot(mRange, data.netnoise.add.co.sn, 'r')
-plot(mRange, data.netnoise.add.mcl.sn, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,3), hold on
+plot(data.addnoiseRange, data.netnoise.add.co_mcl.sn, 'k')
+plot(data.addnoiseRange, data.netnoise.add.co.sn, 'r')
+plot(data.addnoiseRange, data.netnoise.add.mcl.sn, 'b')
 title('Sn')
-axis([0 1 0 1])
-subplot(4,6,4), hold on
-plot(mRange, data.netnoise.add.co_mcl.ppv, 'k')
-plot(mRange, data.netnoise.add.co.ppv, 'r')
-plot(mRange, data.netnoise.add.mcl.ppv, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,4), hold on
+plot(data.addnoiseRange, data.netnoise.add.co_mcl.ppv, 'k')
+plot(data.addnoiseRange, data.netnoise.add.co.ppv, 'r')
+plot(data.addnoiseRange, data.netnoise.add.mcl.ppv, 'b')
 title('PPV')
-axis([0 1 0 1])
-subplot(4,6,5), hold on
-plot(mRange, data.netnoise.add.co_mcl.nmi, 'k')
-plot(mRange, data.netnoise.add.co.nmi, 'r')
-plot(mRange, data.netnoise.add.mcl.nmi, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,5), hold on
+plot(data.addnoiseRange, data.netnoise.add.co_mcl.nmi, 'k')
+plot(data.addnoiseRange, data.netnoise.add.co.nmi, 'r')
+plot(data.addnoiseRange, data.netnoise.add.mcl.nmi, 'b')
 title('NMI')
-axis([0 1 0 1])
-subplot(4,6,6), hold on
-plot(mRange, data.netnoise.add.mcl.ga, 'b')
-axis([0 1 0 1])
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,6), hold on
+plot(data.addnoiseRange, data.netnoise.add.mcl.ga, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
 title('ARI')
 
 % row 2 - Craig network noise remove
-subplot(4,6,7), hold on
-plot(mRange, data.netnoise.remove.co_mcl.mr, 'k')
-plot(mRange, data.netnoise.remove.co.mr, 'r')
-plot(mRange, data.netnoise.remove.mcl.mr, 'b')
+subplot(6,6,7), hold on
+plot(data.remnoiseRange, data.netnoise.remove.co_mcl.mr, 'k')
+plot(data.remnoiseRange, data.netnoise.remove.co.mr, 'r')
+plot(data.remnoiseRange, data.netnoise.remove.mcl.mr, 'b')
 ylabel('Data net remove')
 axis([0 1 0 1])
-subplot(4,6,8), hold on
-plot(mRange, data.netnoise.remove.co_mcl.ga, 'k')
-plot(mRange, data.netnoise.remove.co.ga, 'r')
-plot(mRange, data.netnoise.remove.mcl.ga, 'b')
+subplot(6,6,8), hold on
+plot(data.remnoiseRange, data.netnoise.remove.co_mcl.ga, 'k')
+plot(data.remnoiseRange, data.netnoise.remove.co.ga, 'r')
+plot(data.remnoiseRange, data.netnoise.remove.mcl.ga, 'b')
 axis([0 1 0 1])
-subplot(4,6,9), hold on
-plot(mRange, data.netnoise.remove.co_mcl.sn, 'k')
-plot(mRange, data.netnoise.remove.co.sn, 'r')
-plot(mRange, data.netnoise.remove.mcl.sn, 'b')
+subplot(6,6,9), hold on
+plot(data.remnoiseRange, data.netnoise.remove.co_mcl.sn, 'k')
+plot(data.remnoiseRange, data.netnoise.remove.co.sn, 'r')
+plot(data.remnoiseRange, data.netnoise.remove.mcl.sn, 'b')
 axis([0 1 0 1])
-subplot(4,6,10), hold on
-plot(mRange, data.netnoise.remove.co_mcl.ppv, 'k')
-plot(mRange, data.netnoise.remove.co.ppv, 'r')
-plot(mRange, data.netnoise.remove.mcl.ppv, 'b')
+subplot(6,6,10), hold on
+plot(data.remnoiseRange, data.netnoise.remove.co_mcl.ppv, 'k')
+plot(data.remnoiseRange, data.netnoise.remove.co.ppv, 'r')
+plot(data.remnoiseRange, data.netnoise.remove.mcl.ppv, 'b')
 axis([0 1 0 1])
-subplot(4,6,11), hold on
-plot(mRange, data.netnoise.remove.co_mcl.nmi, 'k')
-plot(mRange, data.netnoise.remove.co.nmi, 'r')
-plot(mRange, data.netnoise.remove.mcl.nmi, 'b')
+subplot(6,6,11), hold on
+plot(data.remnoiseRange, data.netnoise.remove.co_mcl.nmi, 'k')
+plot(data.remnoiseRange, data.netnoise.remove.co.nmi, 'r')
+plot(data.remnoiseRange, data.netnoise.remove.mcl.nmi, 'b')
 axis([0 1 0 1])
-subplot(4,6,12)
-plot(mRange, data.netnoise.remove.mcl.ari, 'b')
+subplot(6,6,12)
+plot(data.remnoiseRange, data.netnoise.remove.mcl.ari, 'b')
+axis([0 1 0 1])
+
+% row 3 - Craig network noise remove
+subplot(6,6,13), hold on
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co_mcl.mr, 'k')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co.mr, 'r')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.mcl.mr, 'b')
+ylabel('Data net shuffle')
+axis([0 1 0 1])
+subplot(6,6,14), hold on
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co_mcl.ga, 'k')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co.ga, 'r')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.mcl.ga, 'b')
+axis([0 1 0 1])
+subplot(6,6,15), hold on
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co_mcl.sn, 'k')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co.sn, 'r')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.mcl.sn, 'b')
+axis([0 1 0 1])
+subplot(6,6,16), hold on
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co_mcl.ppv, 'k')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co.ppv, 'r')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.mcl.ppv, 'b')
+axis([0 1 0 1])
+subplot(6,6,17), hold on
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co_mcl.nmi, 'k')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.co.nmi, 'r')
+plot(data.shufflenoiseRange, data.netnoise.shuffle.mcl.nmi, 'b')
+axis([0 1 0 1])
+subplot(6,6,18)
+plot(data.shufflenoiseRange, data.netnoise.shuffle.mcl.ari, 'b')
 axis([0 1 0 1])
 
 % row 3 - corum add
-subplot(4,6,13), hold on
-plot(mRange, data.corum.add.co_mcl.mr, 'k')
-plot(mRange, data.corum.add.co.mr, 'r')
-plot(mRange, data.corum.add.mcl.mr, 'b')
+subplot(6,6,19), hold on
+plot(data.addnoiseRange, data.corum.add.co_mcl.mr, 'k')
+plot(data.addnoiseRange, data.corum.add.co.mr, 'r')
+plot(data.addnoiseRange, data.corum.add.mcl.mr, 'b')
 legend('CO+MCL','CO','MCL','location','south')
 ylabel('Corum add')
-axis([0 1 0 1])
-subplot(4,6,14), hold on
-plot(mRange, data.corum.add.co_mcl.ga, 'k')
-plot(mRange, data.corum.add.co.ga, 'r')
-plot(mRange, data.corum.add.mcl.ga, 'b')
-axis([0 1 0 1])
-subplot(4,6,15), hold on
-plot(mRange, data.corum.add.co_mcl.sn, 'k')
-plot(mRange, data.corum.add.co.sn, 'r')
-plot(mRange, data.corum.add.mcl.sn, 'b')
-axis([0 1 0 1])
-subplot(4,6,16), hold on
-plot(mRange, data.corum.add.co_mcl.ppv, 'k')
-plot(mRange, data.corum.add.co.ppv, 'r')
-plot(mRange, data.corum.add.mcl.ppv, 'b')
-axis([0 1 0 1])
-subplot(4,6,17), hold on
-plot(mRange, data.corum.add.co_mcl.nmi, 'k')
-plot(mRange, data.corum.add.co.nmi, 'r')
-plot(mRange, data.corum.add.mcl.nmi, 'b')
-axis([0 1 0 1])
-subplot(4,6,18), hold on
-plot(mRange, data.corum.add.mcl.ari, 'b')
-axis([0 1 0 1])
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,20), hold on
+plot(data.addnoiseRange, data.corum.add.co_mcl.ga, 'k')
+plot(data.addnoiseRange, data.corum.add.co.ga, 'r')
+plot(data.addnoiseRange, data.corum.add.mcl.ga, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,21), hold on
+plot(data.addnoiseRange, data.corum.add.co_mcl.sn, 'k')
+plot(data.addnoiseRange, data.corum.add.co.sn, 'r')
+plot(data.addnoiseRange, data.corum.add.mcl.sn, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,22), hold on
+plot(data.addnoiseRange, data.corum.add.co_mcl.ppv, 'k')
+plot(data.addnoiseRange, data.corum.add.co.ppv, 'r')
+plot(data.addnoiseRange, data.corum.add.mcl.ppv, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,23), hold on
+plot(data.addnoiseRange, data.corum.add.co_mcl.nmi, 'k')
+plot(data.addnoiseRange, data.corum.add.co.nmi, 'r')
+plot(data.addnoiseRange, data.corum.add.mcl.nmi, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
+subplot(6,6,24), hold on
+plot(data.addnoiseRange, data.corum.add.mcl.ari, 'b')
+axis([0 max(data.addnoiseRange) 0 1])
 
 % row 4 - corum remove
-subplot(4,6,19), hold on
-plot(mRange(1:length(data.corum.remove.co_mcl.mr)), data.corum.remove.co_mcl.mr, 'k')
-plot(mRange(1:length(data.corum.remove.co.mr)), data.corum.remove.co.mr, 'r')
-plot(mRange(1:length(data.corum.remove.mcl.mr)), data.corum.remove.mcl.mr, 'b')
+subplot(6,6,25), hold on
+plot(data.remnoiseRange(1:length(data.corum.remove.co_mcl.mr)), data.corum.remove.co_mcl.mr, 'k')
+plot(data.remnoiseRange(1:length(data.corum.remove.co.mr)), data.corum.remove.co.mr, 'r')
+plot(data.remnoiseRange(1:length(data.corum.remove.mcl.mr)), data.corum.remove.mcl.mr, 'b')
 ylabel('Corum remove')
 axis([0 1 0 1])
-subplot(4,6,20), hold on
-plot(mRange(1:length(data.corum.remove.co_mcl.ga)), data.corum.remove.co_mcl.ga, 'k')
-plot(mRange(1:length(data.corum.remove.co.ga)), data.corum.remove.co.ga, 'r')
-plot(mRange(1:length(data.corum.remove.mcl.ga)), data.corum.remove.mcl.ga, 'b')
+subplot(6,6,26), hold on
+plot(data.remnoiseRange(1:length(data.corum.remove.co_mcl.ga)), data.corum.remove.co_mcl.ga, 'k')
+plot(data.remnoiseRange(1:length(data.corum.remove.co.ga)), data.corum.remove.co.ga, 'r')
+plot(data.remnoiseRange(1:length(data.corum.remove.mcl.ga)), data.corum.remove.mcl.ga, 'b')
 axis([0 1 0 1])
-subplot(4,6,21), hold on
-plot(mRange(1:length(data.corum.remove.co_mcl.mr)), data.corum.remove.co_mcl.sn, 'k')
-plot(mRange(1:length(data.corum.remove.co.mr)), data.corum.remove.co.sn, 'r')
-plot(mRange(1:length(data.corum.remove.mcl.mr)), data.corum.remove.mcl.sn, 'b')
+subplot(6,6,27), hold on
+plot(data.remnoiseRange(1:length(data.corum.remove.co_mcl.mr)), data.corum.remove.co_mcl.sn, 'k')
+plot(data.remnoiseRange(1:length(data.corum.remove.co.mr)), data.corum.remove.co.sn, 'r')
+plot(data.remnoiseRange(1:length(data.corum.remove.mcl.mr)), data.corum.remove.mcl.sn, 'b')
 axis([0 1 0 1])
-subplot(4,6,22), hold on
-plot(mRange(1:length(data.corum.remove.co_mcl.ppv)), data.corum.remove.co_mcl.ppv, 'k')
-plot(mRange(1:length(data.corum.remove.co.ppv)), data.corum.remove.co.ppv, 'r')
-plot(mRange(1:length(data.corum.remove.mcl.ppv)), data.corum.remove.mcl.ppv, 'b')
+subplot(6,6,28), hold on
+plot(data.remnoiseRange(1:length(data.corum.remove.co_mcl.ppv)), data.corum.remove.co_mcl.ppv, 'k')
+plot(data.remnoiseRange(1:length(data.corum.remove.co.ppv)), data.corum.remove.co.ppv, 'r')
+plot(data.remnoiseRange(1:length(data.corum.remove.mcl.ppv)), data.corum.remove.mcl.ppv, 'b')
 axis([0 1 0 1])
-subplot(4,6,23), hold on
-plot(mRange(1:length(data.corum.remove.co_mcl.nmi)), data.corum.remove.co_mcl.nmi, 'k')
-plot(mRange(1:length(data.corum.remove.co.nmi)), data.corum.remove.co.nmi, 'r')
-plot(mRange(1:length(data.corum.remove.mcl.nmi)), data.corum.remove.mcl.nmi, 'b')
+subplot(6,6,29), hold on
+plot(data.remnoiseRange(1:length(data.corum.remove.co_mcl.nmi)), data.corum.remove.co_mcl.nmi, 'k')
+plot(data.remnoiseRange(1:length(data.corum.remove.co.nmi)), data.corum.remove.co.nmi, 'r')
+plot(data.remnoiseRange(1:length(data.corum.remove.mcl.nmi)), data.corum.remove.mcl.nmi, 'b')
 axis([0 1 0 1])
-subplot(4,6,24), hold on
-plot(mRange(1:length(data.corum.remove.mcl.ari)), data.corum.remove.mcl.ari, 'b')
+subplot(6,6,30), hold on
+plot(data.remnoiseRange(1:length(data.corum.remove.mcl.ari)), data.corum.remove.mcl.ari, 'b')
 axis([0 1 0 1])
 
-set(gcf,'units','normalized','position',[.1 .1 .6 .8])
+% row 6 - corum shuffle
+subplot(6,6,31), hold on
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co_mcl.mr)), data.corum.shuffle.co_mcl.mr, 'k')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co.mr)), data.corum.shuffle.co.mr, 'r')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.mcl.mr)), data.corum.shuffle.mcl.mr, 'b')
+ylabel('Corum shuffle')
+axis([0 1 0 1])
+subplot(6,6,32), hold on
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co_mcl.ga)), data.corum.shuffle.co_mcl.ga, 'k')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co.ga)), data.corum.shuffle.co.ga, 'r')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.mcl.ga)), data.corum.shuffle.mcl.ga, 'b')
+axis([0 1 0 1])
+subplot(6,6,33), hold on
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co_mcl.sn)), data.corum.shuffle.co_mcl.sn, 'k')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co.sn)), data.corum.shuffle.co.sn, 'r')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.mcl.sn)), data.corum.shuffle.mcl.sn, 'b')
+axis([0 1 0 1])
+subplot(6,6,34), hold on
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co_mcl.ppv)), data.corum.shuffle.co_mcl.ppv, 'k')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co.ppv)), data.corum.shuffle.co.ppv, 'r')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.mcl.ppv)), data.corum.shuffle.mcl.ppv, 'b')
+axis([0 1 0 1])
+subplot(6,6,35), hold on
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co_mcl.nmi)), data.corum.shuffle.co_mcl.nmi, 'k')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.co.nmi)), data.corum.shuffle.co.nmi, 'r')
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.mcl.nmi)), data.corum.shuffle.mcl.nmi, 'b')
+axis([0 1 0 1])
+subplot(6,6,36), hold on
+plot(data.shufflenoiseRange(1:length(data.corum.shuffle.mcl.ari)), data.corum.shuffle.mcl.ari, 'b')
+axis([0 1 0 1])
+
+set(gcf,'units','normalized','position',[.05 .1 .6 .8],...
+    'paperunits','normalized','paperposition',[.05 .1 .9 .6])
+fn = 'E:\Greg\ClusterReliable\figures/netnoise_vs_stats.png';
+%saveas(gcf,fn)
 
 
 %% Illustrate clustering with an "animation"

@@ -1,24 +1,15 @@
 % compare my code to clusterone.java for a small connection matrix MM
 
 % connection matrices
-load('/Users/Mercy/Academics/Foster/ClusterExplore/data/MM.mat')
+load('E:/Greg/ClusterReliable/data/MM.mat')
 
 % clusterone.java
 CCj = cell(1,3);
-fns = dir('E:/Greg/ClusterReliable/data/clustervalidation_*txt');
-for ii = 1:length(fns)
-    fid = fopen([fns(ii).folder '/' fns(ii).name]);
-    cc = 0;
-    while not(feof(fid))
-        cc = cc+1;
-        t1 = strsplit(fgetl(fid),'\t');
-        CCj{ii}{cc} = nan(size(t1));
-        for jj = 1:length(CCj{ii}{cc})
-            CCj{ii}{cc}(jj) = str2double(t1{jj});
-        end
-    end
-    fclose(fid);
+java_path = 'E:/Greg/ClusterReliable/java/cluster_one-1.0.jar';
+for ii = 1:3
+    CCj{ii} = clusterone_java(MM{ii}, 2, 0.3, java_path);
 end
+
 
 % my code
 CC = cell(1,length(MM));
@@ -58,3 +49,5 @@ for ii = 1:3
     end
     imagesc(Mtmp)
 end
+
+

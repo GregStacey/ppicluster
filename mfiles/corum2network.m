@@ -1,4 +1,4 @@
-function [corum_network, unqprots] = corum2network(corum_filename)
+function [corum_network, unqprots, complexes] = corum2network(corum_filename)
 
 % Read raw CORUM file
 fid = fopen(corum_filename,'r');
@@ -60,5 +60,5 @@ for ii = 1:length(complexes)
       end
   end
 end
-
+8;
 

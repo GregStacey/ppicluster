@@ -1,4 +1,8 @@
-function Members2 = clustone_mcl(intMatrix, pars)
+function Members2 = clustone_mcl(intMatrix, pars, java_path, default)
+
+if nargin<4
+    default = 0;
+end
 
 % Cluster intmatrix with ClusterONE+MCL
 
@@ -9,7 +13,8 @@ best_prec = pars.best_prec;
 best_I = pars.best_I;
 
 % ClusterONE - round 1
-COne_members = myclusterone(intMatrix, best_p, 0);
+%COne_members = myclusterone(intMatrix, best_p, 0);
+COne_members = clusterone_java(intMatrix, best_p, best_dens, java_path, default);
 if isempty(COne_members); return; end
 
 % MCL - round 1

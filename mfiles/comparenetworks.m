@@ -1,13 +1,13 @@
 function output = comparenetworks(network, ref_network, matrix, ref_matrix)
 
 % matching ratio
-output.mr = matchingratio(ref_network, network);
+%output.mr = matchingratio(ref_network, network);
 
 % geometric accuracy
-[output.ga,output.sn,output.ppv] = geomacc(ref_network, network);
+%[output.ga,output.sn,output.ppv] = geomacc(ref_network, network);
 
 % normalized mutual information
-output.nmi = nmi(ref_network, network);
+%output.nmi = nmi(ref_network, network);
 
 % co-complex probability
 iterMax = 1000;

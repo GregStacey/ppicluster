@@ -230,11 +230,21 @@ ggsave(fn,width=10, height=2.6)
 sf = "../data/dfchange_02.Rda"
 load(sf)
 
-
-ggplot(df.change, aes(x=n.shuffled.interactions, y=n.rearranged.edges)) + geom_point(alpha=0.4)
-
+ggplot(df.change, aes(x=n.shuffled.interactions, y=n.rearranged.edges, shape=algorithm)) + 
+  geom_point(alpha=0.6) + geom_abline(linetype="dashed") +theme_bw() +
+  xlab("Number of shuffled network edges") + 
+  ylab("Number of rearranged cluster edges") + 
+  coord_cartesian(ylim=c(0,80000)) + theme(legend.position="none")
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v04.pdf"
-ggsave(fn,width=10, height=2.6)
+ggsave(fn,width=4, height=3.2)
+
+ggplot(df.change, aes(x=noise, y=n.rearranged.edges/n.shuffled.interactions, color=algorithm)) + 
+  geom_line() + geom_abline(linetype="dashed") +theme_bw() +
+  xlab("Interactome FPR") + 
+  ylab("Ratio of rearranged cluster edges\nto shuffled network edges") + theme(legend.position="none") +
+  scale_colour_grey()
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D2_v04.pdf"
+ggsave(fn,width=4, height=3.2)
 
 
 # 2E,F ##### ------------------------------------------- #####
