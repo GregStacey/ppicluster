@@ -297,3 +297,24 @@ for (ii in 1:nrow(corum)) {
   JJ[ii] = sum(this.ids %in% prots) / length(unique(c(nn, prots)))
   print(paste(ii, nn[ii]))
 }
+
+
+
+allComplexes$Protein.IDs <- character(length(allComplexes$subunits.UniProt.IDs)) # preallocate column
+for (ii in 1:nrow(allComplexes)) { # go through every protein you want to match
+  these.prots = unlist(strsplit(as.character(allComplexes$subunits.UniProt.IDs[ii]),";")) # split into single IDs
+  human.matches = character(length(these.prots)) # preallocate mouse matches
+  for (jj in 1:length(these.prots)) { # go through every single ID of that protein
+    I = which(H.sapiens.M.musculus$Human %in% these.prots[jj])
+    if (length(I)==1) { # if you found exactly ONE human-to-mouse ortholog...
+      human.matches[jj] = H.sapiens.M.musculus$Protein.IDs[I] # ... store the mouse ID in human matches
+    }
+  }
+  # concatenate mouse matches
+  human.matches = human.matches[ !human.matches %in% ""] # remove NAs
+  human.matches = paste(human.matches, collapse=";") # collapse into semicolon separated string
+  
+  # store in condition file
+  allComplexes$Protein.IDs[ii] = human.matches
+}
+

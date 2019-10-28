@@ -150,3 +150,51 @@ fn = "../data/clusters_full_netw_walktrap.txt"
 write_tsv(clusters, path=fn)
 
 
+
+# Jz (z-score)
+# calculate Ji1z all clusters (Compare each cluster to its unnoised version)
+clusters2$Ji1z = rep(NA, nrow(clusters2))
+for (ii in 1:length(unqiters)) {
+  print(paste("Ji1z: iter",ii))
+  for (jj in 1:length(unqalgs)) {
+    print(paste("      algorithm",unqalgs[jj]))
+    I0 = clusters2$iter==unqiters[ii] & clusters2$algorithm==unqalgs[jj]
+    ref.clusters = clusters2$cluster[I0 & clusters2$noise_mag==0]
+    for (kk in 1:length(unqmags)) {
+      print(paste("        noise",unqmags[kk]))
+      I = which(I0 & clusters2$noise_mag==unqmags[kk])
+      these.clusters = clusters2$cluster[I]
+      for (mm in 1:length(I)) {
+        clusters2$Ji1z[I[mm]] = calcAz(these.clusters[mm], ref.clusters)
+      }
+    }
+  }
+}
+
+# write
+fn = "../data/clusters_full_netw_walktrap.txt"
+write_tsv(clusters, path=fn)
+
+# calculate Ji2z all clusters (Compare each cluster to its iter=1 version)
+clusters2$Ji2z = rep(NA, nrow(clusters2))
+for (kk in 1:length(unqmags)) {
+  print(paste("Ji2z: noise",unqmags[kk]))
+  for (jj in 1:length(unqalgs)) {
+    print(paste("      algorithm",unqalgs[jj]))
+    I0 = clusters$algorithm==unqalgs[jj] & clusters$noise_mag==unqmags[kk]
+    ref.clusters = clusters$cluster[I0 & clusters$iter==1]
+    for (ii in 1:length(unqiters)) {
+      print(paste("        iter",unqmags[kk]))
+      I = which(I0 & clusters$iter==unqiters[ii])
+      these.clusters = clusters$cluster[I]
+      for (mm in 1:length(I)) {
+        clusters$Ji2z[I[mm]] = calcAz(these.clusters[mm], ref.clusters)
+      }
+    }
+  }
+}
+# write
+fn = "../data/clusters_full_netw_walktrap.txt"
+write_tsv(clusters, path=fn)
+
+

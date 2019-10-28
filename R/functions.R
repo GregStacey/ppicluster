@@ -10,7 +10,6 @@ require(tidyr)
 require(dplyr)
 require(NMI)
 require(fossil)
-require(FlowSOM)
 require(VennDiagram)
 require(infotheo)
 require(igraph)
@@ -25,6 +24,7 @@ blank_theme = theme(axis.title.x=element_blank(),
 
 # define functions
 calcA = function(this.cluster, clusters) {
+  # J, Ji
   # assignment reproducibility
   # essentially the maximum Jaccard index
   #
@@ -40,6 +40,55 @@ calcA = function(this.cluster, clusters) {
   }
   A = max(JJ, na.rm=T)
   return(A)
+}
+
+
+calcAz = function(this.cluster, clusters) {
+  # z-score of J, Ji
+  this.cluster = unlist(strsplit(this.cluster, ";"))
+  JJ = numeric(length(clusters))
+  for (ii in 1:length(clusters)) {
+    that.cluster = unlist(strsplit(clusters[ii], ";"))
+    JJ[ii] = length(intersect(this.cluster, that.cluster)) / 
+      length(unique(c(this.cluster, that.cluster)))
+  }
+  A = max(JJ, na.rm=T)
+  
+  # now do this 1000 more times with random clusters
+  # convert clusters to a data.frame = [node, cluster.id]
+  iterMax = 100
+  df.cluster = clusters.to.df(clusters)
+  A.rand = rep(NA, iterMax)
+  for (iter in 1:iterMax) {
+    #print(iter)
+    JJ.rand = numeric(length(clusters))
+    rand.cluster = df.cluster
+    rand.cluster$cluster = rand.cluster$cluster[sample(nrow(df.cluster), nrow(df.cluster))]
+    for (ii in 1:length(clusters)) {
+      that.cluster = rand.cluster$prots[rand.cluster$cluster==ii]
+      JJ.rand[ii] = length(intersect(this.cluster, that.cluster)) / 
+        length(unique(c(this.cluster, that.cluster)))
+    }
+    A.rand[iter] = max(JJ.rand, na.rm=T)
+  }
+  
+  Az = (A - mean(A.rand)) / sd(A.rand)
+  return(A)
+}
+
+
+clusters.to.df = function(clusters) {
+  prots = unlist(strsplit(clusters, ";"))
+  df = data.frame(prots = prots, stringsAsFactors = F)
+  df$cluster = numeric(nrow(df))
+  cc = 0
+  for (ii in 1:length(clusters)) {
+    nn = length(unlist(strsplit(clusters[ii], ";")))
+    I = (cc+1) : (cc+nn)
+    df$cluster[I] = ii
+    cc = cc+nn
+  }
+  return(df)
 }
 
 

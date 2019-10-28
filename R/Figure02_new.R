@@ -204,7 +204,6 @@ if (F) {
   }
   df4$F.measure = NA
   df4.m = melt(df4, id.vars = "n.novel")
-  
 }
 
 
