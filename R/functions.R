@@ -73,7 +73,8 @@ calcAz = function(this.cluster, clusters) {
   }
   
   Az = (A - mean(A.rand)) / sd(A.rand)
-  return(A)
+  tmp = list(Az, mean(A.rand), sd(A.rand))
+  return(tmp)
 }
 
 
