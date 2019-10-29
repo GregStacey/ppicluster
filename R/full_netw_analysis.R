@@ -152,6 +152,9 @@ if (0) {
   
 } else {
   clusters2 = read_tsv("../data/clusters_full_netw_walktrap.txt")
+  unqiters = unique(clusters$iter)
+  unqmags = unique(clusters$noise_mag)
+  unqalgs = unique(clusters$algorithm)
   
   # Jz (z-score)
   # calculate Ji1z all clusters (Compare each cluster to its unnoised version)
