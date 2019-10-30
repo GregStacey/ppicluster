@@ -56,7 +56,7 @@ calcAz = function(this.cluster, clusters) {
   
   # now do this 1000 more times with random clusters
   # convert clusters to a data.frame = [node, cluster.id]
-  iterMax = 100
+  iterMax = 50
   df.cluster = clusters.to.df(clusters)
   A.rand = rep(NA, iterMax)
   for (iter in 1:iterMax) {

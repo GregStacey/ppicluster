@@ -151,10 +151,14 @@ if (0) {
   write_tsv(clusters, path=fn)
   
 } else {
-  clusters2 = read_tsv("../data/clusters_full_netw_walktrap.txt")
+  
+  #clusters2 = as.data.frame(read_tsv("../data/clusters_full_netw_walktrap.txt"))
+  clusters2 = as.data.frame(read.csv("../data/clusters_full_netw_walktrap.txt", sep="\t"))
+  clusters2$algorithm = as.character(clusters2$algorithm)
   unqiters = unique(clusters2$iter)
   unqmags = unique(clusters2$noise_mag)
   unqalgs = unique(clusters2$algorithm)
+  print(unqmags)
   
   # Jz (z-score)
   # calculate Ji1z all clusters (Compare each cluster to its unnoised version)
@@ -178,9 +182,11 @@ if (0) {
           clusters2$Ji1z.sd[I[mm]] = tmp[[2]]
         }
       }
+      # write
+      fn = "../data/clusters_full_netw_walktrap_jiz.txt"
+      write_tsv(clusters, path=fn)
     }
   }
-  
   # write
   fn = "../data/clusters_full_netw_walktrap_jiz.txt"
   write_tsv(clusters, path=fn)
@@ -206,6 +212,9 @@ if (0) {
           clusters2$Ji2z.sd[I[mm]] = tmp[[2]]
         }
       }
+      # write
+      fn = "../data/clusters_full_netw_walktrap_jiz.txt"
+      write_tsv(clusters, path=fn)
     }
   }
   # write
