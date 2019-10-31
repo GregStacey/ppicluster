@@ -92,6 +92,15 @@ clusters.to.df = function(clusters) {
   return(df)
 }
 
+df.to.cluster = function(df) {
+  unqid = unique(df$cluster)
+  clusters = character(length(unqid))
+  for (ii in 1:length(unqid)) {
+    clusters[ii] = paste(unique(df$prots[df$cluster == unqid[ii]]), collapse = ";")
+  }
+  return(clusters)
+}
+
 
 calcE = function(cluster0_int, interactome0_int, this.interactome) {
   # edge reproducibility

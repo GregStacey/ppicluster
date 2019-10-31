@@ -150,75 +150,59 @@ if (0) {
   fn = "../data/clusters_full_netw_walktrap.txt"
   write_tsv(clusters, path=fn)
   
-} else {
-  
-  #clusters2 = as.data.frame(read_tsv("../data/clusters_full_netw_walktrap.txt"))
-  clusters2 = as.data.frame(read.csv("../data/clusters_full_netw_walktrap.txt", sep="\t"))
-  clusters2$algorithm = as.character(clusters2$algorithm)
-  unqiters = unique(clusters2$iter)
-  unqmags = unique(clusters2$noise_mag)
-  unqalgs = unique(clusters2$algorithm)
-  print(unqmags)
-  
-  # Jz (z-score)
-  # calculate Ji1z all clusters (Compare each cluster to its unnoised version)
-  clusters2$Ji1z = rep(NA, nrow(clusters2))
-  clusters2$Ji1z.mu = rep(NA, nrow(clusters2))
-  clusters2$Ji1z.sd = rep(NA, nrow(clusters2))
-  for (ii in 1:length(unqiters)) {
-    print(paste("Ji1z: iter",ii))
-    for (jj in 1:length(unqalgs)) {
-      print(paste("      algorithm",unqalgs[jj]))
-      I0 = clusters2$iter==unqiters[ii] & clusters2$algorithm==unqalgs[jj]
-      ref.clusters = clusters2$cluster[I0 & clusters2$noise_mag==0]
-      for (kk in 1:length(unqmags)) {
-        print(paste("        noise",unqmags[kk]))
-        I = which(I0 & clusters2$noise_mag==unqmags[kk])
-        these.clusters = clusters2$cluster[I]
-        for (mm in 1:length(I)) {
-          tmp = calcAz(these.clusters[mm], ref.clusters)
-          clusters2$Ji1z[I[mm]] = tmp[[1]]
-          clusters2$Ji1z.mu[I[mm]] = tmp[[2]]
-          clusters2$Ji1z.sd[I[mm]] = tmp[[2]]
-        }
-      }
-      # write
-      fn = "../data/clusters_full_netw_walktrap_jiz.txt"
-      write_tsv(clusters, path=fn)
-    }
-  }
-  # write
-  fn = "../data/clusters_full_netw_walktrap_jiz.txt"
-  write_tsv(clusters, path=fn)
-  
-  # calculate Ji2z all clusters (Compare each cluster to its iter=1 version)
-  clusters2$Ji2z = rep(NA, nrow(clusters2))
-  clusters2$Ji2z.mu = rep(NA, nrow(clusters2))
-  clusters2$Ji2z.sd = rep(NA, nrow(clusters2))
-  for (kk in 1:length(unqmags)) {
-    print(paste("Ji2z: noise",unqmags[kk]))
-    for (jj in 1:length(unqalgs)) {
-      print(paste("      algorithm",unqalgs[jj]))
-      I0 = clusters$algorithm==unqalgs[jj] & clusters$noise_mag==unqmags[kk]
-      ref.clusters = clusters$cluster[I0 & clusters$iter==1]
-      for (ii in 1:length(unqiters)) {
-        print(paste("        iter",unqmags[kk]))
-        I = which(I0 & clusters$iter==unqiters[ii])
-        these.clusters = clusters$cluster[I]
-        for (mm in 1:length(I)) {
-          tmp = calcAz(these.clusters[mm], ref.clusters)
-          clusters2$Ji2z[I[mm]] = tmp[[1]]
-          clusters2$Ji2z.mu[I[mm]] = tmp[[2]]
-          clusters2$Ji2z.sd[I[mm]] = tmp[[2]]
-        }
-      }
-      # write
-      fn = "../data/clusters_full_netw_walktrap_jiz.txt"
-      write_tsv(clusters, path=fn)
-    }
-  }
-  # write
-  fn = "../data/clusters_full_netw_walktrap_jiz.txt"
-  write_tsv(clusters, path=fn)
 }
+
+
+# make clusters.null
+clusters2 = as.data.frame(read.csv("../data/clusters_full_netw_walktrap.txt", sep="\t"))
+clusters2$algorithm = as.character(clusters2$algorithm)
+clusters2$cluster = as.character(clusters2$cluster)
+unqiters = unique(clusters2$iter)
+unqmags = unique(clusters2$noise_mag)
+unqalgs = unique(clusters2$algorithm)
+print(unqmags)
+
+# don't need different magnitudes or iterations
+# include 2 iterations just for numbers
+# (set2 is getting scrambled! doesn't matter what made it)
+clusters2 = clusters2[clusters2$noise_mag==0 & clusters2$iter<=2, ]
+
+# calculate Ji1 all clusters (Compare each cluster to its unnoised version)
+clusters.null = data.frame(cluster.iter = numeric(10^6),
+                           scramble.iter = numeric(10^6),
+                           algorithm = character(10^6),
+                           cluster = character(10^6),
+                           Ji1.null = numeric(10^6), na.rm=T)
+scramble.iterMax = 100
+cc = 0
+for (ii in 1:length(unqiters)) {
+  print(paste("Ji null: cluster iter",ii))
+  for (jj in 1:length(unqalgs)) {
+    print(paste("  algorithm",unqalgs[jj]))
+    I0 = clusters2$iter==unqiters[ii] & clusters2$algorithm==unqalgs[jj]
+    ref.clusters = clusters2$cluster[I0 & clusters2$noise_mag==0]
+    for (kk in 1:scramble.iterMax) {
+      print(paste("    scramble iter",kk))
+      # make scrambled clusters
+      rand.cluster = clusters.to.df(ref.clusters)
+      rand.cluster$cluster = rand.cluster$cluster[sample(nrow(rand.cluster), nrow(rand.cluster))]
+      rand.cluster = df.to.cluster(rand.cluster)
+      for (mm in 1:length(I)) {
+        cc = cc+1
+        print(cc)
+        clusters.null$cluster.iter[cc] = ii
+        clusters.null$scramble.iter[cc] = kk
+        clusters.null$algorithm[cc] = unqalgs[jj]
+        clusters.null$cluster[cc] = ref.clusters[mm]
+        clusters.null$Ji1.null[cc] = calcA(ref.clusters[mm], rand.cluster)
+      }
+    }
+    # write
+    fn = "../data/clusters_full_netw_walktrap_null.txt"
+    write_tsv(clusters, path=fn)
+  }
+}
+# write
+fn = "../data/clusters_full_netw_walktrap_null.txt"
+write_tsv(clusters, path=fn)
 
