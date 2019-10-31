@@ -202,6 +202,7 @@ for (ii in 1:length(unqiters)) {
     write_tsv(clusters, path=fn)
   }
 }
+clusters.null = clusters.null[1:cc,]
 # write
 fn = "../data/clusters_full_netw_walktrap_null.txt"
 write_tsv(clusters, path=fn)
