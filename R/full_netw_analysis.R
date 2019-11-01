@@ -157,22 +157,22 @@ if (0) {
 clusters2 = as.data.frame(read.csv("../data/clusters_full_netw_walktrap.txt", sep="\t"))
 clusters2$algorithm = as.character(clusters2$algorithm)
 clusters2$cluster = as.character(clusters2$cluster)
-unqiters = unique(clusters2$iter)
-unqmags = unique(clusters2$noise_mag)
-unqalgs = unique(clusters2$algorithm)
-print(unqmags)
 
 # don't need different magnitudes or iterations
 # include 2 iterations just for numbers
 # (set2 is getting scrambled! doesn't matter what made it)
 clusters2 = clusters2[clusters2$noise_mag==0 & clusters2$iter<=2, ]
+unqiters = unique(clusters2$iter)
+unqmags = unique(clusters2$noise_mag)
+unqalgs = unique(clusters2$algorithm)
+print(unqmags)
 
 # calculate Ji1 all clusters (Compare each cluster to its unnoised version)
 clusters.null = data.frame(cluster.iter = numeric(10^6),
                            scramble.iter = numeric(10^6),
                            algorithm = character(10^6),
                            cluster = character(10^6),
-                           Ji1.null = numeric(10^6), na.rm=T)
+                           Ji1.null = rep(NA,10^6), stringsAsFactors = F)
 scramble.iterMax = 100
 cc = 0
 for (ii in 1:length(unqiters)) {
@@ -187,7 +187,7 @@ for (ii in 1:length(unqiters)) {
       rand.cluster = clusters.to.df(ref.clusters)
       rand.cluster$cluster = rand.cluster$cluster[sample(nrow(rand.cluster), nrow(rand.cluster))]
       rand.cluster = df.to.cluster(rand.cluster)
-      for (mm in 1:length(I)) {
+      for (mm in 1:length(ref.clusters)) {
         cc = cc+1
         print(cc)
         clusters.null$cluster.iter[cc] = ii
@@ -199,11 +199,11 @@ for (ii in 1:length(unqiters)) {
     }
     # write
     fn = "../data/clusters_full_netw_walktrap_null.txt"
-    write_tsv(clusters, path=fn)
+    write_tsv(clusters.null, path=fn)
   }
 }
 clusters.null = clusters.null[1:cc,]
 # write
 fn = "../data/clusters_full_netw_walktrap_null.txt"
-write_tsv(clusters, path=fn)
+write_tsv(clusters.null, path=fn)
 
