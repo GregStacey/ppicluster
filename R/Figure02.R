@@ -1,339 +1,328 @@
+# Copy Figure 2 from https://arxiv.org/pdf/1706.06136.pdf
 
-require(scatterpie)
+# 1000 proteins in 100 clusters
+# Three intuition tests
+#   1. Decays as classes are shuffled
+#   2. Insensitive to number of clusters
+#   3. Handles moonlighting proteins
+
+
+#install.packages("NMI", repos='http://cran.us.r-project.org')
+#install.packages("sp", repos='http://cran.us.r-project.org')
+#install.packages("maps", repos='http://cran.us.r-project.org')
+#install.packages("fossil", repos='http://cran.us.r-project.org')
+#install.packages("infotheo", repos='http://cran.us.r-project.org')
+#install.packages("FlowSOM", repos='http://cran.us.r-project.org')
+
 source("functions.R")
 
-
-fnsave = "../data/clusters_wshuffle_coexp.Rda"
-load(fnsave)
-clusters$noise_mag = as.numeric(clusters$noise_mag)
-
-fnsave = "../data/cluster3.txt"
-clusters2 = as.data.frame(read_tsv(fnsave))
-clusters2$noise_mag = as.numeric(clusters2$noise_mag)
-clusters2 = clusters2[clusters2$data_type=="corum",]
-clusters = rbind(clusters[,1:5], clusters2)
-
-
-
-# 2A ##### ------------------------------------------- #####
-# example of noise-adding where
-#   i) clusters are obviously changing
-#   ii)  measures are different
-
-I = clusters$data_type%in%"corum" & clusters$algorithm%in%"mcl" & clusters$noise_type%in%"network_shuffle"
-data = clusters[I,]
-set0 = data$cluster[data$noise_mag==0]
-
-unqnoise = unique(data$noise_mag)
-for (uu in c(8)) {
-  set1 = data$cluster[data$noise_mag==unqnoise[uu]]
-  pci = matrix(nrow=length(set1), ncol=3)#length(set0))
-  for (ii in 1:length(set1)) {
-    
-    # find best-matching cluster
-    cluster1 = unlist(strsplit(set1[ii], ";"))
-    JJ = numeric(length(set0))
-    for (jj in 1:length(set0)) {
-      cluster0 = unlist(strsplit(set0[jj], ";"))
-      nn.jacc = length(unique(c(cluster0, cluster1)))
-      JJ[jj] = length(intersect(cluster0, cluster1)) / nn.jacc 
-    }
-    I.max = which.max(JJ)[1]
-    cluster0 = unlist(strsplit(set0[I.max], ";"))
-    nn.jacc = length(unique(c(cluster0, cluster1)))
-    nn.intersect = length(intersect(cluster0, cluster1))
-    nn.notintersect.set1 = length(cluster1) - nn.intersect
-    nn.notintersect.set0 = length(cluster0) - nn.intersect
-    
-    pci[ii,] = c(nn.intersect, nn.notintersect.set1, nn.notintersect.set0)
-  }
-  pci = as.data.frame(pci)
-  pci$cluster = 1:nrow(pci)
-  pci$size = unlist(lapply(lapply(lapply(set1, strsplit, ";"), "[[", 1), length))
-
-  # tile x and y
-  # assume that cluster with sqrt(size) needs a box of width=m*sqrt(size)
-  gridx = 250
-  df = pci[,]
-  df = df[order(df$size, decreasing = T),]
-  mm = 3
-  df$tile.size = round(mm * sqrt(df$size)/5)*5 * .85 + 2
-  df$y = numeric(nrow(df))
-  df$x = cumsum(df$tile.size) - df$tile.size[1]*.9
-  df$x = (df$x %% gridx)
-  y0 = 0
-  I0 = 1
-  for (ii in 2:nrow(df)) {
-    if (abs(df$x[ii-1] - df$x[ii]) > gridx*.65) { 
-      y0 = y0 + max(df$tile.size[I0:ii])/2 + 5
-      I0 = ii
-    }
-    df$y[ii] = y0
-  }
-  df = df[,c(1:3,ncol(df) + seq(from=-3, to=0, by=1))]
-  df[df==0] = 10^-4
-  
-  # plot
-  ggplot() + geom_scatterpie(aes(x=x, y=y, r=sqrt(size)), data=df, cols=names(df)[1:3]) +
-    #scale_fill_manual(values=c("#4dac26","#d01c8b","#dddddd")) + # (green, red, grey) = (grey, black, white)
-    scale_fill_manual(values=c("grey", "white","black")) + # (green, red, grey) = (grey, black, white)
-    coord_fixed() + theme_void() + theme(legend.position="none")
-  sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_", uu, ".pdf", sep="")
-  ggsave(sf, width=10, height=5)
-  sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_", uu, ".png", sep="")
-  ggsave(sf, width=10, height=5, dpi=1000)
-  
-  # zoom in
-  ggplot() + geom_scatterpie(aes(x=x, y=y, r=sqrt(size)), data=df, cols=names(df)[1:3]) + 
-    #scale_fill_manual(values=c("#4dac26","#d01c8b","#dddddd")) +
-    scale_fill_manual(values=c("grey", "white","black")) + # (green, red, grey) = (grey, black, white)
-    coord_fixed() + theme_void() + theme(legend.position="none") + coord_cartesian(xlim = c(80, 130))
-  sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_zoom_", uu, ".pdf", sep="")
-  ggsave(sf, width=2, height = 5)
-  sf = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/figure02/pies_zoom_", uu, ".png", sep="")
-  ggsave(sf, width=2, height = 5, dpi=1000)
-}
-
-
-
-sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v06.Rda"
-if (T){
-  load(sf)
+fn = "/Users/gregstacey/Academics/Foster/ClusterExplore/data/suppFig01.Rda"
+if (F) {
+  load(fn)
 } else {
-
-  # corum
-  fn = "../data/clusters_full_netw_walktrap2.txt"
-  Ji2 = as.data.frame(read_tsv(fn))
-  Ji2 = Ji2[Ji2$iter==1,]
-  Ji2$network = "corum"
-  Ji2 = Ji2[,c("iter", "network", "noise_mag", "algorithm", "cluster", "Ji1")]
-  
-  # email+chem
-  fn = "../data/clusters_facebook_netw_pamwalk.txt"
-  Ji = as.data.frame(read_tsv(fn))
-  Ji = Ji[,c("iter", "network", "noise_mag", "algorithm", "cluster", "Ji1")]
-  
-  # merge
-  Ji = rbind(Ji, Ji2)
-  
-  Ji$network[Ji$network=="chem"] = "DrugBank"
-  Ji$network[Ji$network=="corum"] = "CORUM"
-  Ji$network[Ji$network=="email"] = "email-Eu"
-  
-  # make cluster.size, remove all clusters with size<3
-  Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
-  Ji = Ji[Ji$cluster.size>2,]
-  
-  I = !Ji$algorithm == "hierarchical" & Ji$iter==1
-  Ji = Ji[I,]
-  unqnets = unique(Ji$network)
-  unqalg = unique(Ji$algorithm)
-  unqnoise = unique(Ji$noise_mag)
-  sim = data.frame(network = character(10^4),
-                   measure = character(10^4),
-                   algorithm = character(10^4),
-                   noise_mag = character(10^4),
-                   Ji1 = numeric(10^4), stringsAsFactors = F)
-  cc = 0
-  cc2 = 0
-  for (uu in 1:length(unqnets)) {
-    for (ii in 1:length(unqnoise)) {
-      for (jj in 1:length(unqalg)) {
-      
-        I1 = Ji$noise_mag == unqnoise[ii] & Ji$algorithm%in%unqalg[jj] & Ji$network==unqnets[uu]
-        if (sum(I1)==0) next
-        
-        # Ji1
-        cc = cc+1
-        sim$measure[cc] = "ai"
-        sim$network[cc] = unqnets[uu]
-        sim$algorithm[cc] = unqalg[jj]
-        sim$noise_mag[cc] = unqnoise[ii]
-        sim$Ji1[cc] = mean(Ji$Ji1[I1])
-      }
-    }
+  # 1. Shuffling
+  tmp = seq(from=1, to=1000, by=5)
+  df = data.frame(n.shuffle = tmp,
+                  GA = numeric(length(tmp)),
+                  MMR = numeric(length(tmp)),
+                  J = numeric(length(tmp)), 
+                  NMI = numeric(length(tmp)),
+                  ARI = numeric(length(tmp)),
+                  `F-measure` = numeric(length(tmp)),
+                  MIz = numeric(length(tmp)),stringsAsFactors = F)
+  clust0 = data.frame(prots = 1:1000, clusters = rep(1:100, 10))
+  tmp0 = character(100)
+  for (ii in 1:length(tmp0)) {
+    tmp0[ii] = paste(as.character(clust0$prots[clust0$clusters==ii]), collapse=";")
   }
-  sim = sim[1:cc,]
-  sim$noise_mag = as.numeric(sim$noise_mag)
-  sim$Ji[sim$Ji==0] = NA
-  Ji$noise_mag = as.numeric(Ji$noise_mag)
-
-  save(list=c("sim","Ji"), file = sf)
-}
-
-Ji$measure = Ji$algorithm
-Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
-Ji$algorithm[Ji$algorithm=="co"] = "CO"
-Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
-Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
-Ji$algorithm[Ji$algorithm=="walk"] = "walktrap"
-sim$algorithm[sim$algorithm=="co_mcl"] = "CO+MCL"
-sim$algorithm[sim$algorithm=="co"] = "CO"
-sim$algorithm[sim$algorithm=="mcl"] = "MCL"
-sim$algorithm[sim$algorithm=="pam"] = "k-Med"
-sim$algorithm[sim$algorithm=="walk"] = "walktrap"
-sim$Ji1 = sim$Ji
-
-
-# simple counting: 1% shuffle affects how many clusters?
-df = data.frame(nn = numeric(100), ff = numeric(100), new = numeric(100))
-I = Ji$network == "CORUM" & Ji$noise_mag==0.01
-unqalgs = unique(Ji$algorithm)
-for (ii in 1:length(unqalgs)) {
-  I2 = I & Ji$algorithm==unqalgs[ii]
-  df$nn[ii] = sum(Ji$Ji1[I2] < 1, na.rm=T)
-  df$ff[ii] = sum(Ji$Ji1[I2] < 1, na.rm=T) / sum(I2)
-  df$new[ii] = sum(Ji$Ji1[I2] == 0)
-}
-df = df[1:length(unqalgs), ]
-
-
-# 2B ##### ------------------------------------------- #####
-# line plots of J_i vs noise
-
-I = sim$measure=="ai" & sim$measure=="ai" & sim$network=="CORUM"
-ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
-  facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
-  geom_point(data = Ji[Ji$network=="CORUM",], alpha=0.025, color="black") +
-  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v08.png"
-ggsave(fn,width=10, height=2.6)
-
-
-
-# 2C ##### ------------------------------------------- #####
-# violin plots of Ji1 vs noise
-
-I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network=="CORUM"
-ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
-  geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(~algorithm) +
-  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR") + 
-  coord_cartesian(ylim=c(0,1)) + theme_bw()
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v06.pdf"
-ggsave(fn,width=10, height=2.6)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v06.png"
-ggsave(fn,width=10, height=2.6)
-
-
-# 2D ##### ------------------------------------------- #####
-# noise-amplification
-
-# I = sim$measure=="ai"& sim$network=="CORUM"
-# sim$noise.amplification = (1-sim$Ji1) / sim$noise_mag
-# ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() + 
-#   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
-#   geom_hline(yintercept = 1, linetype="dashed") +
-#   ylab("Error amplification by clustering") + xlab("Interactome FPR") +
-#   scale_y_continuous(breaks = c(1,10,20),
-#                      labels=c("1x","10x", "20x"))
-
-sf = "../data/dfchange_02.Rda"
-load(sf)
-
-ggplot(df.change, aes(x=n.shuffled.interactions, y=n.rearranged.edges, shape=algorithm)) + 
-  geom_point(alpha=0.6) + geom_abline(linetype="dashed") +theme_bw() +
-  xlab("Number of shuffled network edges") + 
-  ylab("Number of rearranged cluster edges") + 
-  coord_cartesian(ylim=c(0,80000)) + theme(legend.position="none")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v04.pdf"
-ggsave(fn,width=4, height=3.2)
-
-ggplot(df.change, aes(x=noise, y=n.rearranged.edges/n.shuffled.interactions, color=algorithm)) + 
-  geom_line() + geom_abline(linetype="dashed") +theme_bw() +
-  xlab("Interactome FPR") + 
-  ylab("Ratio of rearranged cluster edges\nto shuffled network edges") + theme(legend.position="none") +
-  scale_colour_grey()
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D2_v04.pdf"
-ggsave(fn,width=4, height=3.2)
-
-
-# 2E,F ##### ------------------------------------------- #####
-
-I = sim$measure=="ai" & sim$measure=="ai" & sim$network %in% c("DrugBank","email-Eu") & sim$algorithm=="MCL"
-ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
-  theme_bw() + theme(legend.position="none") + facet_grid(~network) +
-  geom_point(data = Ji[Ji$network%in% c("DrugBank","email-Eu") &Ji$algorithm=="MCL",], alpha=0.1, color="black") +
-  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2E_v01.png"
-ggsave(fn,width=4.2, height=2.6)
-
-I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network%in% c("DrugBank","email-Eu") & 
-  Ji$algorithm=="MCL"
-ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
-  geom_violin() + geom_jitter(width=.02,alpha=.1) + facet_grid(~network) +
-  ylab("Similarity to un-noised (Ji)") + xlab("Interactome FPR") + 
-  coord_cartesian(ylim=c(0,1)) + theme_bw()
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2F_v01.pdf"
-ggsave(fn,width=4.2, height=2.6)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2F_v01.png"
-ggsave(fn,width=4.2, height=2.6)
-
-
-
-
-# supp of drugbank and email sets ##### ------------------------------------------- #####
-for (ss in 1:2) {
-  sets = c("DrugBank","email-Eu")
-  # line plots of J_i vs noise
-  I = sim$measure=="ai" & sim$measure=="ai" & sim$network==sets[ss]
-  ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
-    facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
-    geom_point(data = Ji[Ji$network==sets[ss],], alpha=0.025, color="black") +
-    ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
-  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A",ss,".png", sep="")
-  ggsave(fn,width=10, height=2.6)
-  
-  # violin plots of Ji1 vs noise
-  I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network==sets[ss]
-  ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
-    geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(~algorithm) +
-    ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR") + 
-    coord_cartesian(ylim=c(0,1)) + theme_bw()
-  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B",ss,".png", sep="")
-  ggsave(fn,width=10, height=2.6)
-  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B",ss,".pdf", sep="")
-  ggsave(fn,width=10, height=2.6)
-  
-  # noise-amplification
-  I = sim$measure=="ai"& sim$network==sets[ss]
-  sim$noise.amplification = (1-sim$Ji1) / sim$noise_mag
-  ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() + 
-    facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
-    geom_hline(yintercept = 1, linetype="dashed") +
-    ylab("Error amplification by clustering") + xlab("Interactome FPR") +
-    scale_y_continuous(breaks = c(1,10,20),
-                       labels=c("1x","10x", "20x"))
-  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C",ss,".pdf", sep="")
-  ggsave(fn,width=10, height=2.6)
-}
-
-
-
-
-# non-optimal parameters
-# ##### ------------------------------------------- #####
-fn = "../data/clusters_wshuffle_notoptimal.txt"
-Jin = as.data.frame(read_tsv(fn))
-unqalgs = unique(Ji$algorithm)
-unqmags = unique(Ji$noise_mag)
-Jin$Ji1 = numeric(nrow(Jin))
-for (ii in 1:length(unqalgs)) {
-  I0 = Ji$algorithm==unqalgs[ii] & Ji$noise_mag==0
-  ref.clusters = Jin$cluster[I0]
-  for (jj in 1:length(unqmags)) {
-    print(paste("        noise",unqmags[jj]))
-    I = which(Ji$algorithm==unqalgs[ii] & Ji$noise_mag==unqmags[jj])
-    these.clusters = Jin$cluster[I]
-    for (mm in 1:length(I)) {
-      Jin$Ji1[I[mm]] = calcA(these.clusters[mm], ref.clusters)
+  for (ii in 1:nrow(df)) {
+    print(round(ii/nrow(df)*100)/100)
+    clust1 = clust0
+    I = sample(nrow(clust0), df$n.shuffle[ii])
+    clust1$clusters[I] = ceiling(runif(length(I)) * max(clust1$clusters))
+    
+    # convert to geomacc format
+    tmp1 = character(length(unique(clust1$clusters)))
+    for (jj in 1:length(tmp1)) {
+      tmp1[jj] = paste(as.character(clust1$prots[clust1$clusters==jj]), collapse=";")
     }
+    
+    #df$GA[ii] = geomacc(tmp0, tmp1)
+    #df$MMR[ii] = matchingratio(tmp0, tmp1)
+    #tmp = numeric(length(tmp0))
+    #for (jj in 1:length(tmp)) {
+    #  tmp[jj] = calcA(tmp1[jj], tmp0)
+    #}
+    #df$J[ii] = mean(tmp, na.rm=T)
+    #df$NMI[ii] = NMI(clust0, clust1)[[1]]
+    #df$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
+    #df$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    df$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
   }
+  df.m = melt(df, id.vars = "n.shuffle")
+
+  
+  # 2. Number of clusters
+  tmp = seq(from=10, to=1000, by=5)
+  df2 = data.frame(n.clusters = tmp,
+                   GA = numeric(length(tmp)),
+                   MMR = numeric(length(tmp)),
+                   J = numeric(length(tmp)), 
+                   NMI1 = numeric(length(tmp)),
+                   NMI2 = numeric(length(tmp)),
+                   ARI = numeric(length(tmp)),
+                   `F-measure` = numeric(length(tmp)), 
+                   MIz.025 = numeric(length(tmp)),
+                   MIz.975 = numeric(length(tmp)),
+                   MIz = numeric(length(tmp)), stringsAsFactors = F)
+  for (ii in 1:nrow(df2)) {
+    print(round(ii/nrow(df2)*100)/100)
+    
+    clust0 = data.frame(prots = 1:1000, clusters = rep(1:df2$n.clusters[ii], length.out=1000))
+    tmp0 = character(df2$n.clusters[ii])
+    for (jj in 1:length(tmp0)) {
+      tmp0[jj] = paste(as.character(clust0$prots[clust0$clusters==jj]), collapse=";")
+    }
+    tmp0 = tmp0[!tmp0==""]
+    
+    clust1 = data.frame(prots = 1:1000, clusters = rep(1:df2$n.clusters[ii], length.out=1000))
+    I = sample(nrow(clust0), 500)
+    clust1$clusters[I] = ceiling(runif(length(I)) * max(clust1$clusters))
+    # convert to geomacc format
+    tmp1 = character(length(unique(clust1$clusters)))
+    for (jj in 1:length(tmp1)) {
+      tmp1[jj] = paste(as.character(clust1$prots[clust1$clusters==jj]), collapse=";")
+    }
+    tmp1 = tmp1[!tmp1==""]
+    
+    #df2$GA[ii] = geomacc(tmp0, tmp1)
+    #df2$MMR[ii] = matchingratio(tmp0, tmp1)
+    #tmp = numeric(length(tmp0))
+    #for (jj in 1:length(tmp)) {
+    # tmp[jj] = calcA(tmp1[jj], tmp0)
+    #}
+    #df2$J[ii] = mean(tmp, na.rm=T)
+    df2$NMI1[ii] = NMI::NMI(clust0, clust1)[[1]]
+    df2$NMI2[ii] = aricode::NMI(clust0$clusters, clust1$clusters)[[1]]
+    #df2$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
+    #df2$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    #tmp =  calcMIz(clust0$clusters,clust1$clusters,100, T)
+    #df2$MIz[ii] = tmp[2]
+    #df2$MIz.025[ii] = tmp[1]
+    #df2$MIz.975[ii] = tmp[3]
+  }
+  df2.m = melt(df2, id.vars = "n.clusters")
+
+  
+  # 3. Number of moonlighting proteins
+  tmp = seq(from=1, to=1000, by=5)
+  df3 = data.frame(n.moonlight = tmp,
+                   GA = numeric(length(tmp)),
+                   MMR = numeric(length(tmp)),
+                   J = numeric(length(tmp)), 
+                   NMI = numeric(length(tmp)),
+                   ARI = numeric(length(tmp)),
+                   MIz = numeric(length(tmp)),
+                   `F-measure` = numeric(length(tmp)), stringsAsFactors = F)
+  prots.orig = 1:1000
+  for (ii in 1:nrow(df3)) {
+    print(round(ii/nrow(df3)*100)/100)
+    
+    clust0 = data.frame(prots = prots.orig, clusters = rep(1:100, length.out=1000))
+    # prots to swap
+    prots.before = sample(prots.orig, df3$n.moonlight[ii])
+    I.before = clust0$prots %in% prots.before
+    
+    # swap them
+    prots.swapped = sample(prots.orig[!prots.orig %in% prots.before], size=sum(I.before), replace = T)
+    clust0$prots[I.before] = prots.swapped
+    
+    tmp0 = character(100)
+    for (jj in 1:length(tmp0)) {
+      tmp0[jj] = paste(as.character(clust0$prots[clust0$clusters==jj]), collapse=";")
+    }
+    
+    clust1 = clust0
+    tmp1 = tmp0
+    
+    df3$GA[ii] = geomacc(tmp0, tmp1)
+    df3$MMR[ii] = matchingratio(tmp0, tmp1)
+    tmp = numeric(length(tmp0))
+    for (jj in 1:length(tmp)) {
+      tmp[jj] = calcA(tmp1[jj], tmp0)
+    }
+    #df3$J[ii] = mean(tmp, na.rm=T)
+    #df3$NMI[ii] = NMI(clust0, clust1)[[1]]
+    #df3$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
+    #df3$F.measure[ii] = FMeasure(clust0$clusters, clust1$clusters, silent=T)
+    df3$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
+  }
+  df3.m = melt(df3, id.vars = "n.moonlight")
+  
+  
+  # 4. Novel clusters in set 2
+  tmp = seq(from=0, to=1000, by=5)
+  df4 = data.frame(n.novel = tmp,
+                   GA = numeric(length(tmp)),
+                   MMR = numeric(length(tmp)),
+                   J = numeric(length(tmp)), 
+                   NMI = numeric(length(tmp)),
+                   ARI = numeric(length(tmp)),
+                   MIz = numeric(length(tmp)),
+                   `F-measure` = numeric(length(tmp)), stringsAsFactors = F)
+  # clust0 as usual
+  clust0 = data.frame(prots = 1:1000, clusters = rep(1:100, 10))
+  tmp0 = character(100)
+  for (jj in 1:length(tmp0)) {
+    tmp0[jj] = paste(as.character(clust0$prots[clust0$clusters==jj]), collapse=";")
+  }
+  for (ii in 1:nrow(df4)) {
+    print(round(ii/nrow(df4)*100)/100)
+    
+    # in clust1, remove some proteins
+    clust1 = clust0
+    I = sample(nrow(clust0), df4$n.novel[ii])
+    clust1$clusters[I] = NA
+    unq.clusts = unique(clust1$clusters[!is.na(clust1$clusters)])
+    tmp1 = character(length(unq.clusts))
+    for (jj in 1:length(tmp1)) {
+      I2 = clust1$clusters==jj & !is.na(clust1$clusters)
+      tmp1[jj] = paste(as.character(clust1$prots[I2]), collapse=";")
+    }
+
+    #df4$GA[ii] = geomacc(tmp0, tmp1)
+    #df4$MMR[ii] = matchingratio(tmp1, tmp0)
+    #tmp = numeric(length(tmp0))
+    #for (jj in 1:length(tmp)) {
+    #  tmp[jj] = calcA(tmp1[jj], tmp0)
+    #}
+    #df4$J[ii] = mean(tmp, na.rm=T)
+    #df4$NMI[ii] = NMI(clust0, clust1)[[1]]
+    #df4$ARI[ii] = adj.rand.index(clust0$clusters, clust1$clusters)
+    #df4$F.measure[ii] = FMeasure(clust0.fm$clusters, clust1$clusters, silent=T)
+    df4$MIz[ii] = calcMIz(clust0$clusters,clust1$clusters,100)
+  }
+  df4$F.measure = NA
+  df4.m = melt(df4, id.vars = "n.novel")
 }
 
-for (ii in 1:length(unqalgs)) {
-  I = Jin$noise_mag==0.01 & Jin$algorithm==unqalgs[ii]
-  x = (mean(Jin$Ji1[I]))
-  I = Ji$noise_mag==0.01 & Ji$algorithm==unqalgs[ii] & Ji$network=="CORUM"
-  x2 = (mean(Ji$Ji1[I]))
-  print(paste(x,x2))
-}
+
+
+## Mike's MIz
+fn="../data/suppFig01_v02.Rda"
+load(fn)
+
+ggplot(df2save[[1]], aes(x=n.shuffle, y=MIz)) + geom_line()+
+  ylab("Similarity") + xlab("Fraction random in 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_A.png"
+ggsave(fn,width=3, height=2.4)
+
+ggplot(df2save[[2]], aes(x=n.clusters, y=MIz)) + geom_line()+
+  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_B.png"
+ggsave(fn,width=3, height=2.4)
+
+ggplot(df2, aes(x=n.clusters, y=MIz)) + geom_line() +
+  geom_line(data=df2, aes(x=n.clusters, y=MIz.025), alpha=.6) +
+  geom_line(data=df2, aes(x=n.clusters, y=MIz.975), alpha=.6) +
+  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_B_02.png"
+ggsave(fn,width=3, height=2.4)
+  
+ggplot(df2save[[3]], aes(x=n.moonlight, y=MIz)) + geom_line()+
+  ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_C.png"
+ggsave(fn,width=3, height=2.4)
+
+ggplot(df2save[[4]], aes(x=n.novel, y=MIz)) + geom_line()+
+  ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw() + 
+  coord_cartesian(ylim=c(0,300))
+fn = "/Users/gregstacey/Academics/Foster/LabMembers/Mike Skinnider/figures/MIz_D.png"
+ggsave(fn,width=3, height=2.4)
+##
+
+
+
+# A - random
+x = seq(from=0, to=1, by=0.01)
+df.fake1 = data.frame(x=x,
+                      y=exp(-x * 3)*.9 + .1)
+ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction random in 2") + theme_bw()+
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+df.m = melt(df, id.vars = "n.shuffle")
+ggplot(df.m, aes(x=n.shuffle/1000, y=value, color=variable)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction random in 2") + theme_bw() +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A2_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+
+
+# B - number
+x = seq(from=0, to=1000, by=10)
+df.fake1 = data.frame(x=x,
+                      y=rep(0.5, length=length(x)))
+ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
+  coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+df.m = melt(df2, id.vars = "n.clusters")
+ggplot(df.m, aes(x=n.clusters, y=value, color=variable)) + geom_line() +
+  ylab("Similarity") + xlab("Number of clusters in 1 and 2") + theme_bw() +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim=c(-20, 1020), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B2_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+
+
+# C - moonlighting
+x = seq(from=0, to=1, by=0.01)
+df.fake1 = data.frame(x=x,
+                      y=rep(1, length=length(x)))
+ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+df.m = melt(df3, id.vars = "n.moonlight")
+ggplot(df.m, aes(x=n.moonlight/1000, y=value, color=variable)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction moonlighting in 1 and 2") + theme_bw() +
+  scale_colour_manual(values = c("#F8766D", "#B79F00", "#00BA38", "#00BFC4", "#619CFF","#00BA38")) +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C2_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+
+
+# D - novel members
+x = seq(from=0, to=1, by=0.01)
+y = exp(-x * 2)
+df.fake1 = data.frame(x=x,
+                      y = (y - min(y)) / (max(y) - min(y)))
+ggplot(df.fake1, aes(x=x, y=y)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw()+
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D_v01.pdf"
+ggsave(fn,width=3, height=2.4)
+
+df.m = melt(df4, id.vars = "n.novel")
+ggplot(df.m, aes(x=n.novel/1000, y=value, color=variable)) + geom_line() +
+  ylab("Similarity") + xlab("Fraction removed in 2") + theme_bw() +
+  theme(legend.position = "none") +
+  coord_cartesian(xlim=c(-0.02, 1.02), ylim = c(0,1.02))
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1D2_v01.pdf"
+ggsave(fn,width=3, height=2.4)

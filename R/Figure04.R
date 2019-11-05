@@ -1,320 +1,316 @@
 
-require(ggplot2)
 source("functions.R")
 
-#fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v05.Rda"
-#load(fn) # sim, Ji
-fn = "../data/clusters_full_netw_walktrap.txt"
-Ji = as.data.frame(read_tsv(fn))
-Ji = Ji[!Ji$algorithm=="hierarchical",]
-Ji = Ji[Ji$noise_mag %in% c(0,0.01,0.02,0.05,0.1,0.15,0.25,0.5,1),]
+# load chromatograms
+fn = "../data/Combined_replicates_2014_04_22_contaminates_removed_for_HvsL_scripts.csv"
+chroms = as.data.frame(read_csv(fn))
+tmp = names(chroms)
+tmp[1] = "protid"
+names(chroms) = tmp
 
-Ji$measure = Ji$algorithm
-Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
-Ji$algorithm[Ji$algorithm=="co"] = "CO"
-Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
-Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
-Ji$algorithm[Ji$algorithm=="walk"] = "walktrap"
+# load clusters
+fn1 = "../data/clusters_wshuffle_moredata.txt"
+fn2 = "../data/cluster3.txt"
+data.c1 = as.data.frame(read_tsv(fn1))
+data.c2 = as.data.frame(read_tsv(fn2))
+data.c = rbind(data.c1, data.c2)
+data.c$noise_mag = as.numeric(data.c$noise_mag)
+# reduce to just experiment data
+data.c = data.c[!data.c$data_type%in%"corum",]
 
-# make cluster.size, remove all clusters with size<3
-Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
-Ji = Ji[Ji$cluster.size>2,]
+# load interactomes
+fn = "../data/interactomes_moredata.txt"
+ints.c = as.data.frame(read_tsv(fn))
+ints.c$ppi = paste(ints.c$protA, ints.c$protB, sep="-")
 
-# make size.factor
-Ji$noise_mag = as.numeric(Ji$noise_mag)
-Ji$size.factor = character(nrow(Ji))
-Ji$size.factor[Ji$cluster.size<=3] = "N<=3"
-Ji$size.factor[Ji$cluster.size<=6 & Ji$cluster.size>3] = "3<N<=6"
-Ji$size.factor[Ji$cluster.size<=12 & Ji$cluster.size>6] = "6<N<=12"
-Ji$size.factor[Ji$cluster.size>12] = "N>12"
-Ji$size.factor = factor(Ji$size.factor, levels= c("N<=3", "3<N<=6", "6<N<=12", "N>12"))
+unqalgs = unique(data.c$algorithm)
+unqdatasets = unique(data.c$data_type)
+unqmags = sort(unique(data.c$noise_mag))
+unqmags = unqmags[unqmags<=1]
 
-# make size.prctile
-Ji$size.prctile = numeric(nrow(Ji))
-for (ii in 1:length(unique(Ji$noise_mag))) {
-  for (jj in 1:length(unique(Ji$algorithm))) {
-    for (kk in 1:length(unique(Ji$iter))) {
-      I = Ji$noise_mag==sort(unique(Ji$noise_mag))[ii] & 
-        Ji$algorithm==sort(unique(Ji$algorithm))[jj] & 
-        Ji$iter==sort(unique(Ji$iter))[kk]
-      Ji$size.prctile[I] = rank(Ji$cluster.size[I]) / sum(I)
-      #Ji$size.prctile[I] = quantile(Ji$cluster.size[I], seq(from=0, to=1, length=sum(I)))
+fn.walk = "../data/data_c_walktrap.txt"
+if (T) {
+  load(fn.walk)
+} else {
+  # walktrap cluster
+  # add 10 iterations of PAM and walktrap
+  data.c.add = data.frame(data_type = character(10^5), noise_type = character(10^5),
+                          noise_mag = numeric(10^5), algorithm = character(10^5),
+                          cluster = character(10^5), stringsAsFactors = F)
+  cc = 0
+  for (ii in 1:length(unqmags)) {
+    for (jj in 1:length(unqdatasets)) {
+      print(paste("walktrap clustering dataset",unqdatasets[jj],"at noise=", unqmags[ii]))
+      
+      # get shuffled network
+      I = ints.c$noise_mag==unqmags[ii] & ints.c$dataset==unqdatasets[jj] & !ints.c$protA==ints.c$protB
+      if (sum(I)<190) next
+      these.ints = ints.c[I,c("protA", "protB")]
+      ints.shuffle = shufflecorum(these.ints, unqmags[ii])
+      
+      # walktrap
+      graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
+      walk.cluster = walktrap.community(graph.object)
+      for (kk in 1:length(walk.cluster)) {
+        if (length(walk.cluster[[kk]]) < 3) next
+        cc = cc+1
+        data.c.add$data_type[cc] = unqdatasets[jj]
+        data.c.add$noise_type[cc] = "chrom"
+        data.c.add$noise_mag[cc] = unqmags[ii]
+        data.c.add$algorithm[cc] = "walk"
+        data.c.add$cluster[cc] = paste(walk.cluster[[kk]], collapse=";")
+      }
     }
   }
+  data.c.add = data.c.add[1:cc,]
+}
+data.c = rbind(data.c, data.c.add)
+
+# calculate Ji
+fn = "../data/intJ_vs_clustJ_v03.Rda"
+if (T){
+  load(fn)
+  df = df[!df$algorithm == "hierarchical",]
+} else {
+  nn = 10^6
+  df = data.frame(dataset = character(nn), algorithm = character(nn), noise_mag=numeric(nn),
+                  nclust0 = numeric(nn), nclust = numeric(nn), clust.size=numeric(nn), clustJ=numeric(nn),
+                  nint0 = numeric(nn), nint = numeric(nn), intJ=numeric(nn),
+                  stringsAsFactors = F)
+  cc = 0
+  for (ii in 1:length(unqdatasets)) {
+    print(paste("   ", ii))
+    i0 = ints.c$dataset%in%unqdatasets[ii] & ints.c$noise_mag==0
+    this.nint0 = sum(i0)
+    for (jj in 1:length(unqmags)) {
+      print(unqmags[jj])
+      i1 = ints.c$dataset%in%unqdatasets[ii] & ints.c$noise_mag==unqmags[jj]
+      this.intJ = length(intersect(ints.c$ppi[i0], ints.c$ppi[i1])) / 
+        length(unique(c(ints.c$ppi[i0],ints.c$ppi[i1])))
+      this.nint = sum(i1)
+      for (kk in 1:length(unqalgs)) {
+        I0 = data.c$data_type%in%unqdatasets[ii] & data.c$noise_mag==0 & data.c$algorithm%in%unqalgs[kk]
+        I1 = data.c$data_type%in%unqdatasets[ii] & data.c$noise_mag==unqmags[jj] & data.c$algorithm%in%unqalgs[kk]
+        if (sum(I1)==0) next
+        
+        cluster0 = data.c$cluster[I0]
+        cluster = data.c$cluster[I1]
+        J.i = numeric(length(cluster))
+        for (mm in 1:length(cluster)) {
+          J.i[mm] = calcA(cluster[mm], cluster0)
+          
+          cc = cc+1
+          df$dataset[cc] = unqdatasets[ii]
+          df$algorithm[cc] = unqalgs[kk]
+          df$noise_mag[cc] = unqmags[jj]
+          df$nclust0[cc] = length(cluster0)
+          df$nclust[cc] = length(cluster)
+          df$clustJ[cc] = J.i[mm]
+          df$nint0[cc] = this.nint0
+          df$nint[cc] = this.nint
+          df$intJ[cc] = this.intJ
+          df$clust.size[cc] = length(unlist(strsplit(cluster[mm], ";")))
+        }
+      }
+    }
+  }
+  df = df[1:cc,]
+  
+  save("df", file = fn)
 }
 
-# make noise.factor
-#Ji$noise.factor = factor("fpr=0", levels = c("fpr=0", "fpr<=0.02","0.05<fpr<=0.1","0.15<fpr<=0.25","0.50>=fpr"))
-Ji$noise.factor[Ji$noise_mag == 0] = ("fpr=0")
-Ji$noise.factor[Ji$noise_mag %in% c(0.01, 0.02)] = ("fpr<=0.02")
-Ji$noise.factor[Ji$noise_mag %in% c(0.05, 0.1)] = ("0.05<fpr<=0.1")
-Ji$noise.factor[Ji$noise_mag %in% c(0.15, 0.25)] = ("0.15<fpr<=0.25")
-Ji$noise.factor[Ji$noise_mag %in% c(0.5, 1)] = ("0.50>=fpr")
-#levels(Ji$noise.factor) = c("fpr=0", "fpr<=0.02","0.05<fpr<=0.1","0.15<fpr<=0.25","0.50>=fpr")
-
-
-fn = "../data/clusters_Ai_vs_fdr_df_z.Rda"
-load(fn) # df.z
+df$experiment = as.numeric(unlist(sapply(sapply(df$dataset, strsplit, "_"), "[", 2)))
+groups = list(c(1,2,3,4,5,6,7,8),c(9,10,11,12,13,14),c(15,16,17,18,19,20),c(21,22,23,24,25,26,27,28))
+df$experiment[df$experiment%in%groups[[1]]] = "DS1"
+df$experiment[df$experiment%in%groups[[2]]] = "DS2"
+df$experiment[df$experiment%in%groups[[3]]] = "DS3"
+df$experiment[df$experiment%in%groups[[4]]] = "DS4"
+df$algorithm[df$algorithm=="co"] = "CO"
+df$algorithm[df$algorithm=="co_mcl"] = "CO+MCL"
+df$algorithm[df$algorithm=="mcl"] = "MCL"
+df$algorithm[df$algorithm=="pam"] = "k-Med"
+df$algorithm[df$algorithm=="walk"] = "walktrap"
 
 
 # get averages for figures
 nn = 10^3
-dm = data.frame(noise_mag = numeric(nn), 
-                Ji1 = numeric(nn),
-                Ji2 = numeric(nn),
+dm = data.frame(x = numeric(nn), 
+                y = numeric(nn),
+                intJ = numeric(nn),
+                nclust = numeric(nn),
                 algorithm = character(nn),
-                size.factor = character(nn),
+                experiment = character(nn),
                 stringsAsFactors = F)
 cc = 0
-for (ii in 1:length(unique(Ji$noise_mag))) {
-  this.noise = sort(unique(Ji$noise_mag))[ii]
-  for (jj in 1:length(unique(Ji$algorithm))) {
-    this.algorithm = sort(unique(Ji$algorithm))[jj]
-    for (kk in 1:length(unique(Ji$size.factor))) {
-      this.size = sort(unique(Ji$size.factor))[kk]
-      I = Ji$noise_mag==this.noise & 
-        Ji$algorithm==this.algorithm & 
-        Ji$size.factor==this.size
-      if (sum(I)<10) next
+for (ii in 1:length(unique(df$noise_mag))) {
+  this.noise = sort(unique(df$noise_mag))[ii]
+  for (jj in 1:length(unique(df$algorithm))) {
+    this.algorithm = sort(unique(df$algorithm))[jj]
+    for (kk in 1:length(unique(df$experiment))) {
+      this.experiment = sort(unique(df$experiment))[kk]
       cc = cc+1
-      dm[cc,] = c(this.noise, mean(Ji$Ji1[I], na.rm=T), mean(Ji$Ji2[I], na.rm=T), this.algorithm, this.size)
+      I = df$noise_mag==this.noise & 
+        df$algorithm%in%this.algorithm & 
+        df$experiment%in%this.experiment
+      dm[cc,] = c(this.noise, mean(df$clustJ[I], na.rm=T), 
+                  mean(df$intJ[I], na.rm=T), sum(I), this.algorithm, this.experiment)
     }
   }
 }
 dm = dm[1:cc,]
-dm = dm[!is.na(dm$size.factor),]
-dm$noise_mag = as.numeric(dm$noise_mag)
-dm$Ji1 = as.numeric(dm$Ji1)
-dm$Ji2 = as.numeric(dm$Ji2)
-tmp = sort(unique(Ji$size.factor))
-dm$size.factor = tmp[as.numeric(dm$size.factor)]
-dm = dm[!dm$algorithm=="hierarchical",]
+dm$x = as.numeric(dm$x)
+dm$y = as.numeric(dm$y)
+dm$intJ = as.numeric(dm$intJ)
+dm$nclust = as.numeric(dm$nclust)
 
 
-Ar_null_n3 = mean(df.z$Ar[df.z$size==3],na.rm=T)
-Ar_null_n6 = mean(df.z$Ar[df.z$size==6],na.rm=T)
-Ar_null_n12 = mean(df.z$Ar[df.z$size==12],na.rm=T)
+# calculate R^2 as function of chrom_noise
+noise.range = seq(from=0, to=1.25, by=0.01)
+chrom.mat0 = as.matrix(chroms[,3:57])
+good.data = !is.na(chrom.mat0)
+n.data = rowSums(good.data)
+n.data[sample(length(n.data), round(length(n.data)*.9))] = 0
+nn = sum(n.data>5)
+chrom.mat0 = chrom.mat0[n.data>5,]
+good.data = good.data[n.data>5,]
+df.chromcor = data.frame(chromnoise = numeric(10^6), 
+                         rr = numeric(10^6),
+                         avg.rr = numeric(10^6))
+for (ii in 1:length(noise.range)) {
+  print(noise.range[ii])
+  noise.mat = matrix(rnorm(nrow(chrom.mat0) * ncol(chrom.mat0)), 
+                     nrow = nrow(chrom.mat0), ncol = ncol(chrom.mat0))
+  chrom.mat = chrom.mat0 * exp(noise.mat * noise.range[ii])
+  
+  RR = numeric(nrow(chrom.mat))
+  for (jj in 1:nrow(chrom.mat)) {
+    RR[jj] = cor(log(chrom.mat0[jj,good.data[jj,]]), 
+                 log(chrom.mat[jj,good.data[jj,]]))
+  }
+  RR = RR ^ 2
+  
+  I = ((ii-1)*nn+1) : (ii*nn)
+  df.chromcor$rr[I] = RR
+  df.chromcor$avg.rr[I] = mean(RR, na.rm=T)
+  df.chromcor$chromnoise[I] = noise.range[ii]
+}
+df.chromcor = df.chromcor[1:max(I),]
 
 
-# 4B. Cluster size vs Ji
-Ji$noise.factor = as.factor(Ji$noise.factor)
-Ji$noise.factor = ordered(Ji$noise.factor, 
-                          levels = c("0.50>=fpr", "0.15<fpr<=0.25","0.05<fpr<=0.1","fpr<=0.02", "fpr=0"))
-Ji$alpha = I(0.005 + 0.09 * Ji$cluster.size / 100)
-Ji$alpha[Ji$alpha>0.5] = 0.5
-Ji$alpha[Ji$Ji2==1] = Ji$alpha[Ji$Ji2==1] / 3
-ggplot(Ji[Ji$iter>1,], aes(x=log10(cluster.size), y=Ji2, color=noise.factor, alpha=alpha)) + 
-  geom_point() + facet_grid(~algorithm) +
-  geom_smooth(method="lm") + 
-  scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1)) + 
-  scale_x_continuous(breaks=log10(c(3,10,25,50,100,200)), labels = c(3,10,25,50,100,200)) +
-  coord_cartesian(ylim = c(-.001,1.001), xlim=c(log10(2.6),log10(200))) + theme_bw() + 
-  geom_hline(yintercept=Ar_null_n3, linetype="dashed", alpha=.65, colour="#F8766D") +
-  geom_hline(yintercept=Ar_null_n6, linetype="dashed", alpha=.65, colour="#7CAE00") +
-  geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4") +
-  scale_color_viridis(discrete = T) + 
-  theme(legend.position = "none") +
-  ylab("Similarity to iter=1 (Ji)") + 
-  xlab("Cluster size")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4C_v04.png"
+
+
+# A. Proteasome chromatograms
+# read proteasomal proteins
+fn = "../data/uniprot-proteasome+26s.tab"
+uniprot = as.data.frame(read_tsv(fn))
+I.26s = grepl("26S proteasome",uniprot$`Protein names`)
+I = chroms$protid %in% uniprot$Entry[I.26s]
+df.prot = melt(chroms[I,], id.vars=c("protid","Replicate"))
+df.prot$variable = gsub(" ", "..", df.prot$variable)
+df.prot$fraction = as.numeric(unlist(sapply(sapply(df.prot$variable, strsplit, "..", fixed=T), "[", 3)))
+df.prot = df.prot[,-3]
+df.prot$value2 = df.prot$value * exp(rnorm(nrow(df.prot)) * 0.25)
+df.prot$value3 = df.prot$value * exp(rnorm(nrow(df.prot)) * 0.5)
+df.prot = melt(df.prot, id.vars=c("protid", "Replicate", "fraction"))
+df.prot$variable = as.character(df.prot$variable)
+df.prot$variable[df.prot$variable %in% "value"] = "No noise"
+df.prot$variable[df.prot$variable %in% "value2"] = "25% noise"
+df.prot$variable[df.prot$variable %in% "value3"] = "50% noise"
+df.prot$variable = factor(df.prot$variable, levels = c("No noise", "25% noise", "50% noise"))
+df.prot = df.prot[df.prot$Replicate==1,]
+
+# calculate average R^2
+unqprots = unique(df.prot$protid)
+unqnoise = unique(df.prot$variable)
+for (ii in 1:length(unqnoise)) {
+  RR = rep(NA, length(unqprots))
+  for (jj in 1:length(unqprots)) {
+    I0 = which(df.prot$protid == unqprots[jj] & df.prot$variable==unqnoise[1])
+    I1 = which(df.prot$protid == unqprots[jj] & df.prot$variable==unqnoise[ii])
+    
+    ia = !is.na(df.prot$value[I0])
+    if (sum(ia)<3) next
+    RR[jj] = cor.test(log(df.prot$value[I0[ia]]), log(df.prot$value[I1[ia]]))$estimate
+  }
+  print(paste(unqnoise[ii], mean(RR^2, na.rm=T)))
+}
+
+
+ggplot(df.prot[df.prot$Replicate==1,], aes(x=fraction,y=log(value),group=protid)) + geom_line(alpha=.35) +
+  facet_wrap(~variable) + theme_bw() + xlab("Fraction") + ylab("log(Protein amount)")
+fn = "../figures/fig_3A_v01.pdf"
 ggsave(fn,width=10, height=3)
 
 
-# 4D. Consensus adjacency matrix examples
-load("/Users/gregstacey/Academics/Foster/ClusterExplore/data/clusters_Ai_vs_fdr.Rda")
-I0 = clusters$algorithm=="mcl" & clusters$noise_mag==0.15
-clusters = clusters[I0,]
-I1 = which(clusters$iter==1)
 
-clust.good = clusters$cluster[166]
-clust.bad =  clusters$cluster[78]
-
-df.adj.good = consensus.adjmat(clust.good, clusters)
-df.adj.bad = consensus.adjmat(clust.bad, clusters)
-df.adj.good$iter.name = factor(paste("iter=", df.adj.good$iter, sep=""))
-df.adj.bad$iter.name = factor(paste("iter=", df.adj.bad$iter, sep=""))
-df.adj.good$iter.name = factor(df.adj.good$iter.name, levels=paste("iter=", 1:11, sep=""))
-df.adj.bad$iter.name = factor(df.adj.bad$iter.name, levels=paste("iter=", 1:11, sep=""))
-
-df.adj.good = df.adj.good[df.adj.good$iter %in% c(1,5,10),]
-ggplot(df.adj.good, aes(prots, variable)) +
-  geom_tile(aes(fill = value), color = "white") +
-  scale_fill_gradient(low = "white", high = "steelblue") + 
-  facet_grid(~iter.name) + theme(legend.position="none") +
-  theme(axis.title.x=element_blank(),axis.title.y=element_blank(),
-        axis.text.x=element_blank(),axis.text.y=element_blank(),legend.position = "none",
-        axis.ticks.x=element_blank(),axis.ticks.y=element_blank())
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4D_v03.png"
-ggsave(file=fn, width=10*3/5 * .8, height=2.3 * .8)
-
-df.adj.bad = df.adj.bad[df.adj.bad$iter %in% c(1,5,10),]
-ggplot(df.adj.bad, aes(prots, variable)) +
-  geom_tile(aes(fill = value), color = "white") +
-  scale_fill_gradient(low = "white", high = "steelblue") + 
-  facet_grid(~iter.name) + theme(legend.position="none") +
-  theme(axis.title.x=element_blank(),axis.title.y=element_blank(),
-        axis.text.x=element_blank(),axis.text.y=element_blank(),legend.position = "none",
-        axis.ticks.x=element_blank(),axis.ticks.y=element_blank())
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4E_v03.png"
-ggsave(file=fn, width=10*3/5 * .8, height=2.3 * .8)
+# B. Ji vs chromnoise
+ggplot(df, aes(x=noise_mag*100, y=clustJ, color=experiment)) + 
+  geom_point(alpha=0.01) +  facet_grid(~algorithm) +
+  ylab("Similarity to un-noised (Ji)") + xlab("Noise magnitude, %") + 
+  geom_line(data=dm, aes(x=x*100, y=y,color=experiment), size=2, alpha=.6) +
+  theme_bw() + xlim(0,50) + theme(legend.position = "none") + scale_colour_grey()
+#scale_color_brewer(palette="Set1")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v04.pdf"
+ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v04.png"
+ggsave(fn,width=10, height=3)
 
 
 
-# enrichment of good and bad clusters
-# read GO
-fn = "../data/gene2go"
-gene2go = read_tsv(fn)
-gene2go = gene2go[!gene2go$Evidence %in% "IEA", ] # filter by evidence
+# C. chromatogram
+ggplot(df.chromcor, aes(x=chromnoise*100, y=rr)) + 
+  geom_point(alpha=.002) + geom_line(aes(x=chromnoise*100, y=avg.rr)) +
+  xlab("Noise magnitude, %") + ylab("Noised vs un-noised chromatogram\ncorrelation (Pearson R)") +
+  theme_bw()
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3C_v03.pdf"
+ggsave(fn,width=3.4, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3C_v03.png"
+ggsave(fn,width=3.4, height=3)
 
-# make a uniprot <--> ensembl map
-fn.map = "../data/HUMAN_9606_idmapping.dat.gz"
-map = read_tsv(fn.map,
-               col_names = c("uniprot", "db", "id"))
-ens = filter(map, db == "GeneID") %>% dplyr::select(-db)
-ent = filter(map, db == 'UniProtKB-ID') %>% dplyr::select(-db)
-ens_ent = left_join(ens, ent, by = 'uniprot') %>%
-  #dplyr::select(-uniprot) %>%
-  drop_na() %>%
-  set_colnames(c("uniprot", "entrez", "gene"))
 
-# load clusters
-fn = "../data/clusters_full_netw.txt"
-Ji = as.data.frame(read_tsv(fn))
-Ji = Ji[Ji$iter==1,]
 
-# protein universe
-this.background = unique(unlist(strsplit(Ji$cluster, ";")))
-this.background.entrez = unique(ens_ent$entrez[ens_ent$uniprot %in% this.background])
-n.universe = length(this.background.entrez)
+# D. co-interactome probability vs chromnoise
 
-# get GO associated with this universe
-this.gene2go = gene2go[gene2go$GeneID %in% this.background.entrez,]
-
-# loop through ontologies
-onts = unique(this.gene2go$Category)
-
-clusts = list()
-clusts[[1]] = clust.good
-clusts[[2]] = clust.bad
-df = data.frame(clust = numeric(10^3),
-                ont = character(10^3),
-                p.or.q = character(10^3), 
-                go.terms = character(10^3), stringsAsFactors = F)
+# make coint prob
+unqsets = unique(ints.c$dataset)
+unqmags = unique(ints.c$noise_mag)
+nn = length(unqsets) * length(unqmags)
+iterMax = 100
+df.intJ = data.frame(dataset = character(nn),
+                     noise_mag = numeric(nn),
+                     avg.coint = numeric(nn), 
+                     avg.intJ = numeric(nn), 
+                     coint = numeric(nn), 
+                     intJ = numeric(nn), stringsAsFactors = F)
+df.intJ[df.intJ==0] = NA
 cc = 0
-for (ii in 1:length(clusts)) {
-  for (oo in 1:length(onts)) {
-    ont = onts[oo]
-    
-    # get GO associated with this universe and ontology
-    this.gene2go.ont = this.gene2go[this.gene2go$Category == ont,]
-    
-    # remove redundant entries from this.gene2go, and filter to >20 & <200 proteins
-    this.gene2go.ont = distinct(this.gene2go.ont[,c("GeneID", "GO_ID")])
-    x = table(this.gene2go.ont[,c("GeneID", "GO_ID")])
-    n.times = colSums(x)
-    filtered.terms = colnames(x)[n.times>10 & n.times<200]
-    this.gene2go.ont = this.gene2go.ont[this.gene2go.ont$GO_ID%in%filtered.terms,]
-    this.goterms = unique(this.gene2go.ont$GO_ID)
-    
-    # filter to terms annotated 
-    nn = length(this.goterms)
-    
-    # set
-    this.ids = unlist(strsplit(clusts[[ii]], ";"))
-    this.entrez = ens_ent$entrez[ens_ent$uniprot %in% this.ids]
-    n.set = length(this.entrez)
-    if (length(this.entrez)<2) {
-      print("    cluster size <= 2...")
-      next
-    }
-    
-    sumTable = data.frame(GOBPID = character(nn), 
-                          Pvalue = numeric(nn),
-                          n.u = numeric(nn),n.u.hits = numeric(nn),n.s = numeric(nn),n.s.hits = numeric(nn),
-                          stringsAsFactors = F)
-    for (mm in 1:nn) {
-      go = this.goterms[mm]
-      sumTable$GOBPID[mm] = go
-      
-      # universe hits
-      n.u.hits = sum(this.gene2go.ont$GeneID%in%this.background.entrez & this.gene2go.ont$GO_ID %in% go)
-      
-      # set hits
-      n.s.hits = sum(this.gene2go.ont$GeneID %in% this.entrez & this.gene2go.ont$GO_ID %in% go)
-      
-      sumTable$Pvalue[mm] = phyper(n.s.hits-1, n.u.hits, 
-                                   n.universe-n.u.hits, n.set, lower.tail=FALSE)
-      sumTable$n.u[mm] = n.universe
-      sumTable$n.u.hits[mm] = n.u.hits
-      sumTable$n.s[mm] = n.set
-      sumTable$n.s.hits[mm] = n.s.hits
-    }
-    sumTable[is.na(sumTable)] = 1
-    sumTable$qvalue = p.adjust(sumTable$Pvalue)
-    
-    # p-significant
+for (ii in 1:length(unqsets)) {
+  I0 = ints.c$dataset==unqsets[ii] & ints.c$noise_mag==0
+  ints0 = ints.c$ppi[I0]
+  if (length(ints0)<250) next
+  for (jj in 1:length(unqmags)) {
+    I = ints.c$dataset==unqsets[ii] & ints.c$noise_mag==unqmags[jj]
+    ints = ints.c$ppi[I]
+    if (length(ints)<250) next
     cc = cc+1
-    I.p = sumTable$Pvalue <= 0.05
-    df$clust[cc] = ii
-    df$ont[cc] = ont
-    df$p.or.q[cc] = "p"
-    df$go.terms[cc] = paste(sumTable$GOBPID[I.p], collapse=";")
-    
-    # q-significant
-    cc = cc+1
-    I.q = sumTable$qvalue <= 0.05
-    df$clust[cc] = ii
-    df$ont[cc] = ont
-    df$p.or.q[cc] = "q"
-    df$go.terms[cc] = paste(sumTable$GOBPID[I.q], collapse=";")
-    
+    df.intJ$coint[cc] = sum(ints0 %in% ints) / length(ints0)
+    df.intJ$intJ[cc] = length(intersect(ints0, ints)) / length(unique(c(ints0, ints)))
+    df.intJ$dataset[cc] = unqsets[ii]
+    df.intJ$noise_mag[cc] = unqmags[jj]
   }
 }
-df = df[1:cc,]
-
-# how many of the good cluster proteins are ribosomal?
-#fn = "../data/uniprot-human-ribosome.txt"
-#hurib = as.data.frame(read_tsv(fn))
-fn = "../data/allComplexes.txt"
-corum = as.data.frame(read_tsv(fn))
-
-
-this.ids = unlist(strsplit(clust.good, ";"))
-I = grep("ibosom", corum$ComplexName)
-for (ii in 1:length(I)) {
-  prots = unlist(strsplit(corum$`subunits(UniProt IDs)`[I[ii]], ";"))
-  nn = sum(this.ids %in% prots)
-  name = corum$ComplexName[I[ii]]
-  print(paste(nn, "/", length(this.ids), "in", name))
+for (ii in 1:length(unqmags)) {
+  I = df.intJ$noise_mag==unqmags[ii]
+  df.intJ$avg.coint[I] = mean(df.intJ$coint[I], na.rm=T)
+  df.intJ$avg.intJ[I] = mean(df.intJ$intJ[I], na.rm=T)
 }
 
-this.ids = unlist(strsplit(clust.bad, ";"))
-JJ = numeric(nrow(corum))
-nn = numeric(nrow(corum))
-for (ii in 1:nrow(corum)) {
-  prots = unlist(strsplit(corum$`subunits(UniProt IDs)`[ii], ";"))
-  nn[ii] = sum(this.ids %in% prots)
-  JJ[ii] = sum(this.ids %in% prots) / length(unique(c(nn, prots)))
-  print(paste(ii, nn[ii]))
-}
-
-
-
-allComplexes$Protein.IDs <- character(length(allComplexes$subunits.UniProt.IDs)) # preallocate column
-for (ii in 1:nrow(allComplexes)) { # go through every protein you want to match
-  these.prots = unlist(strsplit(as.character(allComplexes$subunits.UniProt.IDs[ii]),";")) # split into single IDs
-  human.matches = character(length(these.prots)) # preallocate mouse matches
-  for (jj in 1:length(these.prots)) { # go through every single ID of that protein
-    I = which(H.sapiens.M.musculus$Human %in% these.prots[jj])
-    if (length(I)==1) { # if you found exactly ONE human-to-mouse ortholog...
-      human.matches[jj] = H.sapiens.M.musculus$Protein.IDs[I] # ... store the mouse ID in human matches
-    }
-  }
-  # concatenate mouse matches
-  human.matches = human.matches[ !human.matches %in% ""] # remove NAs
-  human.matches = paste(human.matches, collapse=";") # collapse into semicolon separated string
-  
-  # store in condition file
-  allComplexes$Protein.IDs[ii] = human.matches
-}
+ggplot(df.intJ, aes(x=noise_mag, y=coint)) + geom_point(alpha=.1) +
+  geom_line(aes(x=noise_mag, y=avg.coint)) +
+  xlab("Noise magnitude, %") + ylab("Interactome Jaccard") +
+  theme_bw()
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v04.pdf"
+ggsave(fn,width=3.4, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v04.png"
+ggsave(fn,width=3.4, height=3)
 

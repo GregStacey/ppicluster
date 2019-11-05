@@ -28,7 +28,7 @@ meltmat = function(mat, id.vars) {
 }
 
 # get corum
-fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/allComplexes.txt"
+fn = "/Users/gregstacey/Academics/Foster/ClusterExplore/data/allComplexes.txt"
 corum = as.data.frame(read_tsv(fn))
 corum = corum[corum$Organism%in%"Human",]
 corum$size = unlist(lapply(lapply(lapply(corum$`subunits(UniProt IDs)`, strsplit, ";"), unlist), length))
@@ -60,7 +60,7 @@ ggplot(df, aes(x, y)) +
   scale_fill_gradient(low = "white", high = "steelblue") + 
   theme_bw() + blank_theme + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-ggsave("/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_1A_1_v01.png",
+ggsave("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_1A_1_v01.png",
        width=4, height=4)
 
 
@@ -103,7 +103,7 @@ for (jj in 1:length(precRange)) {
     scale_fill_gradient(low = "white", high = "steelblue") + 
     theme_bw() + blank_theme + 
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-  fn = paste("/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_1A_", (jj-1)*2+2, "_v01.png", sep="")
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_1A_", (jj-1)*2+2, "_v01.png", sep="")
   ggsave(fn,width=4, height=4)
   
   
@@ -123,87 +123,9 @@ for (jj in 1:length(precRange)) {
     scale_fill_gradient(low = "white", high = "steelblue") + 
     theme_bw() + blank_theme + 
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-  fn = paste("/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_1A_", (jj-1)*2+3, "_v01.png", sep="")
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_1A_", (jj-1)*2+3, "_v01.png", sep="")
   ggsave(fn,width=4, height=4)
 }
 
-
-
-
-##### ------------------------------------------- #####
-# Simple Ai vs FDR
-
-# get clusters
-fn.save = "/Users/Mercy/Academics/Foster/ClusterExplore/data/figure01_panel01.Rda"
-if (TRUE){
-  load(fn.save)
-} else {
-  # define functions
-  source("/Users/Mercy/Academics/Foster/ClusterExplore/R/functions.R")
-  
-  fn = "/Users/Mercy/Academics/Foster/ClusterExplore/data/clusters_Ai_vs_fdr.txt"
-  data = read_tsv(fn)
-  clusters = data[data$iter==1 & data$algorithm%in%"mcl",]
-  
-  # all unique proteins
-  rdntprots = unlist(sapply(clusters$cluster, FUN=strsplit, ";"))
-  unqprots = unique(rdntprots)
-  
-  # calculate Ai for each cluster
-  I.order = sample(nrow(clusters), nrow(clusters))
-  clusters$Ar = numeric(nrow(clusters))
-  clusters$Ar.zscore = numeric(nrow(clusters))
-  for (ii in 1:nrow(clusters)) {
-    print(ii)
-    this.cluster = unlist(strsplit(clusters$cluster[I.order[ii]], ";"))
-    this.algorithm = clusters$algorithm[I.order[ii]]
-    this.fdr = clusters$noise_mag[I.order[ii]]
-    
-    # calculate Ai, complex reproducibility
-    unqIters = 2:10
-    Ar = numeric(length(unqIters))
-    for (jj in 1:length(unqIters)) {
-      I = data$algorithm %in% this.algorithm & data$noise_mag==this.fdr & data$iter==unqIters[jj]
-      Ar[jj] = calcA(this.cluster, data$cluster[I])
-    }
-    clusters$Ar[I.order[ii]] = mean(Ar, na.rm=T)
-  }
-  
-  # get averages for figures
-  nn = 10^3
-  dm = data.frame(x = numeric(nn), 
-                  y = numeric(nn),
-                  algorithm = character(nn),stringsAsFactors = F)
-  cc = 0
-  for (ii in 1:length(unique(clusters$noise_mag))) {
-    this.noise = sort(unique(clusters$noise_mag))[ii]
-    for (jj in 1:length(unique(clusters$algorithm))) {
-      this.algorithm = sort(unique(clusters$algorithm))[jj]
-      
-      cc = cc+1
-      I = clusters$noise_mag==this.noise & 
-        clusters$algorithm%in%this.algorithm 
-      dm[cc,] = c(this.noise, mean(clusters$Ar[I], na.rm=T), this.algorithm, this.size)
-      
-    }
-  }
-  dm = dm[1:cc,]
-  dm$x = as.numeric(dm$x)
-  dm$y = as.numeric(dm$y)
-  
-  save(clusters, dm, file=fn.save)
-}
-
-ggplot(clusters, aes(x=noise_mag, y=Ar)) + geom_point(alpha=0.04,color='steelblue') +
-  ylab("Cluster-wise similarity, Ji") + xlab("Network FPR") + 
-  coord_cartesian(ylim=c(0,1)) + 
-  geom_line(data=dm, aes(x=x, y=y), size=1, alpha=.9,color='steelblue') + theme_bw() +
-  theme(axis.line = element_line(colour = "black"),
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(),
-      panel.border = element_blank(),
-      panel.background = element_blank()) 
-fn = "/Users/Mercy/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_1A_6_v01.png"
-ggsave(fn,width=5, height=2.5)
 
 
