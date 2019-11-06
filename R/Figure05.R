@@ -91,10 +91,45 @@ dm$size.factor = tmp[as.numeric(dm$size.factor)]
 dm = dm[!dm$algorithm=="hierarchical",]
 
 
-Ar_null_n3 = mean(df.z$Ar[df.z$size==3],na.rm=T)
-Ar_null_n6 = mean(df.z$Ar[df.z$size==6],na.rm=T)
-Ar_null_n12 = mean(df.z$Ar[df.z$size==12],na.rm=T)
-
+# get null for panel B
+fn = "../data/clusters_full_netw_walktrap_null.txt"
+Ji.null = as.data.frame(read_tsv(fn))
+names(Ji.null) = c("cluster.iter", "scramble.iter", "algorithm", "cluster", "Ji1")
+Ji.null$cluster.size = sapply((sapply(Ji.null$cluster, strsplit, ";")), length)
+Ji.null = Ji.null[Ji.null$cluster.size>2, ]
+Ji.null$algorithm[Ji.null$algorithm=="co_mcl"] = "CO+MCL"
+Ji.null$algorithm[Ji.null$algorithm=="co"] = "CO"
+Ji.null$algorithm[Ji.null$algorithm=="mcl"] = "MCL"
+Ji.null$algorithm[Ji.null$algorithm=="pam"] = "k-Med"
+Ji.null$algorithm[Ji.null$algorithm=="walk"] = "walktrap"
+# make summary
+unqsize = sort(unique(Ji.null$cluster.size))
+unqalgs = unique(Ji.null$algorithm)
+nn = 10^4
+null.summ = data.frame(cluster.size = integer(nn),
+                       algorithm = character(nn),
+                       avg = numeric(nn),
+                       avg.95 = numeric(nn),
+                       avg.05 = numeric(nn),
+                       nn = numeric(nn), stringsAsFactors = F)
+cc = 0
+for (jj in 1:length(unqalgs)) {
+  for (ii in 1:length(unqsize)) {
+    cc = cc+1
+    I = Ji.null$cluster.size==unqsize[ii] & Ji.null$algorithm==unqalgs[jj]
+    null.summ$cluster.size[cc] = unqsize[ii]
+    null.summ$algorithm[cc] =unqalgs[jj]
+    null.summ$avg[cc] = mean(Ji.null$Ji1[I], na.rm = T)
+    null.summ$avg.95[cc] = quantile(Ji.null$Ji1[I], .975)
+    null.summ$avg.05[cc] = quantile(Ji.null$Ji1[I], .025)
+    null.summ$nn[cc] = sum(I)
+  }
+  I = null.summ$algorithm == unqalgs[jj]
+  null.summ$avg[I] = predict(loess(avg ~ cluster.size, data = null.summ[I,]), newdata = null.summ[I,])
+  null.summ$avg.95[I] = predict(loess(avg.95 ~ cluster.size, data = null.summ[I,]), newdata = null.summ[I,])
+  null.summ$avg.05[I] = predict(loess(avg.05 ~ cluster.size, data = null.summ[I,]), newdata = null.summ[I,])
+}
+null.summ = null.summ[1:cc, ]
 
 # 4B. Cluster size vs Ji
 Ji$noise.factor = as.factor(Ji$noise.factor)
@@ -103,22 +138,26 @@ Ji$noise.factor = ordered(Ji$noise.factor,
 Ji$alpha = I(0.005 + 0.09 * Ji$cluster.size / 100)
 Ji$alpha[Ji$alpha>0.5] = 0.5
 Ji$alpha[Ji$Ji2==1] = Ji$alpha[Ji$Ji2==1] / 3
-ggplot(Ji[Ji$iter>1,], aes(x=log10(cluster.size), y=Ji2, color=noise.factor, alpha=alpha)) + 
-  geom_point() + facet_grid(~algorithm) +
+ggplot(data = Ji[Ji$iter>1,], aes(x=log10(cluster.size), y=Ji2, color=noise.factor, alpha=alpha)) + 
+  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg), color="red") + 
+  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg.95), color="red", linetype="dashed") + 
+  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg.05), color="red", linetype="dashed") + 
+  geom_point() + 
+  facet_grid(~algorithm) +
   geom_smooth(method="lm") + 
   scale_y_continuous(breaks=c(0,0.25,0.5,0.75,1)) + 
   scale_x_continuous(breaks=log10(c(3,10,25,50,100,200)), labels = c(3,10,25,50,100,200)) +
   coord_cartesian(ylim = c(-.001,1.001), xlim=c(log10(2.6),log10(200))) + theme_bw() + 
-  geom_hline(yintercept=Ar_null_n3, linetype="dashed", alpha=.65, colour="#F8766D") +
-  geom_hline(yintercept=Ar_null_n6, linetype="dashed", alpha=.65, colour="#7CAE00") +
-  geom_hline(yintercept=Ar_null_n12, linetype="dashed", alpha=.65, colour="#00BFC4") +
   scale_color_viridis(discrete = T) + 
   theme(legend.position = "none") +
   ylab("Similarity to iter=1 (Ji)") + 
-  xlab("Cluster size")
+  xlab("Cluster size") 
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_4C_v04.png"
 ggsave(fn,width=10, height=3)
 
+ggplot() + 
+  geom_point(data = Ji.null, aes(x=log10(cluster.size), y=Ji1), color="red", alpha = .01) + 
+  facet_grid(~algorithm)
 
 # 4D. Consensus adjacency matrix examples
 load("/Users/gregstacey/Academics/Foster/ClusterExplore/data/clusters_Ai_vs_fdr.Rda")

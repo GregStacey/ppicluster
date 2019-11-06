@@ -154,47 +154,53 @@ if (0) {
 
 
 # make clusters.null
-clusters2 = as.data.frame(read.csv("../data/clusters_full_netw_walktrap.txt", sep="\t"))
-clusters2$algorithm = as.character(clusters2$algorithm)
-clusters2$cluster = as.character(clusters2$cluster)
+clusters = as.data.frame(read.csv("../data/clusters_full_netw_walktrap.txt", sep="\t"))
+clusters$algorithm = as.character(clusters$algorithm)
+clusters$cluster = as.character(clusters$cluster)
 
-# don't need different magnitudes or iterations
-# include 2 iterations just for numbers
-# (set2 is getting scrambled! doesn't matter what made it)
-clusters2 = clusters2[clusters2$noise_mag==0 & clusters2$iter<=2, ]
-unqiters = unique(clusters2$iter)
-unqmags = unique(clusters2$noise_mag)
-unqalgs = unique(clusters2$algorithm)
+# don't need multiple iterations
+# include 3 iterations just to compare a couple iters to iter=1
+clusters = clusters[clusters$iter<=3, ]
+unqiters = unique(clusters$iter)
+unqiters = unqiters[unqiters>1]
+unqmags = unique(clusters$noise_mag)
+unqalgs = unique(clusters$algorithm)
 print(unqmags)
 
 # calculate Ji1 all clusters (Compare each cluster to its unnoised version)
-clusters.null = data.frame(cluster.iter = numeric(10^6),
-                           scramble.iter = numeric(10^6),
+clusters.null = data.frame(scramble.iter = numeric(10^6),
                            algorithm = character(10^6),
                            cluster = character(10^6),
-                           Ji1.null = rep(NA,10^6), stringsAsFactors = F)
-scramble.iterMax = 100
+                           Ji2.null = rep(NA,10^6), stringsAsFactors = F)
+scramble.iterMax = 20
 cc = 0
-for (ii in 1:length(unqiters)) {
-  print(paste("Ji null: cluster iter",ii))
+# calculate Ji2 all clusters (Compare each cluster to its iter=1 version)
+clusters$Ji2.null = numeric(nrow(clusters))
+for (kk in 1:length(unqmags)) {
+  print(paste("Ji2: noise",unqmags[kk]))
   for (jj in 1:length(unqalgs)) {
-    print(paste("  algorithm",unqalgs[jj]))
-    I0 = clusters2$iter==unqiters[ii] & clusters2$algorithm==unqalgs[jj]
-    ref.clusters = clusters2$cluster[I0 & clusters2$noise_mag==0]
-    for (kk in 1:scramble.iterMax) {
-      print(paste("    scramble iter",kk))
-      # make scrambled clusters
-      rand.cluster = clusters.to.df(ref.clusters)
-      rand.cluster$cluster = rand.cluster$cluster[sample(nrow(rand.cluster), nrow(rand.cluster))]
-      rand.cluster = df.to.cluster(rand.cluster)
-      for (mm in 1:length(ref.clusters)) {
-        cc = cc+1
-        print(cc)
-        clusters.null$cluster.iter[cc] = ii
-        clusters.null$scramble.iter[cc] = kk
-        clusters.null$algorithm[cc] = unqalgs[jj]
-        clusters.null$cluster[cc] = ref.clusters[mm]
-        clusters.null$Ji1.null[cc] = calcA(ref.clusters[mm], rand.cluster)
+    print(paste("      algorithm",unqalgs[jj]))
+    I0 = clusters$algorithm==unqalgs[jj] & clusters$noise_mag==unqmags[kk]
+    ref.clusters = clusters$cluster[I0 & clusters$iter==1]
+    for (ii in 1:length(unqiters)) {
+      print(paste("        iter",unqiters[ii]))
+      for (uu in 1:scramble.iterMax) {
+        # make scrambled clusters
+        rand.cluster = clusters.to.df(ref.clusters)
+        rand.cluster$cluster = rand.cluster$cluster[sample(nrow(rand.cluster), nrow(rand.cluster))]
+        rand.cluster = df.to.cluster(rand.cluster)
+        I = which(I0 & clusters$iter==unqiters[ii])
+        these.clusters = clusters$cluster[I]
+        for (mm in 1:length(I)) {
+          cc = cc+1
+          print(cc)
+          #clusters$Ji2.null[I[mm]] = calcA(these.clusters[mm], rand.cluster)
+          #lusters.null$cluster.iter[cc] = ii
+          clusters.null$scramble.iter[cc] = uu
+          clusters.null$algorithm[cc] = unqalgs[jj]
+          clusters.null$cluster[cc] = ref.clusters[mm]
+          clusters.null$Ji2.null[cc] = calcA(these.clusters[mm], rand.cluster)
+        }
       }
     }
     # write
