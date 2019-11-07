@@ -57,9 +57,9 @@ for (hh in 1:length(noise.types)) {
     if (noise.types[hh] == "network_add") ints.noised = addcorum(ints.corum, noise.range[ii])
     if (noise.types[hh] == "network_remove") ints.noised = removecorum(ints.corum, noise.range[ii])
     
-    # if you removed 100%... change it to 95%
+    # if you removed 100%... change it to 85%
     if (nrow(ints.noised)==0 & noise.range[ii] & noise.types[hh]=="network_remove"){
-      ints.noised = removecorum(ints.corum, .95)
+      while (length(unique(c(ints.noised[,1], ints.noised[,2]))) < 1500) ints.noised = removecorum(ints.corum, .85)
     }
     
     # walktrap
