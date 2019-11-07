@@ -139,9 +139,9 @@ Ji$alpha = I(0.005 + 0.09 * Ji$cluster.size / 100)
 Ji$alpha[Ji$alpha>0.5] = 0.5
 Ji$alpha[Ji$Ji2==1] = Ji$alpha[Ji$Ji2==1] / 3
 ggplot(data = Ji[Ji$iter>1,], aes(x=log10(cluster.size), y=Ji2, color=noise.factor, alpha=alpha)) + 
-  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg), color="red") + 
-  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg.95), color="red", linetype="dashed") + 
-  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg.05), color="red", linetype="dashed") + 
+  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg), color="black") + 
+  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg.95), color="black", linetype="dashed") + 
+  geom_line(data = null.summ, inherit.aes = F, aes(x=log10(cluster.size), y=avg.05), color="black", linetype="dashed") + 
   geom_point() + 
   facet_grid(~algorithm) +
   geom_smooth(method="lm") + 

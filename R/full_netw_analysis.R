@@ -149,7 +149,6 @@ if (0) {
   # write
   fn = "../data/clusters_full_netw_walktrap.txt"
   write_tsv(clusters, path=fn)
-  
 }
 
 

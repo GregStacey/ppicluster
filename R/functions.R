@@ -348,8 +348,7 @@ pamclust = function(ints, nclust){
   # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
   I.row = match(ints$protA, unqprots) # row
   I.col = match(ints$protB, unqprots) # column
-  
-  
+
   unqprots = unique(c(ints$protA, ints$protB))
   nn = length(unqprots)
   
@@ -384,7 +383,6 @@ pamclust = function(ints, nclust){
   attr(d, 'Upper') = T
   d[1:length(d)] = 1
   d[I.fill] = 0
-  
   
   clusts = pam(d, nclust)
   
@@ -423,7 +421,6 @@ pamclust = function(ints, nclust){
 
 
 shufflecorum = function(ints.corum, ff){
-  
   unqprots = sort(unique(c(ints.corum[,1], ints.corum[,2])))
   unqprots = unqprots[!unqprots==""]
 
@@ -466,7 +463,44 @@ shufflecorum = function(ints.corum, ff){
   return(ints.shuffle) 
 }
 
+addcorum = function(ints.corum, ff){
+  unqprots = sort(unique(c(ints.corum[,1], ints.corum[,2])))
+  unqprots = unqprots[!unqprots==""]
+  
+  N.add = round(nrow(ints.corum) * ff)
+  
+  # N random pairs
+  protA = sample(unqprots, N.add, replace = T)
+  protB = sample(unqprots, N.add, replace = T)
+  
+  I.bad = 1
+  while (sum(I.bad)>0) {
+    # sort A<B
+    ia = match(protA, unqprots)
+    ib = match(protB, unqprots)
+    I = ia>ib
+    protA0 = protA
+    protB0 = protB
+    protA[I] = protB0[I]
+    protB[I] = protA0[I]
+    
+    # replace any A==B or AB%in%corum
+    I.bad = protA==protB | (paste(protA,protB) %in% paste(ints.corum$protA, ints.corum$protB))
+    protA[I.bad] = sample(unqprots, sum(I.bad), replace = T)
+    protB[I.bad] = sample(unqprots, sum(I.bad), replace = T)
+  }
+  
+  ints.add = data.frame(protA = protA, protB = protB, stringsAsFactors = F)
+  ints.corum = rbind(ints.corum, ints.add)
+  return(ints.corum)
+}
 
+removecorum = function(ints.corum, ff){
+  N.keep = round(nrow(ints.corum) * (1 - ff))
+  I.keep = sample(nrow(ints.corum), N.keep)
+  ints.corum = ints.corum[I.keep, ]
+  return(ints.corum)
+}
 
 consensus.adjmat = function(this.cluster, clusters){
   unqIters = unique(clusters$iter)
