@@ -48,14 +48,19 @@ clusters2 = data.frame(network = rep("corum", 10^6),
 
 # add 1 iterations of PAM and walktrap
 cc = 0
-noise_types = c("network_remove","network_add")
-for (hh in 1:length(noise_types)) {
+noise.types = c("network_remove","network_add")
+for (hh in 1:length(noise.types)) {
   for (ii in 1:length(noise.range)) {
-    print(paste("clustering",noise_types[hh],"at noise=", noise.range[ii]))
+    print(paste("clustering",noise.types[hh],"at noise =", noise.range[ii]))
     
     # get shuffled corum
-    if (noise_types[hh] == "network_add") ints.noised = addcorum(ints.corum, noise.range[ii])
-    if (noise_types[hh] == "network_remove") ints.noised = removecorum(ints.corum, noise.range[ii])
+    if (noise.types[hh] == "network_add") ints.noised = addcorum(ints.corum, noise.range[ii])
+    if (noise.types[hh] == "network_remove") ints.noised = removecorum(ints.corum, noise.range[ii])
+    
+    # if you removed 100%... change it to 95%
+    if (nrow(ints.noised)==0 & noise.range[ii] & noise.types[hh]=="network_remove"){
+      ints.noised = removecorum(ints.corum, .95)
+    }
     
     # walktrap
     graph.object = graph_from_edgelist(as.matrix(ints.noised), directed = F)
@@ -63,7 +68,7 @@ for (hh in 1:length(noise_types)) {
     for (jj in 1:length(walk.cluster)) {
       if (length(walk.cluster[[jj]]) < 3) next
       cc = cc+1
-      clusters2$noise_type[cc] = noise_types[hh]
+      clusters2$noise_type[cc] = noise.types[hh]
       clusters2$noise_mag[cc] = noise.range[ii]
       clusters2$algorithm[cc] = "walk"
       clusters2$cluster[cc] = paste(walk.cluster[[jj]], collapse=";")
@@ -73,7 +78,7 @@ for (hh in 1:length(noise_types)) {
     pam.cluster = pamclust(ints.noised, 1500)
     for (jj in 1:length(pam.cluster)) {
       cc = cc+1
-      clusters2$noise_type[cc] = noise_types[hh]
+      clusters2$noise_type[cc] = noise.types[hh]
       clusters2$noise_mag[cc] = noise.range[ii]
       clusters2$algorithm[cc] = "pam"
       clusters2$cluster[cc] = pam.cluster[jj]
