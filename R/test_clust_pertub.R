@@ -47,7 +47,7 @@ alg.names = c("k-Med", "MCL", "walktrap", "CO")
 alg = c(function(x) pam(x, 1500),
   function(x) mcl(x, addLoops = F),
   walktrap.community,
-  function(x) clusteroneR(x, pp=8,density_threshold = 0, java_path = "../java/cluster_one-1.0.jar"))
+  function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
 edge.list.format = list(pam.edge.list.format, 
                         mcl.edge.list.format, 
                         function(x) graph_from_edgelist(as.matrix(x), directed = F),
@@ -61,6 +61,8 @@ clusters.mcl = list()
 clusters.walk = list()
 clusters.co = list()
 for (ii in 1:length(noise.range)) {
+  print(paste("noise", noise.range[ii]))
+  
   # k-med
   print("k-med")
   jj = 1
