@@ -72,7 +72,7 @@ calc.reproducibility = function(this.cluster, clusters){
   this.cluster = unlist(strsplit(this.cluster, ";"))
   this.size = length(this.cluster)
   this.size = formatC(this.size, width=3, flag="0")
-
+  
   # find its best match in the other iters
   tmp = numeric(10)
   bestMatches = character(length(unqIters))
@@ -199,5 +199,8 @@ mcl.edge.list.format = function(ints.corum) {
 mcl.cluster.format = function(tmp) {
   clusts = list()
   unqclusts = unique(tmp$Cluster)
-  
+  for (ii in 1:length(unqclusts)) {
+    clusts[[ii]] = paste(which(tmp$Cluster == unqclusts[ii]), collapse = ";")
+  }
+  return(clusts)
 }
