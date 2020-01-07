@@ -8,6 +8,7 @@ source("./clust-perturb-tool/functions.R")
 require(igraph)
 require(MCL)
 require(readr)
+require(dplyr)
 
 ###################### corum
 
