@@ -34,11 +34,16 @@ clust.perturb = function(network,
                          edge.list.format = NULL,
                          cluster.format = NULL) {
   
+  #print(clustering.algorithm)
+  #print(edge.list.format)
+  #print(cluster.format)
+  
   # cluster without noise
   cc = 0
   network.input = network
   if (!is.null(edge.list.format)) network.input = edge.list.format(network)
   tmp = clustering.algorithm(network.input)
+  if (!is.null(cluster.format)) tmp = cluster.format(tmp)
   # store clusters
   clusters0 = data.frame(cluster = character(length(tmp)),
                          reproducibility.J = rep(NA, length(tmp)),

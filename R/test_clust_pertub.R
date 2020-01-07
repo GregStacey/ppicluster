@@ -4,6 +4,7 @@
 #source("/Users/gregstacey/Academics/Foster/clust-perturb/R/functions.R")
 source("./clust-perturb-tool/clust-perturb.R")
 source("./clust-perturb-tool/functions.R")
+source("clusterone_java.R")
 source("functions.R")
 
 require(igraph)
@@ -42,9 +43,9 @@ ints.corum = distinct(ints.corum)
 
 noise.range = c(0, 0.01, 0.1, 0.25, 0.5, 0.75)
 unqprots = unique(c(ints.corum$protA, ints.corum$protB))
-iters = 10
+iters = 2
 alg.names = c("k-Med", "MCL", "walktrap", "CO")
-alg = c(function(x) pam(x, 1500),
+alg = c(function(x) pam(x, 15),
         function(x) mcl(x, addLoops = FALSE),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
@@ -53,7 +54,7 @@ edge.list.format = list(pam.edge.list.format,
                         function(x) graph_from_edgelist(as.matrix(x), directed = F),
                         NULL)
 cluster.format = list(function(x) pam.cluster.format(x,unqprots = unqprots),
-                      mcl,
+                      mcl.cluster.format,
                       NULL,
                       NULL)
 clusters.kmed = list()
