@@ -1,5 +1,5 @@
 
-clusteroneR = function(network, pp, density_threshold, java_path) {
+clusteroneR = function(network, pp=8, density_threshold=0, java_path="../java/cluster_one-1.0.jar") {
   
   # 1. write network to file
   # ensure network is symmetric, i.e. contains A-B and B-A

@@ -235,8 +235,8 @@ ggplot(df.change, aes(x=n.shuffled.interactions, y=n.rearranged.edges, shape=alg
   xlab("Number of shuffled network edges") + 
   ylab("Number of rearranged cluster edges") + 
   coord_cartesian(ylim=c(0,80000)) + theme(legend.position="none")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D_v04.pdf"
-ggsave(fn,width=4, height=3.2)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v01.pdf"
+ggsave(fn,width=4, height=2.5)
 
 ggplot(df.change, aes(x=noise, y=n.rearranged.edges/n.shuffled.interactions, color=algorithm)) + 
   geom_line() + geom_abline(linetype="dashed") +theme_bw() +
@@ -337,3 +337,18 @@ for (ii in 1:length(unqalgs)) {
   x2 = (mean(Ji$Ji1[I]))
   print(paste(x,x2))
 }
+
+
+
+
+# small-clusters-are-bad in this noise-nonoise data
+# (not sure about this)
+# ##### ------------------------------------------- #####
+I = Ji$network=="CORUM"
+summary(glm(Ji1 ~ noise_mag + algorithm + cluster.size, data = Ji[I,]))
+
+ggplot(Ji[I,], aes(x=log10(cluster.size), y=Ji1)) + 
+  facet_grid(noise_mag~algorithm) + 
+  geom_point(alpha=.3) + geom_smooth(method="lm")
+
+
