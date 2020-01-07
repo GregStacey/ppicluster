@@ -45,9 +45,9 @@ unqprots = unique(c(ints.corum$protA, ints.corum$protB))
 iters = 10
 alg.names = c("k-Med", "MCL", "walktrap", "CO")
 alg = c(function(x) pam(x, 1500),
-  function(x) mcl(x, addLoops = F),
-  walktrap.community,
-  function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
+        function(x) mcl(x, addLoops = FALSE),
+        walktrap.community,
+        function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
 edge.list.format = list(pam.edge.list.format, 
                         mcl.edge.list.format, 
                         function(x) graph_from_edgelist(as.matrix(x), directed = F),
@@ -66,32 +66,40 @@ for (ii in 1:length(noise.range)) {
   # k-med
   print("k-med")
   jj = 1
-  clusters.kmed[[ii]] = clust.perturb(ints.corum, alg[[jj]], noise.range[ii], iters,
-                      edge.list.format[[jj]], cluster.format[[jj]])
+  clusters.kmed[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
+                                      noise = noise.range[ii], iter = iters,
+                                      edge.list.format = edge.list.format[[jj]], 
+                                      cluster.format = cluster.format[[jj]])
   save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
        file = "../data/test_clust_perturb_4algs.Rda")
   
   # mcl
   print("mcl")
   jj = 2
-  clusters.mcl[[ii]] = clust.perturb(ints.corum, alg[[jj]], noise.range[ii], iters,
-                      edge.list.format[[jj]], cluster.format[[jj]])
+  clusters.mcl[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
+                                     noise = noise.range[ii], iter = iters,
+                                     edge.list.format = edge.list.format[[jj]], 
+                                     cluster.format = cluster.format[[jj]])
   save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
        file = "../data/test_clust_perturb_4algs.Rda")
   
   # walktrap
   print("walktrap")
   jj = 3
-  clusters.walk[[ii]] = clust.perturb(ints.corum, alg[[jj]], noise.range[ii], iters,
-                      edge.list.format[[jj]], cluster.format[[jj]])
+  clusters.walk[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
+                                      noise = noise.range[ii], iter = iters,
+                                      edge.list.format = edge.list.format[[jj]], 
+                                      cluster.format = cluster.format[[jj]])
   save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
        file = "../data/test_clust_perturb_4algs.Rda")
   
   # co
   print("co")
   jj = 4
-  clusters.co[[ii]] = clust.perturb(ints.corum, alg[[jj]], noise.range[ii], iters,
-                      edge.list.format[[jj]], cluster.format[[jj]])
+  clusters.co[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
+                                    noise = noise.range[ii], iter = iters,
+                                    edge.list.format = edge.list.format[[jj]], 
+                                    cluster.format = cluster.format[[jj]])
   save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
        file = "../data/test_clust_perturb_4algs.Rda")
 }
@@ -141,7 +149,7 @@ for (ii in 1:3) {
     qenriched.goid = character(nrow(clusters)), # which go terms is the clusters enriched for
     np.enriched = numeric(nrow(clusters)), # how many enriched go terms (p<0.01)
     nq.enriched = numeric(nrow(clusters)) # how many enriched go terms (q<0.1)
-  , stringsAsFactors = F)
+    , stringsAsFactors = F)
 }
 for (ii in 1:nrow(clusters)) {
   print(ii)
