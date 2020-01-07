@@ -4,6 +4,7 @@
 #source("/Users/gregstacey/Academics/Foster/clust-perturb/R/functions.R")
 source("./clust-perturb-tool/clust-perturb.R")
 source("./clust-perturb-tool/functions.R")
+source("functions.R")
 
 require(igraph)
 require(MCL)
@@ -61,27 +62,36 @@ clusters.walk = list()
 clusters.co = list()
 for (ii in 1:length(noise.range)) {
   # k-med
+  print("k-med")
   jj = 1
   clusters.kmed[[ii]] = clust.perturb(ints.corum, alg[[jj]], noise.range[ii], iters,
                       edge.list.format[[jj]], cluster.format[[jj]])
+  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+       file = "../data/test_clust_perturb_4algs.Rda")
   
   # mcl
+  print("mcl")
   jj = 2
   clusters.mcl[[ii]] = clust.perturb(ints.corum, alg[[jj]], noise.range[ii], iters,
                       edge.list.format[[jj]], cluster.format[[jj]])
+  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+       file = "../data/test_clust_perturb_4algs.Rda")
   
   # walktrap
+  print("walktrap")
   jj = 3
   clusters.walk[[ii]] = clust.perturb(ints.corum, alg[[jj]], noise.range[ii], iters,
                       edge.list.format[[jj]], cluster.format[[jj]])
+  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+       file = "../data/test_clust_perturb_4algs.Rda")
   
   # co
+  print("co")
   jj = 4
   clusters.co[[ii]] = clust.perturb(ints.corum, alg[[jj]], noise.range[ii], iters,
                       edge.list.format[[jj]], cluster.format[[jj]])
-  
   save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-       "../data/test_clust_perturb_4algs.Rda")
+       file = "../data/test_clust_perturb_4algs.Rda")
 }
 
 
