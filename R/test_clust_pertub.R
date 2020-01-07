@@ -43,9 +43,9 @@ ints.corum = distinct(ints.corum)
 
 noise.range = c(0, 0.01, 0.1, 0.25, 0.5, 0.75)
 unqprots = unique(c(ints.corum$protA, ints.corum$protB))
-iters = 2
+iters = 5
 alg.names = c("k-Med", "MCL", "walktrap", "CO")
-alg = c(function(x) pam(x, 15),
+alg = c(function(x) pam(x, 1500),
         function(x) mcl(x, addLoops = FALSE),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
