@@ -418,6 +418,11 @@ pamclust = function(ints, nclust){
 }
 
 
+mclclust = function() {
+  
+}
+
+
 
 
 shufflecorum = function(ints.corum, ff){
