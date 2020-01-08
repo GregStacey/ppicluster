@@ -43,67 +43,72 @@ ints.corum = distinct(ints.corum)
 
 noise.range = c(0, 0.01, 0.1, 0.25, 0.5, 0.75)
 unqprots = unique(c(ints.corum$protA, ints.corum$protB))
-iters = 5
-alg.names = c("k-Med", "MCL", "walktrap", "CO")
-alg = c(function(x) pam(x, 1500),
-        function(x) mcl(x, addLoops = FALSE),
-        walktrap.community,
-        function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
-edge.list.format = list(pam.edge.list.format, 
-                        mcl.edge.list.format, 
-                        function(x) graph_from_edgelist(as.matrix(x), directed = F),
+if (1) {
+  
+} else {
+  iters = 5
+  alg.names = c("k-Med", "MCL", "walktrap", "CO")
+  alg = c(function(x) pam(x, 1500),
+          function(x) mcl(x, addLoops = FALSE),
+          walktrap.community,
+          function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
+  edge.list.format = list(pam.edge.list.format, 
+                          mcl.edge.list.format, 
+                          function(x) graph_from_edgelist(as.matrix(x), directed = F),
+                          NULL)
+  cluster.format = list(function(x) pam.cluster.format(x,unqprots = unqprots),
+                        mcl.cluster.format,
+                        NULL,
                         NULL)
-cluster.format = list(function(x) pam.cluster.format(x,unqprots = unqprots),
-                      mcl.cluster.format,
-                      NULL,
-                      NULL)
-clusters.kmed = list()
-clusters.mcl = list()
-clusters.walk = list()
-clusters.co = list()
-for (ii in 1:length(noise.range)) {
-  print(paste("noise", noise.range[ii]))
-  
-  # k-med
-  print("k-med")
-  jj = 1
-  clusters.kmed[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
+  clusters.kmed = list()
+  clusters.mcl = list()
+  clusters.walk = list()
+  clusters.co = list()
+  for (ii in 1:length(noise.range)) {
+    print(paste("noise", noise.range[ii]))
+    
+    # k-med
+    print("k-med")
+    jj = 1
+    clusters.kmed[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
+                                        noise = noise.range[ii], iter = iters,
+                                        edge.list.format = edge.list.format[[jj]], 
+                                        cluster.format = cluster.format[[jj]])
+    save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+         file = "../data/test_clust_perturb_4algs.Rda")
+    
+    # mcl
+    print("mcl")
+    jj = 2
+    clusters.mcl[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
+                                       noise = noise.range[ii], iter = iters,
+                                       edge.list.format = edge.list.format[[jj]], 
+                                       cluster.format = cluster.format[[jj]])
+    save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+         file = "../data/test_clust_perturb_4algs.Rda")
+    
+    # walktrap
+    print("walktrap")
+    jj = 3
+    clusters.walk[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
+                                        noise = noise.range[ii], iter = iters,
+                                        edge.list.format = edge.list.format[[jj]], 
+                                        cluster.format = cluster.format[[jj]])
+    save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+         file = "../data/test_clust_perturb_4algs.Rda")
+    
+    # co
+    print("co")
+    jj = 4
+    clusters.co[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
                                       noise = noise.range[ii], iter = iters,
                                       edge.list.format = edge.list.format[[jj]], 
                                       cluster.format = cluster.format[[jj]])
-  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-       file = "../data/test_clust_perturb_4algs.Rda")
-  
-  # mcl
-  print("mcl")
-  jj = 2
-  clusters.mcl[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
-                                     noise = noise.range[ii], iter = iters,
-                                     edge.list.format = edge.list.format[[jj]], 
-                                     cluster.format = cluster.format[[jj]])
-  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-       file = "../data/test_clust_perturb_4algs.Rda")
-  
-  # walktrap
-  print("walktrap")
-  jj = 3
-  clusters.walk[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
-                                      noise = noise.range[ii], iter = iters,
-                                      edge.list.format = edge.list.format[[jj]], 
-                                      cluster.format = cluster.format[[jj]])
-  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-       file = "../data/test_clust_perturb_4algs.Rda")
-  
-  # co
-  print("co")
-  jj = 4
-  clusters.co[[ii]] = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]], 
-                                    noise = noise.range[ii], iter = iters,
-                                    edge.list.format = edge.list.format[[jj]], 
-                                    cluster.format = cluster.format[[jj]])
-  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-       file = "../data/test_clust_perturb_4algs.Rda")
+    save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+         file = "../data/test_clust_perturb_4algs.Rda")
+  }
 }
+
 
 
 ### enrichment
