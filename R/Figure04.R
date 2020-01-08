@@ -131,7 +131,7 @@ df$algorithm[df$algorithm=="mcl"] = "MCL"
 df$algorithm[df$algorithm=="pam"] = "k-Med"
 df$algorithm[df$algorithm=="walk"] = "walktrap"
 
-write_tsv(df, path="../data/interactomes_final.txt")
+write_tsv(df, path="../data/interactomes_moredata.txt")
 
 
 # get averages for figures
