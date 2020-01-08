@@ -105,6 +105,7 @@ for (hh in 1:length(add.range)) {
       clusters$algorithm[cc] = "co"
       clusters$cluster[cc] = pam.cluster[jj]
     }
+    print(paste("number of clusters =",cc))
   }
 }
 clusters = clusters[1:cc,]
