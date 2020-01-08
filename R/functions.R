@@ -418,12 +418,6 @@ pamclust = function(ints, nclust){
 }
 
 
-mclclust = function() {
-  
-}
-
-
-
 
 shufflecorum = function(ints.corum, ff){
   unqprots = sort(unique(c(ints.corum[,1], ints.corum[,2])))
