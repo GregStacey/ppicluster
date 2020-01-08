@@ -58,6 +58,7 @@ for (hh in 1:length(add.range)) {
     
     
     # walktrap
+    print("walk")
     graph.object = graph_from_edgelist(as.matrix(ints.noised), directed = F)
     walk.cluster = walktrap.community(graph.object)
     for (jj in 1:length(walk.cluster)) {
@@ -70,6 +71,7 @@ for (hh in 1:length(add.range)) {
     }
     
     # pam
+    print("k-med")
     pam.cluster = pamclust(ints.noised, 100)
     for (jj in 1:length(pam.cluster)) {
       cc = cc+1
@@ -80,6 +82,7 @@ for (hh in 1:length(add.range)) {
     }
     
     # mcl
+    print("mcl")
     G = graph.data.frame(ints.noised,directed=FALSE)
     A = as_adjacency_matrix(G,type="both",names=TRUE,sparse=FALSE)
     mcl.cluster = mcl(A, addLoops = FALSE)
@@ -94,6 +97,7 @@ for (hh in 1:length(add.range)) {
     }
     
     # clusterone
+    print("clusterone")
     co.cluster = clusteroneR(ints.noised, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
     for (jj in 1:length(pam.cluster)) {
       clusters$add_mag[cc] = add.range[hh]
