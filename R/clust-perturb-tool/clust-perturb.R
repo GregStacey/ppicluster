@@ -1,4 +1,11 @@
 
+# TO DO
+# 
+# 1. Include permutation-based significance for repJ numbers
+#    This will be very time intensive, so make it optional.
+
+
+
 #' Perturb clusters
 #' 
 #' Network to be clustered is formated as a data frame edge list (edge.list). Users can 
@@ -51,7 +58,7 @@ clust.perturb = function(network,
   for (jj in 1:length(tmp)) clusters0$cluster[jj] = paste(tmp[[jj]], collapse=";")
   rm(tmp)
   str(clusters0)
-
+  
   # cluster with noise
   clusters.noise = data.frame(iter = numeric(10^6),
                               noise_mag = numeric(10^6),
@@ -78,6 +85,98 @@ clust.perturb = function(network,
         cc = cc+1
         clusters.noise$iter[cc] = iter
         clusters.noise$noise_mag[cc] = noise[ii]
+        clusters.noise$cluster[cc] = paste(these.clusters[[jj]], collapse=";")
+      }
+    }
+  }
+  clusters.noise = clusters.noise[1:cc,]
+  
+  
+  # calculate J for every cluster in clusters0
+  for (ii in 1:nrow(clusters0)) {
+    print(paste("cluster", ii))
+    tmp.j = numeric(iters * length(noise))
+    cc = 0
+    for (jj in 1:iters) {
+      for (kk in 1:length(noise)) {
+        noise.clusters = clusters.noise$cluster[clusters.noise$iter==jj & 
+                                                  clusters.noise$noise_mag==noise[kk]]
+        cc = cc+1
+        tmp.j[cc] = calcA(clusters0$cluster[ii], noise.clusters)
+      }
+    }
+    
+    clusters0$reproducibility.J[ii] = mean(tmp.j, na.rm=T)
+  }
+  
+  return(clusters0)
+}
+
+
+
+clust.perturb2 = function(network, 
+                          clustering.algorithm, 
+                          add.noise = 0.5, 
+                          remove.noise = 0.5,
+                          iters = 100, 
+                          edge.list.format = NULL,
+                          cluster.format = NULL) {
+  
+  #print(clustering.algorithm)
+  #print(edge.list.format)
+  #print(cluster.format)
+  
+  # cluster without noise
+  cc = 0
+  network.input = network
+  if (!is.null(edge.list.format)) network.input = edge.list.format(network)
+  tmp = clustering.algorithm(network.input)
+  if (!is.null(cluster.format)) tmp = cluster.format(tmp)
+  # store clusters
+  clusters0 = data.frame(cluster = character(length(tmp)),
+                         reproducibility.J = rep(NA, length(tmp)),
+                         stringsAsFactors = F)
+  for (jj in 1:length(tmp)) clusters0$cluster[jj] = paste(tmp[[jj]], collapse=";")
+  rm(tmp)
+  str(clusters0)
+  
+  # cluster with noise
+  clusters.noise = data.frame(iter = numeric(10^6),
+                              add_noise = numeric(10^6),
+                              remove_noise = numeric(10^6),
+                              cluster = character(10^6), stringsAsFactors = F)
+  cc = 0
+  for (iter in 1:iters) {
+    for (ii in 1:length(add.noise)) {
+      print(paste("clustering iter",iter,": add noise=", add.noise[ii], "remove.noise=", remove.noise[ii]))
+      
+      # # add noise to network
+      # ints.shuffle = shufflecorum(network, noise[ii])
+      
+      # simulate the same level of noise (random) 
+      tmp.add = addcorum(network, n.added/sum(i1))
+      tmp.remove = removecorum(network, n.removed/sum(i1))
+      # find added + removed interactions
+      i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% paste(network$protA, network$protB, sep="-")
+      i.remove = !paste(network$protA, network$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
+      # put it together
+      ints.shuffle = rbind(network[!i.remove,], tmp.add[i.add,])
+      
+      # transform network to required format (if needed)
+      if (!is.null(edge.list.format)) ints.shuffle = edge.list.format(ints.shuffle)
+      
+      # cluster
+      these.clusters = clustering.algorithm(ints.shuffle)
+      
+      # transform clusters to list (if needed)
+      if (!is.null(cluster.format)) these.clusters = cluster.format(these.clusters)
+      
+      # store these.clusters
+      for (jj in 1:length(these.clusters)) {
+        cc = cc+1
+        clusters.noise$iter[cc] = iter
+        clusters.noise$add_noise[cc] = add.noise[ii]
+        clusters.noise$remove_noise[cc] = remove.noise[ii]
         clusters.noise$cluster[cc] = paste(these.clusters[[jj]], collapse=";")
       }
     }

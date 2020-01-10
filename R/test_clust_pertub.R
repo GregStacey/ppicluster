@@ -12,6 +12,7 @@ require(MCL)
 require(readr)
 require(dplyr)
 
+
 ###################### corum
 
 # binarize human corum
@@ -110,9 +111,59 @@ if (1) {
 }
 
 
+# plot results
+nn = 1e6
+dfrepj = data.frame(repJ = numeric(nn),
+                    norm.rank = numeric(nn),
+                    noise_mag = numeric(nn),
+                    algorithm = character(nn), stringsAsFactors = F)
+cc = 0
+for (ii in 1:length(noise.range)) {
+  I = (cc+1):(cc+nrow(clusters.kmed[[ii]]))
+  dfrepj$repJ[I] = clusters.kmed[[ii]]$reproducibility.J
+  dfrepj$norm.rank[I] = rank(clusters.kmed[[ii]]$reproducibility.J) / length(I)
+  dfrepj$noise_mag[I] = noise.range[ii]
+  dfrepj$algorithm[I] = "k-Med"
+  cc = cc+length(I)
+  
+  I = (cc+1):(cc+nrow(clusters.mcl[[ii]]))
+  dfrepj$repJ[I] = clusters.mcl[[ii]]$reproducibility.J
+  dfrepj$norm.rank[I] = rank(clusters.mcl[[ii]]$reproducibility.J) / length(I)
+  dfrepj$noise_mag[I] = noise.range[ii]
+  dfrepj$algorithm[I] = "MCL"
+  cc = cc+length(I)
+  
+  I = (cc+1):(cc+nrow(clusters.walk[[ii]]))
+  dfrepj$repJ[I] = clusters.walk[[ii]]$reproducibility.J
+  dfrepj$norm.rank[I] = rank(clusters.walk[[ii]]$reproducibility.J) / length(I)
+  dfrepj$noise_mag[I] = noise.range[ii]
+  dfrepj$algorithm[I] = "walktrap"
+  cc = cc+length(I)
+  
+  I = (cc+1):(cc+nrow(clusters.co[[ii]]))
+  dfrepj$repJ[I] = clusters.co[[ii]]$reproducibility.J
+  dfrepj$norm.rank[I] = rank(clusters.co[[ii]]$reproducibility.J) / length(I)
+  dfrepj$noise_mag[I] = noise.range[ii]
+  dfrepj$algorithm[I] = "CO"
+  cc = cc+length(I)
+}
+dfrepj = dfrepj[1:cc, ]
+
+ggplot(dfrepj, aes(x=norm.rank, y=repJ, color=as.factor(noise_mag))) +
+  facet_wrap(~algorithm) + geom_line()
+
+
+
+### how many iterations do we need?
+
+
+
+### how does repJ vary across iterations? as a function of noise?
+# (hint: it's good if it's consistent!!)
+
+
 
 ### enrichment
-
 # read ontology
 ontology = get_ontology("../data/go-basic.obo")
 # read annotations
@@ -184,7 +235,272 @@ summary(glm(enr[[3]]$nq.enriched ~ clusters$reproducibility.J + clusters$size))
 
 
 
-###################### our interactomes
-# enrichment
+
+# look for clusters that, when segregated, tend to be broken
+df3 = data.frame(clusters = clusts, 
+                 size = unlist(lapply(lapply(lapply(clusts, strsplit, ";"), "[[", 1), length)),
+                 n.segregated = rep(NA, length(clusts)),
+                 n.broken = rep(NA, length(clusts)),
+                 avgsegJ = rep(NA, length(clusts)),
+                 zsegJ = rep(NA, length(clusts)),stringsAsFactors = F)
+for (ii in 1:nrow(df3)) {
+  I.seg = which(broken$id.clust==ii & broken$n.scrambled==0)
+  if (length(I.seg)==0) next
+  df3$n.segregated[ii] = length(I.seg)
+  df3$n.broken[ii] = sum(broken$Ji[I.seg]<1, na.rm = T)
+  df3$avgsegJ[ii] = mean(broken$Ji[I.seg], na.rm = T)
+}
+# Conclusion: Yes! There are clusters that, when segregated from noise, still tend to break.
+
+
+
+
+### predict release-to-release variability of corum clusters
+
+# load corums
+load("../data/corum_old/all_corum_ints.Rda")
+
+# calculate reproducibility of each release
+if (1) {
+  load("../data/corum_old/clusters_tool.Rda") # clusters.old.corum
+} else {
+  clusters.old.corum = list()
+  co.alg = function(x) neR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
+  for (ii in 1:length(ints.old.corum)) {
+    clusters.old.corum[[ii]]  = clust.perturb(ints.old.corum[[ii]], 
+                                              clustering.algorithm = co.alg, 
+                                              noise = 0.1, 
+                                              iter = 1,
+                                              edge.list.format = NULL, 
+                                              cluster.format = NULL)
+  }
+  save(clusters.old.corum, file = "../data/corum_old/clusters_tool.Rda")
+}
+
+# calculate release-to-release variability
+for (ii in 1:(length(clusters.old.corum)-1)) {
+  print(ii)
+  clusters.old.corum[[ii]]$prev.release.J = rep(NA, nrow(clusters.old.corum[[ii]]))
+  these.clusters = clusters.old.corum[[ii]]$cluster
+  ref.clusters = clusters.old.corum[[ii+4]]$cluster
+  for (jj in 1:length(these.clusters)) {
+    clusters.old.corum[[ii]]$prev.release.J[jj] = calcA(these.clusters[jj], ref.clusters)
+  }
+  
+  plot(clusters.old.corum[[ii]]$prev.release.J, 
+           clusters.old.corum[[ii]]$reproducibility.J)
+}
+
+
+
+# ... okay, this doesn't work great.
+#
+# works well for clusters that aren't reproduced in the next corum,
+# but doesn't predict clusters that ARE reproduced.
+#
+# that is, the tool is too pessimistic about reproducibility.
+
+# explore...
+tmp = clusters.old.corum[[5]]
+df = data.frame(bins = seq(from=0, to=.9, length=10),
+                nextJ = numeric(10))
+for (ii in 1:nrow(df)) {
+  ia = tmp$reproducibility.J>df$bins[ii] & tmp$reproducibility.J<(df$bins[ii]+0.1)
+  df$nextJ[ii] = mean(tmp$prev.release.J[ia])
+}
+ggplot(df, aes(x=bins, y=nextJ)) + geom_line()
+
+tmp = clusters.old.corum[[1]]
+tmp$rep.fact = tmp$reproducibility.J > median(tmp$reproducibility.J)
+ggplot(tmp, aes(x=prev.release.J, fill = rep.fact)) + geom_density(alpha=.6)
+
+
+
+# okay rewind.
+# this only works if one random iteration is predictive of another.
+# test that
+tmp1 = clust.perturb(ints.old.corum[[ii]], 
+                     clustering.algorithm = co.alg, 
+                     noise = 0.1, 
+                     iter = 1)
+tmp2 = clust.perturb(ints.old.corum[[ii]], 
+                     clustering.algorithm = co.alg, 
+                     noise = 0.1, 
+                     iter = 1)
+tmp3 = clust.perturb(ints.old.corum[[ii]], 
+                     clustering.algorithm = co.alg, 
+                     noise = 0.1, 
+                     iter = 1)
+tmp4 = clust.perturb(ints.old.corum[[ii]], 
+                     clustering.algorithm = co.alg, 
+                     noise = 0.01, 
+                     iter = 1)
+cor.test(tmp1$reproducibility.J, tmp2$reproducibility.J) # correlated
+cor.test(tmp1$reproducibility.J, tmp3$reproducibility.J) # correlated
+cor.test(tmp2$reproducibility.J, tmp3$reproducibility.J) # correlated
+cor.test(tmp1$reproducibility.J, tmp4$reproducibility.J) #
+
+
+# scratchpad
+# try to get tool to be predictive of corum breakage
+
+# now.
+# if one random iteration is predictive of another, treat corum->corum as an iteration.
+
+# define: how much noise from corum1->5
+ints1 = paste(ints.old.corum[[1]]$protA, ints.old.corum[[1]]$protB, sep="-")
+ints5 = paste(ints.old.corum[[5]]$protA, ints.old.corum[[5]]$protB, sep="-")
+n.added = sum(!ints5 %in% ints1)
+n.removed = sum(!ints1 %in% ints5)
+print(paste("fraction added =",n.added/length(ints1)))
+print(paste("fraction removed =",n.removed/length(ints1)))
+
+# calculate J(corum1->5)
+these.clusters = clusters.old.corum[[1]]$cluster
+ref.clusters = clusters.old.corum[[5]]$cluster
+J15 = numeric(nrow(clusters.old.corum[[1]]))
+for (jj in 1:length(these.clusters)) {
+  J15[jj] = calcA(these.clusters[jj], ref.clusters)
+}
+
+# now, simulate this with random noise
+tmp.add = addcorum(ints.old.corum[[1]], n.added/length(ints1))
+tmp.remove = removecorum(ints.old.corum[[1]], n.removed/length(ints1))
+# find added + removed interactions
+i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% paste(ints.old.corum[[1]]$protA, ints.old.corum[[1]]$protB, sep="-")
+i.remove = !paste(ints.old.corum[[1]]$protA, ints.old.corum[[1]]$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
+# put it together
+ints1.noised = rbind(ints.old.corum[[1]][!i.remove,], tmp.add[i.add,])
+
+# check: how much noise from corum1->noise
+ints1 = paste(ints.old.corum[[1]]$protA, ints.old.corum[[1]]$protB, sep="-")
+intsnoise = paste(ints1.noised$protA, ints1.noised$protB, sep="-")
+n.added = sum(!intsnoise %in% ints1)
+n.removed = sum(!ints1 %in% intsnoise)
+print(paste("fraction added =",n.added/length(ints1)))
+print(paste("fraction removed =",n.removed/length(ints1)))
+
+# cluster
+clust1 = co.alg(ints.old.corum[[1]])
+clust1.noised = co.alg(ints1.noised)
+print(paste("are clust1 and clusters.old.corum[[1]] identical?",identical(clust1, as.list(clusters.old.corum[[1]]$cluster))))
+
+# calculate J(corum1->noise)
+these.clusters = unlist(clust1)
+ref.clusters = unlist(clust1.noised)
+J1noise = numeric(nrow(clusters.old.corum[[1]]))
+for (jj in 1:length(these.clusters)) {
+  J1noise[jj] = calcA(these.clusters[jj], ref.clusters)
+}
+
+plot(J15, J1noise)
+
+# aha!
+# it's the same pattern
+# J15 has way more 1 values, and these are throwing it off.
+# J15 is positive-skewed, J1noise is negative-skewed.
+# that is, there is something inherently different between J1->5 and J1->noise processes.
+#
+# therefore
+# look for differences between (ints1->5)vs(ints1->noise) and (ints5)vs(intsnoise)
+
+# diff1: node loss
+# ints1->5 adds 1926 and loses 282 nodes, ints1->noise adds and loses none
+nodes1 = unique(c(ints.old.corum[[1]]$protA,ints.old.corum[[1]]$protB))
+nodes5 = unique(c(ints.old.corum[[5]]$protA,ints.old.corum[[5]]$protB))
+nodesnoise = unique(c(ints1.noised$protA,ints1.noised$protB))
+n.gain = sum(!nodes5 %in% nodes1)
+n.loss = sum(!nodes1 %in% nodes5)
+
+# oooooooh
+# maybe the edges added in ints1->5 are between NEW nodes!
+# therefore they don't screw up existing clusters.
+# yeah, that makes sense!
+
+# therefore, clust.perturb will be poorly predictive when the primary change is node loss+gain.
+# therefore, think of a situation where edges change but nodes stay the same.
+
+# TEST - filter ints and ints5 to common nodes
+#      - compare J(corum1.filtered->corum5.filtered) to J(corum1.filtered->corum1.filtered.noised)
+# calculate J(corum1.filtered->corum5.filtered)
+nodes1 = unique(c(ints.old.corum[[1]]$protA,ints.old.corum[[1]]$protB))
+nodes5 = unique(c(ints.old.corum[[5]]$protA,ints.old.corum[[5]]$protB))
+nodes = intersect(nodes1, nodes5)
+i1 = ints.old.corum[[1]]$protA %in% nodes & ints.old.corum[[1]]$protB %in% nodes
+ints1.old.filtered = ints.old.corum[[1]][i1,]
+ints1.filtered = paste(ints1.old.filtered$protA, ints1.old.filtered$protB, sep="-")
+i5 = ints.old.corum[[5]]$protA %in% nodes & ints.old.corum[[5]]$protB %in% nodes
+ints5.old.filtered = ints.old.corum[[5]][i5,]
+ints5.filtered = paste(ints5.old.filtered$protA, ints5.old.filtered$protB, sep="-")
+clust1.filtered = co.alg(ints1.old.filtered)
+clust5.filtered = co.alg(ints5.old.filtered)
+# calculate J(corum1.filtered->corum5.filtered)
+these.clusters = unlist(clust1.filtered)
+ref.clusters = unlist(clust5.filtered)
+J1filtered = numeric(length(these.clusters))
+for (jj in 1:length(these.clusters)) {
+  J1filtered[jj] = calcA(these.clusters[jj], ref.clusters)
+}
+# define: how much noise from corum1filtered->5filtered
+n.added = sum(!ints5.filtered %in% ints1.filtered)
+n.removed = sum(!ints1.filtered %in% ints5.filtered)
+print(paste("fraction added =",n.added/length(ints1)))
+print(paste("fraction removed =",n.removed/length(ints1)))
+# simulate the same level of noise (random) 
+tmp.add = addcorum(ints1.old.filtered, n.added/sum(i1))
+tmp.remove = removecorum(ints1.old.filtered, n.removed/sum(i1))
+# find added + removed interactions
+i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% paste(ints1.old.filtered$protA, ints1.old.filtered$protB, sep="-")
+i.remove = !paste(ints1.old.filtered$protA, ints1.old.filtered$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
+# put it together
+ints1.filtered.noised = rbind(ints1.old.filtered[!i.remove,], tmp.add[i.add,])
+# cluster
+clust1.filtered = co.alg(ints1.old.filtered)
+clust1.filtered.noised = co.alg(ints1.filtered.noised)
+# calculate J(corum1.filtered->corum1.filtered.noised)
+these.clusters = unlist(clust1.filtered)
+ref.clusters = unlist(clust1.noised)
+J1filtered.noise = numeric(length(these.clusters))
+for (jj in 1:length(these.clusters)) {
+  J1filtered.noise[jj] = calcA(these.clusters[jj], ref.clusters)
+}
+cor.test(J1filtered, J1filtered.noise)
+
+
+# YES! It works!!
+#
+# now do it with the tool
+co.alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
+clusters1.old.corum.filtered  = clust.perturb(ints1.old.filtered, 
+                                              clustering.algorithm = co.alg, 
+                                              noise = 0.01, 
+                                              iter = 15,
+                                              edge.list.format = NULL, 
+                                              cluster.format = NULL)
+print(paste("are clust1.filtered and clusters1.old.corum.filtered identical?",
+            identical(clust1.filtered, as.list(clusters1.old.corum.filtered$cluster))))
+cor.test(J1filtered, clusters1.old.corum.filtered$reproducibility.J)
+
+
+# Nooooo...
+# it failed...
+#
+# try with separate add+remove levels
+# now do it with the tool
+co.alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
+clusters1.old.corum.filtered2  = clust.perturb2(ints1.old.filtered, 
+                                               clustering.algorithm = co.alg, 
+                                               add.noise = n.added/sum(i1), 
+                                               remove.noise = n.removed/sum(i1), 
+                                               iter = 3,
+                                               edge.list.format = NULL, 
+                                               cluster.format = NULL)
+print(paste("are clust1.filtered and clusters1.old.corum.filtered identical?",
+            identical(clust1.filtered, as.list(clusters1.old.corum.filtered2$cluster))))
+cor.test(J1filtered, clusters1.old.corum.filtered2$reproducibility.J)
+
+
+
+
 
 
