@@ -98,12 +98,13 @@ for (hh in 1:length(add.range)) {
     
     # clusterone
     print("clusterone")
-    co.cluster = clusteroneR(ints.noised, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
-    for (jj in 1:length(pam.cluster)) {
+    co.cluster = unlist(clusteroneR(ints.noised, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
+    for (jj in 1:length(co.cluster)) {
+      cc = cc+1
       clusters$add_mag[cc] = add.range[hh]
       clusters$remove_mag[cc] = remove.range[ii]
       clusters$algorithm[cc] = "co"
-      clusters$cluster[cc] = pam.cluster[jj]
+      clusters$cluster[cc] = co.cluster[jj]
     }
     print(paste("number of clusters =",cc))
   }

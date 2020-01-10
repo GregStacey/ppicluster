@@ -236,6 +236,11 @@ summary(glm(enr[[3]]$nq.enriched ~ clusters$reproducibility.J + clusters$size))
 
 
 
+### motivate the tool
+# show there are clusters that tend to break
+
+load("../data/broken.Rda") # broken
+
 # look for clusters that, when segregated, tend to be broken
 df3 = data.frame(clusters = clusts, 
                  size = unlist(lapply(lapply(lapply(clusts, strsplit, ";"), "[[", 1), length)),
