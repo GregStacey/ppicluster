@@ -52,7 +52,7 @@ for (ii in 1:length(clusts)) {
 }
 df = df[1:cc, ]
 
-iterMax = 1
+iterMax = 50
 nn2 = iterMax * length(clusts)
 cc = 0
 broken = data.frame(id.clust = numeric(nn2),
