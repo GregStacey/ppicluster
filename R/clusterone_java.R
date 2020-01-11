@@ -8,11 +8,11 @@ clusteroneR = function(network, pp=8, density_threshold=0, java_path="../java/cl
   network2 = network[,c(2,1)]
   names(network2) = names(network)
   network = rbind(network, network2)
-  fn_tmpM = "../data/tmp.network.txt"
+  fn_tmpM = paste("../data/tmp",round(runif(1)*1e8),".network.txt", sep="")
   write_tsv(network, fn_tmpM)
   
   # 2. Call clusterone java
-  fn_tmpout = paste("../data/tmp.clusterone.txt")
+  fn_tmpout = paste("../data/tmp",round(runif(1)*1e8),".clusterone.txt", sep="")
   system_call = paste('java -jar ', java_path, ' ', fn_tmpM, ' -s 2 -d ', density_threshold,
                  ' --penalty ', pp, ' > ', fn_tmpout)
   system(system_call)
