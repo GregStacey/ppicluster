@@ -72,7 +72,7 @@ for (hh in 1:length(add.range)) {
     
     # pam
     print("k-med")
-    pam.cluster = pamclust(ints.noised, 100)
+    pam.cluster = pamclust(ints.noised, 1500)
     for (jj in 1:length(pam.cluster)) {
       cc = cc+1
       clusters$add_mag[cc] = add.range[hh]
@@ -83,17 +83,19 @@ for (hh in 1:length(add.range)) {
     
     # mcl
     print("mcl")
-    G = graph.data.frame(ints.noised,directed=FALSE)
-    A = as_adjacency_matrix(G,type="both",names=TRUE,sparse=FALSE)
-    mcl.cluster = mcl(A, addLoops = FALSE)
-    clusts = list()
+    ints = ints.noised[1:1000, ]
+    G = graph.data.frame(ints, directed=FALSE)
+    A = as_adjacency_matrix(G,type="both", names=TRUE,sparse=FALSE)
+    mcl.cluster = mcl(A, addLoops = FALSE, max.iter = 100)
+    unqprots = rownames(A)
     unqclusts = unique(mcl.cluster$Cluster)
     for (ii in 1:length(unqclusts)) {
       cc = cc+1
       clusters$add_mag[cc] = add.range[hh]
       clusters$remove_mag[cc] = remove.range[ii]
       clusters$algorithm[cc] = "mcl"
-      clusters$cluster[cc] = paste(which(mcl.cluster$Cluster == unqclusts[ii]), collapse = ";")
+      I = which(mcl.cluster$Cluster == unqclusts[ii])
+      clusters$cluster[cc] = paste(unqprots[I], collapse = ";")
     }
     
     # clusterone
