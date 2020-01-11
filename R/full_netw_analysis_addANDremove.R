@@ -83,21 +83,22 @@ for (hh in 1:length(add.range)) {
     
     # mcl
     print("mcl")
-    ints = ints.noised[1:1000, ]
-    G = graph.data.frame(ints, directed=FALSE)
+    G = graph.data.frame(ints.noised, directed=FALSE)
     A = as_adjacency_matrix(G,type="both", names=TRUE,sparse=FALSE)
     mcl.cluster = mcl(A, addLoops = FALSE, max.iter = 100)
     unqprots = rownames(A)
-    unqclusts = unique(mcl.cluster$Cluster)
-    for (ii in 1:length(unqclusts)) {
-      cc = cc+1
-      clusters$add_mag[cc] = add.range[hh]
-      clusters$remove_mag[cc] = remove.range[ii]
-      clusters$algorithm[cc] = "mcl"
-      I = which(mcl.cluster$Cluster == unqclusts[ii])
-      clusters$cluster[cc] = paste(unqprots[I], collapse = ";")
+    if (is.data.frame(mcl.cluster)) {
+      unqclusts = unique(mcl.cluster$Cluster)
+      for (ii in 1:length(unqclusts)) {
+        cc = cc+1
+        clusters$add_mag[cc] = add.range[hh]
+        clusters$remove_mag[cc] = remove.range[ii]
+        clusters$algorithm[cc] = "mcl"
+        I = which(mcl.cluster$Cluster == unqclusts[ii])
+        clusters$cluster[cc] = paste(unqprots[I], collapse = ";")
+      }
     }
-    
+
     # clusterone
     print("clusterone")
     co.cluster = unlist(clusteroneR(ints.noised, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
@@ -109,6 +110,10 @@ for (hh in 1:length(add.range)) {
       clusters$cluster[cc] = co.cluster[jj]
     }
     print(paste("number of clusters =",cc))
+    
+    # write
+    fn = "../data/clusters_full_netw_walktrap_addANDremove.txt"
+    write_tsv(clusters[1:cc,], path=fn)
   }
 }
 clusters = clusters[1:cc,]
