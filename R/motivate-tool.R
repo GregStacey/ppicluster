@@ -101,6 +101,6 @@ for (iter in 1:iterMax) {
     broken$n.scrambled[cc] = sum(prots %in% scrambledprots)
     broken$frac.scrambled[cc] = broken$n.scrambled[cc] / length(prots)
   }
-  save(broken, file="../data/broken.Rda")
+  save(clusts,broken, file="../data/broken.Rda")
 }
-save(broken, file="../data/broken.Rda")
+save(clusts,broken, file="../data/broken.Rda")

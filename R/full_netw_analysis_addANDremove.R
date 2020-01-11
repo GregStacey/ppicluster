@@ -89,12 +89,12 @@ for (hh in 1:length(add.range)) {
     unqprots = rownames(A)
     if (is.data.frame(mcl.cluster)) {
       unqclusts = unique(mcl.cluster$Cluster)
-      for (ii in 1:length(unqclusts)) {
+      for (jj in 1:length(unqclusts)) {
         cc = cc+1
         clusters$add_mag[cc] = add.range[hh]
         clusters$remove_mag[cc] = remove.range[ii]
         clusters$algorithm[cc] = "mcl"
-        I = which(mcl.cluster$Cluster == unqclusts[ii])
+        I = which(mcl.cluster$Cluster == unqclusts[jj])
         clusters$cluster[cc] = paste(unqprots[I], collapse = ";")
       }
     }
