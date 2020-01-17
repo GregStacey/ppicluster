@@ -626,3 +626,25 @@ meltmat = function(mat, id.vars) {
 }
 
 
+binarize.corum = function(corum) {
+  
+  # turn corum into a list of protein pairs
+  ints.corum = data.frame(protA = character(10^6),
+                          protB = character(10^6), stringsAsFactors = F)
+  cc = 0
+  for (ii in 1:nrow(corum)) {
+    print(ii)
+    prots = sort(unlist(strsplit(corum$`subunits(UniProt IDs)`[ii], ";")))
+    if (length(prots)<2) next
+    pairs.prots = t(combn(prots, 2))
+    
+    I = (cc+1) : (cc+nrow(pairs.prots))
+    ints.corum$protA[I] = pairs.prots[,1]
+    ints.corum$protB[I] = pairs.prots[,2]
+    cc = cc+length(I)
+  }
+  ints.corum = ints.corum[1:cc,]
+  ints.corum = distinct(ints.corum)
+  
+  return(ints.corum)
+}

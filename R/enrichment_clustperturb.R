@@ -3,9 +3,14 @@ source("clust-perturb-tool/clust-perturb.R")
 source("clust-perturb-tool/functions.R")
 
 
+# binarize corum
+fn = "../data/allComplexes.txt"
+corum = as.data.frame(read_tsv(fn))
+corum = corum[corum$Organism=="Human",]
+ints.corum = binarize.corum(corum)
+
 
 #### cluster 4 algorithms
-load("../data/broken.Rda") # ints.corum
 
 noise.range = 0.1
 iters = 25
