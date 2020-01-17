@@ -167,8 +167,8 @@ clust.perturb2 = function(network,
       ints.shuffle = shufflecorum(network, noise[ii])
       i.removed = !paste(network$protA,network$protB,sep="-") %in% paste(ints.shuffle$protA,ints.shuffle$protB,sep="-")
       ints.removed = network[i.removed,]
-      ia = sapply(ints.removed$protA, FUN = function(x) grepl(x, clusts))
-      ib = sapply(ints.removed$protB, FUN = function(x) grepl(x, clusts))
+      ia = sapply(ints.removed$protA, FUN = function(x) grepl(x, clusters0$cluster))
+      ib = sapply(ints.removed$protB, FUN = function(x) grepl(x, clusters0$cluster))
       n.changed[cc2,] = rowSums(ia & ib, na.rm=T)
       
       # connect ints.shuffle to clusters0
