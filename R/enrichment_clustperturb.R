@@ -5,6 +5,7 @@ source("clust-perturb-tool/functions.R")
 
 
 #### cluster 4 algorithms
+load("../data/broken.Rda") # ints.corum
 
 noise.range = 0.1
 iters = 25
