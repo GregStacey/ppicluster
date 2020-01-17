@@ -15,6 +15,8 @@ require(infotheo)
 require(igraph)
 require(dils)
 require(MCL)
+require(ontologyIndex)
+require(flavin)
 source("clusterone_java.R")
 
 
@@ -532,8 +534,12 @@ consensus.adjmat = function(this.cluster, clusters){
   allProts = unique(c(this.cluster, unlist(lapply(bestMatches, strsplit, ";"))))
   # put this.cluster in the middle
   tmp = allProts[!allProts %in% this.cluster]
-  nn = round(length(tmp)/2)
-  allProts = c(tmp[1:nn], this.cluster, tmp[(nn+1):length(tmp)])
+  if (length(tmp)==1) {
+    allprots = c(this.cluster, tmp)
+  } else if (length(tmp)>1) {
+    nn = round(length(tmp)/2)
+    allProts = c(tmp[1:nn], this.cluster, tmp[(nn+1):length(tmp)])
+  }
   adjmat = matrix(numeric(length(allProts)^2), nrow=length(allProts), ncol=length(allProts))
   df.adjmat = data.frame(prots = character(0),
                          variable = character(0),
@@ -561,6 +567,8 @@ consensus.adjmat = function(this.cluster, clusters){
     df.adjmat = rbind(df.adjmat, df.tmp2)
   }
   df.adjmat$prots = factor(df.adjmat$prots, levels = allProts)
+  df.adjmat$variable = levels(df.adjmat$prots)[match(df.adjmat$variable, levels(df.adjmat$variable))]
+  df.adjmat$variable = factor(df.adjmat$variable, levels = allProts)
   
   return(df.adjmat)
 }

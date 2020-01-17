@@ -5,7 +5,6 @@
 source("./clust-perturb-tool/clust-perturb.R")
 source("./clust-perturb-tool/functions.R")
 source("clusterone_java.R")
-source("functions.R")
 
 require(igraph)
 require(MCL)
@@ -45,7 +44,7 @@ ints.corum = distinct(ints.corum)
 noise.range = c(0, 0.01, 0.1, 0.25, 0.5, 0.75)
 unqprots = unique(c(ints.corum$protA, ints.corum$protB))
 if (1) {
-  
+  load("../data/test_clust_perturb_4algs.Rda")
 } else {
   iters = 5
   alg.names = c("k-Med", "MCL", "walktrap", "CO")
@@ -241,21 +240,76 @@ summary(glm(enr[[3]]$nq.enriched ~ clusters$reproducibility.J + clusters$size))
 
 load("../data/broken.Rda") # broken
 
+# add cluster size to broken
+clust.size = sapply((sapply(clusts, strsplit, ";")), length)
+broken$size = clust.size[broken$id.clust]
+
 # look for clusters that, when segregated, tend to be broken
-df3 = data.frame(clusters = clusts, 
-                 size = unlist(lapply(lapply(lapply(clusts, strsplit, ";"), "[[", 1), length)),
-                 n.segregated = rep(NA, length(clusts)),
-                 n.broken = rep(NA, length(clusts)),
-                 avgsegJ = rep(NA, length(clusts)),
-                 zsegJ = rep(NA, length(clusts)),stringsAsFactors = F)
-for (ii in 1:nrow(df3)) {
-  I.seg = which(broken$id.clust==ii & broken$n.scrambled==0)
-  if (length(I.seg)==0) next
-  df3$n.segregated[ii] = length(I.seg)
-  df3$n.broken[ii] = sum(broken$Ji[I.seg]<1, na.rm = T)
-  df3$avgsegJ[ii] = mean(broken$Ji[I.seg], na.rm = T)
+I = broken$n.scrambled==0
+ggplot(broken[I,], aes(x=id.clust,y=Ji)) + geom_point(alpha=.2)
+I = broken$frac.scrambled<=0.05
+ggplot(broken[I,], aes(x=id.clust,y=Ji)) + geom_jitter(alpha=.2, height = 0.02)
+
+# look for examples
+id = unique(broken$id.clust[broken$size==10])
+I = broken$n.scrambled==0 & broken$id.clust%in%id
+ggplot(broken[I,], aes(x=as.character(id.clust),y=Ji)) + geom_violin(alpha=.2)
+
+# make this plot:
+#   x = cluster rank
+#   y = Ji
+#   color = n.broken
+#   facet = size
+df = data.frame(Ji = numeric(1e5), rank = numeric(1e5), norm.rank = numeric(1e5),
+                size = numeric(1e5), n.scrambled = numeric(1e5),
+                stringsAsFactors = F)
+cc = 0
+#unqsize = c(5, 10, 25, 50)
+unqsize = c(1e5)
+scramblerange = c(0, 1, 2)
+for (ii in 1:length(unqsize)) {
+  for (jj in 1:length(scramblerange)) {
+    I = broken$size<=unqsize[ii] & broken$n.scrambled==scramblerange[jj]
+    if (jj==3) I = broken$size<=unqsize[ii] & broken$n.scrambled>=scramblerange[jj]
+    if (sum(I)==0) next
+    I2 = (cc+1) : (cc+sum(I))
+    df$Ji[I2] = sort(broken$Ji[I], decreasing = F)
+    df$rank[I2] = 1:sum(I)
+    df$norm.rank[I2] = seq(from=0, to=1, length=sum(I))
+    df$size[I2] = unqsize[ii]
+    df$n.scrambled[I2] = scramblerange[jj]
+    cc = cc+sum(I)
+  }
 }
+df = df[1:cc,]
+ggplot(df, aes(x=norm.rank, y=Ji, color=as.character(n.scrambled))) + 
+  facet_wrap(~size) + geom_line(alpha=.99)
+
+ggplot(df, aes(y=Ji, x=as.character(n.scrambled))) + 
+  facet_wrap(~size) + geom_violin(alpha=.99)
+
 # Conclusion: Yes! There are clusters that, when segregated from noise, still tend to break.
+
+
+
+
+### AHA!
+# the tool should produce a connection matrix, where each edge is measuring
+# how likely that pair was to show up in noised clusters.
+# do this for every original cluster.
+# use it to score clusters and show if/how they break apart.
+# identify a cluster that splits in half sensibly.
+# conversely, show a well-connected cluster that survives many edge shufflings.
+#
+# questions
+# 1. how to include this noise-segregating/noise-adding thing to the tool?
+# 2. how to add noise in the tool? why not randomly choose n.add and n.remove?
+#    i.e. not require strict shuffling
+#    or do you want to directly probe each cluster?
+#
+# by segregating noise this way, you get 2 values per clust: n.scrambled + Ji.
+# you should be able to fit a model this data to see if it's higher/lower than random!
+
 
 
 
@@ -506,6 +560,17 @@ cor.test(J1filtered, clusters1.old.corum.filtered2$reproducibility.J)
 
 
 
+
+
+
+##### Waaaaait.
+# Why is low noise repJ so different from segJ for size=3 clusters?
+# In theory they should be kind of the same at low noise!
+#   from figure05.R
+#     mean(jmat[df$size==3,]) = 0.42
+#     mean(df$seg0.repJ[df$size==3], na.rm=T) = 0.99
+co.alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
+test.clust = clust.perturb2(ints.corum, clustering.algorithm = co.alg, noise=0.1, iters=1)
 
 
 

@@ -4,7 +4,7 @@
 
 # functions
 
-calcA = function(this.cluster, clusters) {
+calcA2 = function(this.cluster, clusters) {
   # J, Ji
   # assignment reproducibility
   # essentially the maximum Jaccard index
@@ -19,8 +19,10 @@ calcA = function(this.cluster, clusters) {
     JJ[ii] = length(intersect(this.cluster, that.cluster)) / 
       length(unique(c(this.cluster, that.cluster)))
   }
-  A = max(JJ, na.rm=T)
-  return(A)
+  Ji = max(JJ, na.rm=T)
+  tmp = list(Ji = Ji, best.cluster = clusters[which.max(JJ)])
+  
+  return(tmp)
 }
 
 shufflecorum = function(ints.corum, ff){
