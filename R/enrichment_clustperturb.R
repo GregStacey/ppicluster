@@ -12,7 +12,7 @@ ints.corum = binarize.corum(corum)
 
 #### cluster 4 algorithms
 
-noise.range = 0.1
+noise = 0.1
 iters = 25
 alg.names = c("k-Med", "MCL", "walktrap", "CO")
 alg = c(function(x) pam(x, 1500),
@@ -34,7 +34,7 @@ clusters.kmed = clusters.mcl = clusters.walk = clusters.co = NULL
 print("co")
 jj = 4
 clusters.co = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                             noise = noise.range[ii], iter = iters,
+                             noise = noise, iter = iters,
                              edge.list.format = edge.list.format[[jj]], 
                              cluster.format = cluster.format[[jj]])
 save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
@@ -44,7 +44,7 @@ save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co,
 print("k-med")
 jj = 1
 clusters.kmed = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                              noise = noise.range[ii], iter = iters,
+                              noise = noise, iter = iters,
                               edge.list.format = edge.list.format[[jj]], 
                               cluster.format = cluster.format[[jj]])
 save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
@@ -54,7 +54,7 @@ save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co,
 print("mcl")
 jj = 2
 clusters.mcl = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                             noise = noise.range[ii], iter = iters,
+                             noise = noise, iter = iters,
                              edge.list.format = edge.list.format[[jj]], 
                              cluster.format = cluster.format[[jj]])
 save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
@@ -64,7 +64,7 @@ save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co,
 print("walktrap")
 jj = 3
 clusters.walk = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                              noise = noise.range[ii], iter = iters,
+                              noise = noise, iter = iters,
                               edge.list.format = edge.list.format[[jj]], 
                               cluster.format = cluster.format[[jj]])
 save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
