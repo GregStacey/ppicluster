@@ -44,6 +44,7 @@ clusters = data.frame(network = rep("corum", 10^6),
 cc = 0
 for (hh in 1:length(add.range)) {
   for (ii in 1:length(remove.range)) {
+    if (add.range[hh]==0 & remove.range[ii]==1) next
     print(paste("clustering. add =", add.range[hh], "remove =", remove.range[ii]))
     
     # get shuffled corum
