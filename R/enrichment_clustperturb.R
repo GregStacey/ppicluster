@@ -8,12 +8,13 @@ fn = "../data/allComplexes.txt"
 corum = as.data.frame(read_tsv(fn))
 corum = corum[corum$Organism=="Human",]
 ints.corum = binarize.corum(corum)
+unqprots = unique(c(ints.corum$protA, ints.corum$protB))
 
 
 #### cluster 4 algorithms
 
 noise = 0.1
-iters = 25
+iters = 100
 alg.names = c("k-Med", "MCL", "walktrap", "CO")
 alg = c(function(x) pam(x, 1500),
         function(x) mcl(x, addLoops = FALSE),
@@ -30,45 +31,49 @@ cluster.format = list(function(x) pam.cluster.format(x,unqprots = unqprots),
 clusters.kmed = clusters.mcl = clusters.walk = clusters.co = NULL
 
 
-# co
-print("co")
-jj = 4
-clusters.co = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                             noise = noise, iter = iters,
-                             edge.list.format = edge.list.format[[jj]], 
-                             cluster.format = cluster.format[[jj]])
-save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-     file = "../data/enrichment_clustperturb.Rda")
-
-# k-med
-print("k-med")
-jj = 1
-clusters.kmed = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                              noise = noise, iter = iters,
-                              edge.list.format = edge.list.format[[jj]], 
-                              cluster.format = cluster.format[[jj]])
-save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-     file = "../data/enrichment_clustperturb.Rda")
-
-# mcl
-print("mcl")
-jj = 2
-clusters.mcl = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                             noise = noise, iter = iters,
-                             edge.list.format = edge.list.format[[jj]], 
-                             cluster.format = cluster.format[[jj]])
-save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-     file = "../data/enrichment_clustperturb.Rda")
-
-# walktrap
-print("walktrap")
-jj = 3
-clusters.walk = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                              noise = noise, iter = iters,
-                              edge.list.format = edge.list.format[[jj]], 
-                              cluster.format = cluster.format[[jj]])
-save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-     file = "../data/enrichment_clustperturb.Rda")
+if (0) {
+  load("../data/enrichment_clustperturb.Rda")
+} else {
+  # co
+  print("co")
+  jj = 4
+  clusters.co = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
+                               noise = noise, iter = iters,
+                               edge.list.format = edge.list.format[[jj]], 
+                               cluster.format = cluster.format[[jj]])
+  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+       file = "../data/enrichment_clustperturb.Rda")
+  
+  # k-med
+  print("k-med")
+  jj = 1
+  clusters.kmed = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
+                                 noise = noise, iter = iters,
+                                 edge.list.format = edge.list.format[[jj]], 
+                                 cluster.format = cluster.format[[jj]])
+  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+       file = "../data/enrichment_clustperturb.Rda")
+  
+  # mcl
+  print("mcl")
+  jj = 2
+  clusters.mcl = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
+                                noise = noise, iter = iters,
+                                edge.list.format = edge.list.format[[jj]], 
+                                cluster.format = cluster.format[[jj]])
+  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+       file = "../data/enrichment_clustperturb.Rda")
+  
+  # walktrap
+  print("walktrap")
+  jj = 3
+  clusters.walk = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
+                                 noise = noise, iter = iters,
+                                 edge.list.format = edge.list.format[[jj]], 
+                                 cluster.format = cluster.format[[jj]])
+  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+       file = "../data/enrichment_clustperturb.Rda")
+}
 
 
 
