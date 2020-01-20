@@ -1,4 +1,7 @@
 
+# make figure showing that breakage is reproducible
+
+
 require(ggplot2)
 source("functions.R")
 load("../data/broken.Rda") # broken

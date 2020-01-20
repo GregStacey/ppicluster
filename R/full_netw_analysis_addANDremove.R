@@ -29,9 +29,8 @@ for (ii in 1:nrow(corum)) {
 ints.corum = ints.corum[1:cc,]
 ints.corum = distinct(ints.corum)
 
-# 
-add.range = c(0, 0.01, 0.05, 0.1, 0.25)
-remove.range = c(0, 0.01, 0.05, 0.1, 0.25)
+
+add.range = remove.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 
 
 # make dummy dataframe to fill
@@ -55,8 +54,7 @@ for (hh in 1:length(add.range)) {
     i.remove = !paste(ints.corum$protA, ints.corum$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
     # put it together
     ints.noised = rbind(ints.corum[!i.remove,], tmp.add[i.add,])
-    
-    
+
     # walktrap
     print("walk")
     graph.object = graph_from_edgelist(as.matrix(ints.noised), directed = F)
@@ -87,7 +85,7 @@ for (hh in 1:length(add.range)) {
     A = as_adjacency_matrix(G,type="both", names=TRUE,sparse=FALSE)
     mcl.cluster = mcl(A, addLoops = FALSE, max.iter = 100)
     unqprots = rownames(A)
-    if (is.data.frame(mcl.cluster)) {
+    if (is.list(mcl.cluster)) {
       unqclusts = unique(mcl.cluster$Cluster)
       for (jj in 1:length(unqclusts)) {
         cc = cc+1
