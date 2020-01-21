@@ -55,6 +55,7 @@ for (hh in 1:length(add.range)) {
     i.remove = !paste(ints.corum$protA, ints.corum$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
     # put it together
     ints.noised = rbind(ints.corum[!i.remove,], tmp.add[i.add,])
+    if (nrow(ints.noised) < 2500) next
 
     # walktrap
     print("walk")
