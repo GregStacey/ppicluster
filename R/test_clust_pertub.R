@@ -347,7 +347,7 @@ for (ii in 1:(length(clusters.old.corum)-1)) {
   }
   
   plot(clusters.old.corum[[ii]]$prev.release.J, 
-           clusters.old.corum[[ii]]$reproducibility.J)
+       clusters.old.corum[[ii]]$reproducibility.J)
 }
 
 
@@ -548,12 +548,12 @@ cor.test(J1filtered, clusters1.old.corum.filtered$reproducibility.J)
 # now do it with the tool
 co.alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
 clusters1.old.corum.filtered2  = clust.perturb2(ints1.old.filtered, 
-                                               clustering.algorithm = co.alg, 
-                                               add.noise = n.added/sum(i1), 
-                                               remove.noise = n.removed/sum(i1), 
-                                               iter = 3,
-                                               edge.list.format = NULL, 
-                                               cluster.format = NULL)
+                                                clustering.algorithm = co.alg, 
+                                                add.noise = n.added/sum(i1), 
+                                                remove.noise = n.removed/sum(i1), 
+                                                iter = 3,
+                                                edge.list.format = NULL, 
+                                                cluster.format = NULL)
 print(paste("are clust1.filtered and clusters1.old.corum.filtered identical?",
             identical(clust1.filtered, as.list(clusters1.old.corum.filtered2$cluster))))
 cor.test(J1filtered, clusters1.old.corum.filtered2$reproducibility.J)
@@ -571,6 +571,170 @@ cor.test(J1filtered, clusters1.old.corum.filtered2$reproducibility.J)
 #     mean(df$seg0.repJ[df$size==3], na.rm=T) = 0.99
 co.alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
 test.clust = clust.perturb2(ints.corum, clustering.algorithm = co.alg, noise=0.1, iters=1)
+
+
+
+
+
+##### okay wtheck.
+#   - clust.perturb is not reproducing mcl and kmed results from fig3
+#   - in particular, Ji is way too low
+#   - also, clusters.kmed$cluster has NAs in it
+#   - also, clusters from non-noised network don't match
+
+unqprots = unique(c(ints.corum$protA, ints.corum$protB))
+
+alg = function(x) pam(x, 100)
+edge.list.format = pam.edge.list.format
+
+# start with simple network + first part of tool
+ints = ints.corum[1:1000, ]
+unqprots = unique(c(ints$protA, ints$protB))
+cluster.format = function(x) pam.cluster.format(x,unqprots = unqprots)
+network.input = edge.list.format(ints)
+tmp = clustering.algorithm(network.input)
+ctool.part = unlist(cluster.format(tmp))
+cfig3.part = pamclust(ints, 100)
+identical(ctool.part, cfig3.part)
+# AHA!!!!! 
+# it's the unqprots. it must be for the current network!
+
+# next, simple network + entire tool
+ints = ints.corum[1:1000, ]
+cluster.format = function(x) pam.cluster.format(x,unqprots = unqprots)
+unqprots = unique(c(ints$protA, ints$protB))
+ctool.part = clust.perturb2(ints, clustering.algorithm = alg, noise = 0.1, iter = 2, 
+                            edge.list.format = pam.edge.list.format, cluster.format = cluster.format)
+cfig3.part = pamclust(ints, 100)
+identical(ctool.part$cluster, cfig3.part)
+# WOOHOO!
+# Yup, it's the unqprots.
+
+# now do all of corum
+ints = ints.corum
+alg = function(x) pam(x, 1500)
+unqprots = unique(c(ints$protA, ints$protB))
+cluster.format = function(x) pam.cluster.format(x,unqprots = unqprots)
+ctool.all = clust.perturb2(ints, clustering.algorithm = alg, noise = 0.1, iter = 2, 
+                           edge.list.format = pam.edge.list.format, cluster.format = cluster.format)
+cfig3.all = pamclust(ints, 1500)
+identical(ctool.all$cluster, cfig3.all)
+# YAY!
+# Still identical! Okay, I fixed that!!
+
+# Now, why is Ji so low?
+# try both ways with a lower noise (5%)
+ints = ints.corum
+noise = 0.05
+# tool
+alg = function(x) pam(x, 1500)
+unqprots = unique(c(ints$protA, ints$protB))
+cluster.format = function(x) pam.cluster.format(x,unqprots = unqprots)
+ctool.all = clust.perturb2(ints, clustering.algorithm = alg, noise = noise, iter = 1, 
+                           edge.list.format = pam.edge.list.format, cluster.format = cluster.format)
+# fig 3 method
+tmp = data.frame(cluster = character(1e5),
+                 noise = numeric(1e5),
+                 Ji = numeric(1e5), stringsAsFactors = F)
+clustpam0 = pamclust(ints.corum, nclust = 1500)
+ints.shuffle = shufflecorum(ints.corum, noise)
+clustpam1 = pamclust(ints.shuffle, nclust = 1500)
+Jfig3 = numeric(length(clustpam0))
+for (ii in 1:length(Jfig3)) {
+  tmp = calcA2(clustpam0[ii], clustpam1)
+  Jfig3[ii] = tmp[[1]]
+}
+identical(clustpam0, ctool.all$cluster)
+t.test(Jfig3, ctool.all$reproducibility.J)
+cor.test(Jfig3, ctool.all$reproducibility.J)
+# OOF
+# yeah, the clusters are identical, but
+# Ji is very different between the two methods
+
+# is edge.list.format() screwing up the network?
+edge.list.format = pam.edge.list.format
+e0 = edge.list.format(ints.corum[1:1000, ])
+e1 = edge.list.format(shufflecorum(ints.corum[1:1000, ], 0.05))
+
+# return noise.clusts from the tool and manually calculate Ji
+ints = ints.corum
+noise = 0.05
+# tool
+alg = function(x) pam(x, 1500)
+unqprots = unique(c(ints$protA, ints$protB))
+cluster.format = function(x) pam.cluster.format(x,unqprots = unqprots)
+tmp = clust.perturb2(ints, clustering.algorithm = alg, noise = noise, iter = 1, 
+                     edge.list.format = pam.edge.list.format, cluster.format = cluster.format)
+# ints.shuffle is different...
+e0 = edge.list.format(ints.corum)
+sum(tmp[[3]]==0 & e0==0) / nrow(ints.corum)
+
+
+# OHHHHHH
+# maybe shuffling corum can remove a node or two
+# even losing 1 would change unqprots
+# try again when recalculating unqprots after shuffling
+ints = ints.corum[1:2000,]
+noise = 0.05
+# tool
+alg = function(x) pam(x, 100)
+unqprots = unique(c(ints$protA, ints$protB))
+cluster.format = function(x) pam.cluster.format(x,unqprots = unqprots)
+ctool.all = clust.perturb2(ints, clustering.algorithm = alg, noise = noise, iter = 1, 
+                           edge.list.format = pam.edge.list.format, cluster.format = cluster.format)
+# fig 3 method
+tmp = data.frame(cluster = character(1e5),
+                 noise = numeric(1e5),
+                 Ji = numeric(1e5), stringsAsFactors = F)
+clustpam0 = pamclust(ints, nclust = 100)
+ints.shuffle = shufflecorum(ints, noise)
+clustpam1 = pamclust(ints.shuffle, nclust = 100)
+Jfig3 = numeric(length(clustpam0))
+for (ii in 1:length(Jfig3)) {
+  tmp = calcA2(clustpam0[ii], clustpam1)
+  Jfig3[ii] = tmp[[1]]
+}
+# recalculate J from tool
+ints.shuffle = shufflecorum(network, noise)
+unqprots = unique(c(ints.shuffle$protA, ints.shuffle$protB))
+ints.shuffle = edge.list.format(ints.shuffle)
+these.clusters = clustering.algorithm(ints.shuffle)
+these.clusters = unlist(pam.cluster.format(these.clusters, unqprots = unqprots))
+Jrecalc = numeric(length(clustpam0))
+for (ii in 1:length(clustpam0)) {
+  Jrecalc[ii] = calcA(clustpam0[ii], these.clusters)
+}
+identical(clustpam0, ctool.all$cluster)
+t.test(Jfig3, Jrecalc)
+cor.test(Jfig3, Jrecalc)
+
+
+# okay
+# I replaced cluster.format() with pam.cluster.format()
+# and recalculated unqprots after shuffling. Let's do this thang!
+ints = ints.corum[1:10000,]
+noise = 0.1
+# tool
+alg = function(x) pam(x, 250)
+unqprots = unique(c(ints$protA, ints$protB))
+cluster.format = function(x, y) pam.cluster.format(clusts = x,unqprots = y)
+ctool.all = clust.perturb2(ints, clustering.algorithm = alg, noise = noise, iter = 5, 
+                           edge.list.format = pam.edge.list.format, cluster.format = cluster.format)
+# fig 3 method
+tmp = data.frame(cluster = character(1e5),
+                 noise = numeric(1e5),
+                 Ji = numeric(1e5), stringsAsFactors = F)
+clustpam0 = pamclust(ints, nclust = 250)
+ints.shuffle = shufflecorum(ints, noise)
+clustpam1 = pamclust(ints.shuffle, nclust = 250)
+Jfig3 = numeric(length(clustpam0))
+for (ii in 1:length(Jfig3)) {
+  tmp = calcA2(clustpam0[ii], clustpam1)
+  Jfig3[ii] = tmp[[1]]
+}
+identical(clustpam0, ctool.all$cluster)
+t.test(Jfig3, ctool.all$reproducibility.J)
+cor.test(Jfig3, ctool.all$reproducibility.J)
 
 
 

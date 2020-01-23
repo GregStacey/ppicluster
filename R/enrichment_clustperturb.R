@@ -16,7 +16,7 @@ unqprots = unique(c(ints.corum$protA, ints.corum$protB))
 noise = 0.1
 iters = 100
 alg.names = c("k-Med", "MCL", "walktrap", "CO")
-alg = c(function(x) pam(x, 1500),
+alg = c(function(x) pam(x, 100),
         function(x) mcl(x, addLoops = FALSE),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
@@ -24,7 +24,7 @@ edge.list.format = list(pam.edge.list.format,
                         mcl.edge.list.format, 
                         function(x) graph_from_edgelist(as.matrix(x), directed = F),
                         NULL)
-cluster.format = list(function(x) pam.cluster.format(x,unqprots = unqprots),
+cluster.format = list(pam.cluster.format,
                       mcl.cluster.format,
                       NULL,
                       NULL)
@@ -54,16 +54,6 @@ if (0) {
   save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
        file = "../data/enrichment_clustperturb.Rda")
   
-  # mcl
-  print("mcl")
-  jj = 2
-  clusters.mcl = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
-                                noise = noise, iter = iters,
-                                edge.list.format = edge.list.format[[jj]], 
-                                cluster.format = cluster.format[[jj]])
-  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
-       file = "../data/enrichment_clustperturb.Rda")
-  
   # walktrap
   print("walktrap")
   jj = 3
@@ -71,6 +61,16 @@ if (0) {
                                  noise = noise, iter = iters,
                                  edge.list.format = edge.list.format[[jj]], 
                                  cluster.format = cluster.format[[jj]])
+  save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
+       file = "../data/enrichment_clustperturb.Rda")
+  
+  # mcl
+  print("mcl")
+  jj = 2
+  clusters.mcl = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]], 
+                                noise = noise, iter = iters,
+                                edge.list.format = edge.list.format[[jj]], 
+                                cluster.format = cluster.format[[jj]])
   save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co, 
        file = "../data/enrichment_clustperturb.Rda")
 }

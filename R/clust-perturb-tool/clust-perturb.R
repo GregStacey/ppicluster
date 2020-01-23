@@ -2,7 +2,8 @@
 # TO DO
 # 
 # 1. Include permutation-based significance for repJ numbers
-#    This will be very time intensive, so make it optional.
+#    This can be done AFTER clustering by shuffling protein ids.
+#    This is easier than you think!! (imagine shuffling unqprots)
 
 
 
@@ -124,7 +125,6 @@ clust.perturb = function(network,
 # the same as clust.perturb, except
 #   - also returns the number of shuffled edges per cluster0 in each iter
 #   - also returns the best matches in each iter
-#   - also returns best50, best 75
 clust.perturb2 = function(network, 
                           clustering.algorithm, 
                           noise = 0.5, 
@@ -135,22 +135,22 @@ clust.perturb2 = function(network,
   # cluster without noise
   cc = 0
   network.input = network
+  unqprots = unique(c(network.input$protA, network.input$protB))
   if (!is.null(edge.list.format)) network.input = edge.list.format(network)
   tmp = clustering.algorithm(network.input)
-  if (!is.null(cluster.format)) tmp = cluster.format(tmp)
+  if (!is.null(cluster.format)) tmp = cluster.format(tmp, unqprots)
   # store clusters
   clusters0 = data.frame(cluster = character(length(tmp)),
                          n.removed = rep(NA, length(tmp)),
                          reproducibility.J = rep(NA, length(tmp)),
                          all.iterations.repJ = rep(NA, length(tmp)),
                          best.match = rep(NA, length(tmp)),
-                         best50 = rep(NA, length(tmp)),
-                         best75 = rep(NA, length(tmp)),
                          stringsAsFactors = F)
   for (jj in 1:length(tmp)) clusters0$cluster[jj] = paste(tmp[[jj]], collapse=";")
   rm(tmp)
   str(clusters0)
-  
+  if (iters==0) return(clusters0)
+
   # cluster with noise
   n.changed = matrix(nrow = iters*length(noise), ncol = nrow(clusters0))
   clusters.noise = data.frame(iter = numeric(10^6),
@@ -165,6 +165,7 @@ clust.perturb2 = function(network,
       
       # add noise to network
       ints.shuffle = shufflecorum(network, noise[ii])
+      unqprots = unique(c(ints.shuffle$protA, ints.shuffle$protB))
       i.removed = !paste(network$protA,network$protB,sep="-") %in% paste(ints.shuffle$protA,ints.shuffle$protB,sep="-")
       ints.removed = network[i.removed,]
       ia = sapply(ints.removed$protA, FUN = function(x) grepl(x, clusters0$cluster))
@@ -180,7 +181,7 @@ clust.perturb2 = function(network,
       these.clusters = clustering.algorithm(ints.shuffle)
       
       # transform clusters to list (if needed)
-      if (!is.null(cluster.format)) these.clusters = cluster.format(these.clusters)
+      if (!is.null(cluster.format)) these.clusters = cluster.format(these.clusters, unqprots)
       
       # store these.clusters
       for (jj in 1:length(these.clusters)) {
@@ -195,7 +196,6 @@ clust.perturb2 = function(network,
   
   
   # calculate J for every cluster in clusters0
-  clusters0$best50 = character(nrow(clusters0))
   for (ii in 1:nrow(clusters0)) {
     print(paste("cluster", ii))
     tmp.j = numeric(iters * length(noise))
@@ -223,18 +223,9 @@ clust.perturb2 = function(network,
     clusters0$reproducibility.J[ii] = mean(tmp.j, na.rm=T)
     clusters0$all.iterations.repJ[ii] = paste(tmp.j, collapse = ";")
     clusters0$best.match[ii] = paste(best.match, collapse = " | ")
-    
-    # find best50, best 75
-    # nodes that are in >0.50 (>0.75) of best.matches
-    allprots = unlist(strsplit(unlist(strsplit(clusters0$best.match[ii], " | ", fixed=T)), ";"))
-    freq = table(allprots)
-    freq50 = freq>(round(iters * 0.50))
-    freq75 = freq>(round(iters * 0.75))
-    freq90 = freq>(round(iters * 0.90))
-    if (sum(freq50)>1) clusters0$best50[ii] = paste(sort(names(freq)[freq50]), collapse = ";")
-    if (sum(freq75)>1) clusters0$best75[ii] = paste(sort(names(freq)[freq75]), collapse = ";")
-    if (sum(freq90)>1) clusters0$best90[ii] = paste(sort(names(freq)[freq90]), collapse = ";")
   }
   
   return(clusters0)
+  #tmp = list(clusters0, clusters.noise, ints.shuffle)
+  #return(tmp)
 }

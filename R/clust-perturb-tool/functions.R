@@ -198,7 +198,7 @@ mcl.edge.list.format = function(ints.corum) {
   return(A)
 }
 
-mcl.cluster.format = function(tmp) {
+mcl.cluster.format = function(tmp, unqprots) {
   clusts = list()
   unqclusts = unique(tmp$Cluster)
   for (ii in 1:length(unqclusts)) {
