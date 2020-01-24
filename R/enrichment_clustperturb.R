@@ -120,8 +120,6 @@ clusters = list("clusters.kmed" = clusters.kmed)#,
                # "clusters.walk" = clusters.walk,
                # "clusters.co" = clusters.co)
 all.enr = list() # 4 elements, one for each algorithm
-all.enr50 = list()  
-all.enr75 = list() 
 for (aa in 1:length(clusters)) { 
   # loop over algorithms
   
@@ -152,68 +150,7 @@ for (aa in 1:length(clusters)) {
       all.enr[[aa]][[jj]]$nq.enriched[ii] = sum(p.adjust(pp)<.1)
     }
   }
-  
-  
-  # calculate enrichment for every best50 cluster
-  all.enr50[[aa]] = list()
-  for (ii in 1:3) {
-    all.enr50[[aa]][[ii]] = data.frame(
-      qenriched.goid = character(nrow(clusters[[aa]])), # which go terms is the clusters[[aa]] enriched for
-      np.enriched = numeric(nrow(clusters[[aa]])), # how many enriched go terms (p<0.01)
-      nq.enriched = numeric(nrow(clusters[[aa]])) # how many enriched go terms (q<0.1)
-      , stringsAsFactors = F)
-  }
-  for (ii in 1:nrow(clusters[[aa]])) {
-    print(ii)
-    for (jj in 1:length(anns)) {
-      goids = names(anns[[jj]])
-      pp = rep(NA, length(anns[[jj]]))
-      for (kk in 1:length(anns[[jj]])) {
-        M = sum(unqprots %in% anns[[jj]][[kk]]) # how many proteins have this term (white balls in urn)
-        this.cluster = unlist(strsplit(clusters[[aa]]$best50[ii], ";"))
-        K = length(this.cluster) # size of sample (number of balls drawn)
-        X = sum(this.cluster %in% anns[[jj]][[kk]]) # go id in this cluster (number of white drawn)
-        
-        # probability of drawing that many white balls
-        pp[kk] = phyper(q=X-1, m=M, n=length(unqprots)-M, k=K, lower.tail=FALSE)
-      }
-      all.enr50[[aa]][[jj]]$qenriched.goid[ii] = paste(goids[p.adjust(pp)<.1], collapse = "-")
-      all.enr50[[aa]][[jj]]$np.enriched[ii] = sum(pp<.01)
-      all.enr50[[aa]][[jj]]$nq.enriched[ii] = sum(p.adjust(pp)<.1)
-    }
-  }
-  
-  
-  # calculate enrichment for every best75 cluster
-  all.enr75[[aa]] = list()
-  for (ii in 1:3) {
-    all.enr75[[aa]][[ii]] = data.frame(
-      qenriched.goid = character(nrow(clusters[[aa]])), # which go terms is the clusters[[aa]] enriched for
-      np.enriched = numeric(nrow(clusters[[aa]])), # how many enriched go terms (p<0.01)
-      nq.enriched = numeric(nrow(clusters[[aa]])) # how many enriched go terms (q<0.1)
-      , stringsAsFactors = F)
-  }
-  for (ii in 1:nrow(clusters[[aa]])) {
-    print(ii)
-    for (jj in 1:length(anns)) {
-      goids = names(anns[[jj]])
-      pp = rep(NA, length(anns[[jj]]))
-      for (kk in 1:length(anns[[jj]])) {
-        M = sum(unqprots %in% anns[[jj]][[kk]]) # how many proteins have this term (white balls in urn)
-        this.cluster = unlist(strsplit(clusters[[aa]]$best75[ii], ";"))
-        K = length(this.cluster) # size of sample (number of balls drawn)
-        X = sum(this.cluster %in% anns[[jj]][[kk]]) # go id in this cluster (number of white drawn)
-        
-        # probability of drawing that many white balls
-        pp[kk] = phyper(q=X-1, m=M, n=length(unqprots)-M, k=K, lower.tail=FALSE)
-      }
-      all.enr75[[aa]][[jj]]$qenriched.goid[ii] = paste(goids[p.adjust(pp)<.1], collapse = "-")
-      all.enr75[[aa]][[jj]]$np.enriched[ii] = sum(pp<.01)
-      all.enr75[[aa]][[jj]]$nq.enriched[ii] = sum(p.adjust(pp)<.1)
-    }
-  }
-  
-  save(clusters[[aa]], all.enr, all.enr50, all.enr75, file = "../data/enrichment.Rda")
+  save(clusters[[aa]], all.enr, file = "../data/enrichment.Rda")
 }
 
 
