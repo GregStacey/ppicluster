@@ -449,6 +449,12 @@ shufflecorum = function(ints.corum, ff){
     ib[I] = sample(length(unqprots), sum(I), replace = T)
   }
   
+  # ensure no duplicates
+  while (sum(duplicated(c(paste(ia,ib))))>0) {
+    I = duplicated(c(paste(ia,ib)))
+    ib[I] = sample(length(unqprots), sum(I), replace = T)
+  }
+  
   #
   ints.shuffle$protA = unqprots[ia]
   ints.shuffle$protB = unqprots[ib]

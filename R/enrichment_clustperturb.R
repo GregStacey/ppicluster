@@ -83,7 +83,7 @@ if (0) {
 # read ontology
 ontology = get_ontology("../data/go-basic.obo")
 # read annotations
-if (1) {
+if (0) {
   goa = read_gpa("../data/goa_human.gpa",
                  filter.NOT = T, filter.evidence = c("ND", "IPI", "IEA", "NAS"),
                  ontology = ontology, propagate = T)
@@ -115,12 +115,12 @@ for (ii in 1:length(anns)) {
 
 
 # calculate enrichment for every cluster
-clusters = list("clusters.kmed" = clusters.kmed)#,
-               # "clusters.mcl" = clusters.mcl,
-               # "clusters.walk" = clusters.walk,
-               # "clusters.co" = clusters.co)
+clusters = list("clusters.kmed" = clusters.kmed,
+                "clusters.mcl" = clusters.mcl,
+                "clusters.walk" = clusters.walk,
+                "clusters.co" = clusters.co)
 all.enr = list() # 4 elements, one for each algorithm
-for (aa in 1:length(clusters)) { 
+for (aa in c(2,4)) { 
   # loop over algorithms
   
   all.enr[[aa]] = list()
@@ -150,7 +150,7 @@ for (aa in 1:length(clusters)) {
       all.enr[[aa]][[jj]]$nq.enriched[ii] = sum(p.adjust(pp)<.1)
     }
   }
-  save(clusters[[aa]], all.enr, file = "../data/enrichment.Rda")
+  save(clusters, all.enr, file = "../data/enrichment.Rda")
 }
 
 

@@ -38,16 +38,35 @@ shufflecorum = function(ints.corum, ff){
   ia0 = match(ints.corum$protA, unqprots)
   ib0 = match(ints.corum$protB, unqprots)
   
+  # defined original pairs, possible new pairs
+  tmp = t(combn(1:length(unqprots), 2))
+  all = paste(tmp[,1], tmp[,2])
+  orig = paste(ia0, ib0)
+  poss = all[!all %in% orig]
+  
   # indices of shuffled
   ia = ia0
   ib = ib0
-  ia[I.replace] = sample(length(unqprots), N.replace, replace = T)
-  ib[I.replace] = sample(length(unqprots), N.replace, replace = T)
+  I.new = sample(poss, length(I.replace))
+  ia[I.replace] = as.numeric(sapply(sapply(I.new, strsplit, " "), "[", 1))
+  ib[I.replace] = as.numeric(sapply(sapply(I.new, strsplit, " "), "[", 2))
+  #ia[I.replace] = sample(length(unqprots), N.replace, replace = T)
+  #ib[I.replace] = sample(length(unqprots), N.replace, replace = T)
   
   # ensure no self-interactions
   while (sum(ia==ib)>0) {
     I = ia==ib
     ib[I] = sample(length(unqprots), sum(I), replace = T)
+  }
+  
+  # ensure no duplicates
+  while (sum(duplicated(c(paste(ia,ib))))>0) {
+    I = which(duplicated(c(paste(ia,ib))))
+    for (ii in 1:length(J)) {
+      good = (1:length(unqprots))
+      good = good[!good %in% which(ia0[ib[I[ii]]]==1)]
+      ib[I[ii]] = sample(length(unqprots), sum(I), replace = T)
+    }
   }
   
   #
@@ -57,13 +76,6 @@ shufflecorum = function(ints.corum, ff){
   # quality control: make sure you shuffled N.replace interactions
   N.diff = sum(!ia0==ia | !ib0==ib)
   if (abs(N.replace - N.diff)>5) print(paste("shuffling missed", N.replace-N.diff, "interactions"))
-  
-  # # sort protein pairs alphabetically
-  # for (ii in 1:length(I)) {
-  #   tmp = sort(c(ia[ii], ib[ii]))
-  #   ia[ii] = tmp[1]
-  #   ib[ii] = tmp[2]
-  # }
   
   return(ints.shuffle) 
 }
@@ -192,9 +204,15 @@ pam.cluster.format = function(clusts, unqprots) {
   return(clusts.prots)
 }
 
-mcl.edge.list.format = function(ints.corum) {
+mcl.edge.list.format = function(ints.corum, unqprots=NULL) {
+  if (is.null(unqprots)) unqprots = unique(c(ints.corum$protA, ints.corum$protB))
   G = graph.data.frame(ints.corum,directed=FALSE)
   A = as_adjacency_matrix(G,type="both",names=TRUE,sparse=FALSE)
+  # correct protein ordering
+  I = match(unqprots, rownames(A))
+  A = A[I,I]
+  A[is.na(A)] = 0
+  rownames(A) = colnames(A) = unqprots
   return(A)
 }
 

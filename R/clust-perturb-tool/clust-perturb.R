@@ -132,13 +132,25 @@ clust.perturb2 = function(network,
                           edge.list.format = NULL,
                           cluster.format = NULL) {
   
+  print('1')
+  
   # cluster without noise
   cc = 0
   network.input = network
-  unqprots = unique(c(network.input$protA, network.input$protB))
+  unqprots0 = unique(c(network.input$protA, network.input$protB))
+  print('2')
+  print('2b')
   if (!is.null(edge.list.format)) network.input = edge.list.format(network)
+  print('3')
+  str(network.input)
   tmp = clustering.algorithm(network.input)
-  if (!is.null(cluster.format)) tmp = cluster.format(tmp, unqprots)
+  print('4')
+  if (!is.list(tmp)) {
+    str(tmp)
+    error
+  }
+  if (!is.null(cluster.format)) tmp = cluster.format(tmp, unqprots = unqprots0)
+  print('5')
   # store clusters
   clusters0 = data.frame(cluster = character(length(tmp)),
                          n.removed = rep(NA, length(tmp)),
@@ -158,27 +170,40 @@ clust.perturb2 = function(network,
                               cluster = character(10^6), stringsAsFactors = F)
   cc = 0
   cc2 = 0
-  for (iter in 1:iters) {
-    for (ii in 1:length(noise)) {
+  for (ii in 1:length(noise)) {
+    for (iter in 1:iters) {
       print(paste("clustering iter",iter,"at noise=", noise[ii]))
       cc2 = cc2+1
       
       # add noise to network
       ints.shuffle = shufflecorum(network, noise[ii])
       unqprots = unique(c(ints.shuffle$protA, ints.shuffle$protB))
+      
+      # connect ints.shuffle to clusters0
       i.removed = !paste(network$protA,network$protB,sep="-") %in% paste(ints.shuffle$protA,ints.shuffle$protB,sep="-")
       ints.removed = network[i.removed,]
       ia = sapply(ints.removed$protA, FUN = function(x) grepl(x, clusters0$cluster))
       ib = sapply(ints.removed$protB, FUN = function(x) grepl(x, clusters0$cluster))
       n.changed[cc2,] = rowSums(ia & ib, na.rm=T)
       
-      # connect ints.shuffle to clusters0
-      
       # transform network to required format (if needed)
-      if (!is.null(edge.list.format)) ints.shuffle = edge.list.format(ints.shuffle)
+      if (!is.null(edge.list.format)) ints.shuffle = edge.list.format(ints.shuffle, unqprots0)
+      rownames(ints.shuffle)
       
       # cluster
+      str(ints.shuffle)
       these.clusters = clustering.algorithm(ints.shuffle)
+      str(these.clusters)
+      # catch mcl bug
+      while (is.character(these.clusters)) {
+        # add noise to network
+        ints.shuffle = shufflecorum(network, noise[ii])
+        unqprots = unique(c(ints.shuffle$protA, ints.shuffle$protB))
+        # transform network to required format (if needed)
+        if (!is.null(edge.list.format)) ints.shuffle = edge.list.format(ints.shuffle, unqprots0)
+        rownames(ints.shuffle)
+        these.clusters = clustering.algorithm(ints.shuffle)
+      }
       
       # transform clusters to list (if needed)
       if (!is.null(cluster.format)) these.clusters = cluster.format(these.clusters, unqprots)

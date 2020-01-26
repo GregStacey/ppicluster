@@ -426,8 +426,10 @@ for (jj in 1:length(these.clusters)) {
 tmp.add = addcorum(ints.old.corum[[1]], n.added/length(ints1))
 tmp.remove = removecorum(ints.old.corum[[1]], n.removed/length(ints1))
 # find added + removed interactions
-i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% paste(ints.old.corum[[1]]$protA, ints.old.corum[[1]]$protB, sep="-")
-i.remove = !paste(ints.old.corum[[1]]$protA, ints.old.corum[[1]]$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
+i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% 
+  paste(ints.old.corum[[1]]$protA, ints.old.corum[[1]]$protB, sep="-")
+i.remove = !paste(ints.old.corum[[1]]$protA, ints.old.corum[[1]]$protB, sep="-") %in% 
+  paste(tmp.remove$protA, tmp.remove$protB, sep="-")
 # put it together
 ints1.noised = rbind(ints.old.corum[[1]][!i.remove,], tmp.add[i.add,])
 
@@ -442,7 +444,8 @@ print(paste("fraction removed =",n.removed/length(ints1)))
 # cluster
 clust1 = co.alg(ints.old.corum[[1]])
 clust1.noised = co.alg(ints1.noised)
-print(paste("are clust1 and clusters.old.corum[[1]] identical?",identical(clust1, as.list(clusters.old.corum[[1]]$cluster))))
+print(paste("are clust1 and clusters.old.corum[[1]] identical?",
+            identical(clust1, as.list(clusters.old.corum[[1]]$cluster))))
 
 # calculate J(corum1->noise)
 these.clusters = unlist(clust1)
@@ -509,8 +512,10 @@ print(paste("fraction removed =",n.removed/length(ints1)))
 tmp.add = addcorum(ints1.old.filtered, n.added/sum(i1))
 tmp.remove = removecorum(ints1.old.filtered, n.removed/sum(i1))
 # find added + removed interactions
-i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% paste(ints1.old.filtered$protA, ints1.old.filtered$protB, sep="-")
-i.remove = !paste(ints1.old.filtered$protA, ints1.old.filtered$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
+i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% 
+  paste(ints1.old.filtered$protA, ints1.old.filtered$protB, sep="-")
+i.remove = !paste(ints1.old.filtered$protA, ints1.old.filtered$protB, sep="-") %in% 
+  paste(tmp.remove$protA, tmp.remove$protB, sep="-")
 # put it together
 ints1.filtered.noised = rbind(ints1.old.filtered[!i.remove,], tmp.add[i.add,])
 # cluster
@@ -569,7 +574,8 @@ cor.test(J1filtered, clusters1.old.corum.filtered2$reproducibility.J)
 #   from figure05.R
 #     mean(jmat[df$size==3,]) = 0.42
 #     mean(df$seg0.repJ[df$size==3], na.rm=T) = 0.99
-co.alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
+co.alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, 
+                                 java_path = "../java/cluster_one-1.0.jar")
 test.clust = clust.perturb2(ints.corum, clustering.algorithm = co.alg, noise=0.1, iters=1)
 
 
@@ -662,7 +668,7 @@ noise = 0.05
 # tool
 alg = function(x) pam(x, 1500)
 unqprots = unique(c(ints$protA, ints$protB))
-cluster.format = function(x) pam.cluster.format(x,unqprots = unqprots)
+cluster.format = function(x,y) pam.cluster.format(x,y = unqprots)
 tmp = clust.perturb2(ints, clustering.algorithm = alg, noise = noise, iter = 1, 
                      edge.list.format = pam.edge.list.format, cluster.format = cluster.format)
 # ints.shuffle is different...
@@ -736,5 +742,131 @@ identical(clustpam0, ctool.all$cluster)
 t.test(Jfig3, ctool.all$reproducibility.J)
 cor.test(Jfig3, ctool.all$reproducibility.J)
 
+
+
+
+
+
+# oi vey.
+# do the same process ^ for mcl
+# except you can't fully replicate Figure 3, since that data's from matlab mcl
+ints = ints.corum[1:2000,]
+noise = 0.01
+# tool
+alg = function(x) mcl(x, addLoops = FALSE)
+unqprots = unique(c(ints$protA, ints$protB))
+#cluster.format = function(x) mcl.cluster.format(x,unqprots = unqprots)
+ctool.all = clust.perturb2(ints, clustering.algorithm = alg, noise = noise, iter = 1, 
+                           edge.list.format = mcl.edge.list.format, cluster.format = mcl.cluster.format)
+# fig 3 method
+tmp = data.frame(cluster = character(1e5),
+                 noise = numeric(1e5),
+                 Ji = numeric(1e5), stringsAsFactors = F)
+clustmcl0 = unlist(mcl.cluster.format(mcl(mcl.edge.list.format(ints), addLoops = F)))
+ints.shuffle = shufflecorum(ints, noise)
+clustmcl1 = unlist(mcl.cluster.format(mcl(mcl.edge.list.format(ints.shuffle), addLoops = F)))
+Jfig3 = numeric(length(clustmcl0))
+for (ii in 1:length(Jfig3)) {
+  tmp = calcA2(clustmcl0[ii], clustmcl1)
+  Jfig3[ii] = tmp[[1]]
+}
+identical(clustmcl0, ctool.all$cluster)
+t.test(Jfig3, ctool.all$reproducibility.J)
+cor.test(Jfig3, ctool.all$reproducibility.J)
+# con
+
+# 1. is shuffling working
+ints = ints.corum[1:2000,]
+noise = 0.1
+ints.shuffle = shufflecorum(ints, noise)
+print(sum(ints$protA==ints.shuffle$protA & ints$protB==ints.shuffle$protB) / nrow(ints))
+
+# 2. is edge formatting good?
+edges0 = mcl.edge.list.format(ints)
+edges1 = mcl.edge.list.format(ints.shuffle)
+sum(rownames(edges0) == rownames(edges1)) / length(rownames(edges0))
+# AHA!
+# the rownames are getting shuffled
+# which means the protein order is changing
+# try with passing unqprots...
+unqprots0 = unique(c(ints$protA, ints$protB))
+unqprots1 = unique(c(ints.shuffle$protA, ints.shuffle$protB))
+edges0 = mcl.edge.list.format(ints, unqprots = unqprots0)
+edges1 = mcl.edge.list.format(ints.shuffle, unqprots = unqprots1)
+sum(rownames(edges0) == rownames(edges1)) / length(rownames(edges0))
+# break it up
+G0 = graph.data.frame(ints,directed=FALSE)
+A0 = as_adjacency_matrix(G0,type="both",names=TRUE,sparse=FALSE)
+G1 = graph.data.frame(ints.shuffle,directed=FALSE)
+A1 = as_adjacency_matrix(G1,type="both",names=TRUE,sparse=FALSE)
+sum(rownames(A0) == rownames(A1)) / length(rownames(A0))
+# yeah, proteins are getting reordered
+# and I don't understand what G is
+# try forcing order of A
+unqprots0 = unique(c(ints$protA, ints$protB))
+G0 = graph.data.frame(ints,directed=FALSE)
+A0 = as_adjacency_matrix(G0,type="both",names=TRUE,sparse=FALSE)
+I0 = match(rownames(A0), unqprots0)
+G1 = graph.data.frame(ints.shuffle,directed=FALSE)
+A1 = as_adjacency_matrix(G1,type="both",names=TRUE,sparse=FALSE)
+I1 = match(unqprots0, rownames(A1))
+sum(rownames(A0) == rownames(A1[I1, I1])) / length(rownames(A0))
+# Yes! that works
+# now try putting that in the tool
+ints = ints.corum[1:4000,]
+noise = 0.2
+ctool.all = clust.perturb2(ints, clustering.algorithm = alg, 
+                           noise = noise, iter = 1, 
+                           edge.list.format = mcl.edge.list.format, 
+                           cluster.format = mcl.cluster.format)
+
+# wait... it doesn't work
+# why
+ints = ints.corum0[10001:21000,]
+ints.shuffle = shufflecorum(ints, 0.1)
+unqprots0 = unique(c(ints$protA, ints$protB))
+G = graph.data.frame(ints.shuffle,directed=FALSE)
+A = as_adjacency_matrix(G,type="both",names=TRUE,sparse=FALSE)
+# A doesn't have all the edges. why?
+for (ii in 1:nrow(ints.shuffle)) {
+  ia = which(rownames(A)==ints.shuffle$protA[ii])
+  ib = which(colnames(A)==ints.shuffle$protB[ii])
+  if (A[ia,ib]<1) error
+}
+# correct protein ordering
+I = match(unqprots0, rownames(A))
+A = A[I,I]
+A[is.na(A)] = 0
+rownames(A) = colnames(A) = unqprots0
+
+
+#...
+# okay, try it now with the new code
+
+# 1. is shuffling good?
+ints = ints.corum0[1:2000,]
+noise = 0.1
+ints.shuffle = shufflecorum(ints, noise)
+print(sum(ints$protA==ints.shuffle$protA & ints$protB==ints.shuffle$protB) / nrow(ints))
+
+# 2. is edge formatting good?
+x0 = mcl.edge.list.format(ints)
+x1 = mcl.edge.list.format(ints.shuffle)
+
+# 3. is clustering good
+y0 = mcl(x0,addLoops = F)
+y1 = mcl(x1,addLoops = F)
+
+# 4. cluster formatting is good
+z0 = mcl.cluster.format(y0)
+z1 = mcl.cluster.format(y1)
+
+# 5. does everything work?
+alg = function(x) mcl(x, addLoops = F)
+noise = 0.25
+ctool = clust.perturb2(ints, clustering.algorithm = alg, 
+                       noise = noise, iter = 3, 
+                       edge.list.format = mcl.edge.list.format, 
+                       cluster.format = mcl.cluster.format)
 
 
