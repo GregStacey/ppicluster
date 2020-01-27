@@ -139,7 +139,6 @@ clust.perturb2 = function(network,
   network.input = network
   unqprots0 = unique(c(network.input$protA, network.input$protB))
   print('2')
-  print('2b')
   if (!is.null(edge.list.format)) network.input = edge.list.format(network)
   print('3')
   str(network.input)
