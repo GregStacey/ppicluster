@@ -145,10 +145,6 @@ clust.perturb2 = function(network,
   str(network.input)
   tmp = clustering.algorithm(network.input)
   print('4')
-  if (!is.list(tmp)) {
-    str(tmp)
-    error
-  }
   if (!is.null(cluster.format)) tmp = cluster.format(tmp, unqprots = unqprots0)
   print('5')
   # store clusters
@@ -187,24 +183,12 @@ clust.perturb2 = function(network,
       n.changed[cc2,] = rowSums(ia & ib, na.rm=T)
       
       # transform network to required format (if needed)
-      if (!is.null(edge.list.format)) ints.shuffle = edge.list.format(ints.shuffle, unqprots0)
+      if (!is.null(edge.list.format)) ints.shuffle = edge.list.format(ints.shuffle)
       rownames(ints.shuffle)
       
       # cluster
-      str(ints.shuffle)
       these.clusters = clustering.algorithm(ints.shuffle)
-      str(these.clusters)
-      # catch mcl bug
-      while (is.character(these.clusters)) {
-        # add noise to network
-        ints.shuffle = shufflecorum(network, noise[ii])
-        unqprots = unique(c(ints.shuffle$protA, ints.shuffle$protB))
-        # transform network to required format (if needed)
-        if (!is.null(edge.list.format)) ints.shuffle = edge.list.format(ints.shuffle, unqprots0)
-        rownames(ints.shuffle)
-        these.clusters = clustering.algorithm(ints.shuffle)
-      }
-      
+
       # transform clusters to list (if needed)
       if (!is.null(cluster.format)) these.clusters = cluster.format(these.clusters, unqprots)
       

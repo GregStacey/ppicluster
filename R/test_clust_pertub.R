@@ -870,3 +870,34 @@ ctool = clust.perturb2(ints, clustering.algorithm = alg,
                        cluster.format = mcl.cluster.format)
 
 
+# argh
+# things look okay
+# but mcl is failing lots!
+# see if another package would do better...
+require(hbm)
+ints = ints.corum[1:5000,]
+ints1 = shufflecorum(ints, 0.1)
+adj = mcl.edge.list.format(ints)
+adj1 = mcl.edge.list.format(ints1)
+clust = hbm::mcl(adj, 2)
+clust1 = hbm::mcl(adj1, 2)
+# test it with noise
+ints = ints.corum[1:5000,]
+ints1 = shufflecorum(ints, 0.2)
+unqprots = unique(c(ints$protA, ints$protB))
+unqprots1 = unique(c(ints1$protA, ints1$protB))
+adj = mcl.edge.list.format(ints,unqprots)
+adj1 = mcl.edge.list.format(ints1)
+clust = mcl.cluster.format(hbm::mcl(adj, 2), unqprots)
+clust1 = mcl.cluster.format(hbm::mcl(adj1, 2), unqprots1)
+JJ = numeric(length(clust))
+for (ii in 1:length(clust)) {
+  JJ[ii] = calcA(clust[ii], clust1)
+}
+# check the tool works
+alg = function(x) hbm::mcl(x, infl = 2)
+ctool = clust.perturb2(ints, clustering.algorithm = alg, 
+                       noise = noise, iter = 3, 
+                       edge.list.format = mcl.edge.list.format, 
+                       cluster.format = mcl.cluster.format)
+

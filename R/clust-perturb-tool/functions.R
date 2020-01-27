@@ -204,23 +204,19 @@ pam.cluster.format = function(clusts, unqprots) {
   return(clusts.prots)
 }
 
-mcl.edge.list.format = function(ints.corum, unqprots=NULL) {
-  if (is.null(unqprots)) unqprots = unique(c(ints.corum$protA, ints.corum$protB))
+# mcl
+# requires passing cluster.format the unqprots from the edge list
+# this is so clusters, e.g. "1;2;3" are matched to proteins
+mcl.edge.list.format = function(ints.corum) {
   G = graph.data.frame(ints.corum,directed=FALSE)
   A = as_adjacency_matrix(G,type="both",names=TRUE,sparse=FALSE)
-  # correct protein ordering
-  I = match(unqprots, rownames(A))
-  A = A[I,I]
-  A[is.na(A)] = 0
-  rownames(A) = colnames(A) = unqprots
-  return(A)
 }
 
 mcl.cluster.format = function(tmp, unqprots) {
-  clusts = list()
-  unqclusts = unique(tmp$Cluster)
+  clusts = character()
+  unqclusts = unique(tmp)
   for (ii in 1:length(unqclusts)) {
-    clusts[[ii]] = paste(which(tmp$Cluster == unqclusts[ii]), collapse = ";")
+    clusts[ii] = paste(unqprots[tmp == unqclusts[ii]], collapse = ";")
   }
   return(clusts)
 }
