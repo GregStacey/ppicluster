@@ -17,7 +17,7 @@ noise = 0.1
 iters = 100
 alg.names = c("k-Med", "MCL", "walktrap", "CO")
 alg = c(function(x) pam(x, 1500),
-        function(x) hbm::mcl(x, addLoops = FALSE),
+        function(x) hbm::mcl(x, infl = 2),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
 edge.list.format = list(pam.edge.list.format, 
