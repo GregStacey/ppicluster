@@ -20,6 +20,7 @@ mcl = hbm::mcl
 require(ontologyIndex)
 require(flavin)
 source("clusterone_java.R")
+source("mymcl.R")
 
 
 blank_theme = theme(axis.title.x=element_blank(),

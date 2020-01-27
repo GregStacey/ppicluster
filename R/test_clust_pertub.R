@@ -895,9 +895,47 @@ for (ii in 1:length(clust)) {
   JJ[ii] = calcA(clust[ii], clust1)
 }
 # check the tool works
-alg = function(x) hbm::mcl(x, infl = 2)
+alg = function(x) mymcl(x, infl = 2)
 ctool = clust.perturb2(ints, clustering.algorithm = alg, 
-                       noise = noise, iter = 3, 
+                       noise = noise, iters = 3, 
                        edge.list.format = mcl.edge.list.format, 
                        cluster.format = mcl.cluster.format)
+
+# argh, try it again with my change to hbm::mcl
+alg = function(x) mymcl(x, infl = 2, iter = 20, verbose = T)
+noise = 0.1
+iters = 3
+#
+ints = ints.corum[1:1000,]
+unqprots = unique(c(ints$protA, ints$protB))
+x0 = mcl.edge.list.format(ints)
+y0 = alg(x0)
+z0 = mcl.cluster.format(y0, unqprots = unqprots)
+#
+ints1 = shufflecorum(ints, 0.1)
+unqprots1 = unique(c(ints1$protA, ints1$protB))
+x1 = mcl.edge.list.format(ints1)
+y1 = alg(x1)
+z1 = mcl.cluster.format(y1, unqprots = unqprots1)
+JJ = numeric(length(z0))
+for (ii in 1:length(JJ)) {
+  JJ[ii] = calcA(z0[ii], z1)
+}
+# try with the tool
+ctool = clust.perturb2(ints, clustering.algorithm = alg, 
+                       noise = noise, iters = 3, 
+                       edge.list.format = mcl.edge.list.format, 
+                       cluster.format = mcl.cluster.format)
+# try a higher noise range...
+ctool = clust.perturb2(ints, clustering.algorithm = alg, 
+                       noise = 0.3, iters = 3, 
+                       edge.list.format = mcl.edge.list.format, 
+                       cluster.format = mcl.cluster.format)
+# try all of corum with the tool...
+alg = function(x) mymcl(x, infl = 2, iter = 2, verbose = T)
+ctool = clust.perturb2(ints.corum, clustering.algorithm = alg, 
+                       noise = 0.1, iters = 1, 
+                       edge.list.format = mcl.edge.list.format, 
+                       cluster.format = mcl.cluster.format)
+
 
