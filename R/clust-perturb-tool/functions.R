@@ -1,5 +1,6 @@
 
 # dependencies
+require(Matrix)
 source("mymcl.R")
 
 
