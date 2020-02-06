@@ -119,7 +119,7 @@ clusters = list("clusters.kmed" = clusters.kmed,
                 "clusters.walk" = clusters.walk,
                 "clusters.co" = clusters.co)
 all.enr = list() # 4 elements, one for each algorithm
-for (aa in c(2,4)) { 
+for (aa in 1:length(clusters)) { 
   # loop over algorithms
   
   all.enr[[aa]] = list()

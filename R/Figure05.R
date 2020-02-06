@@ -12,31 +12,6 @@ fn = "../data/allComplexes.txt"
 corum = as.data.frame(read_tsv(fn))
 corum = corum[corum$Organism=="Human",]
 
-df = data.frame(clust = clusts,
-                repJ = clusters.co[[3]]$reproducibility.J,
-                size = numeric(length(clusts)),
-                density = numeric(length(clusts)),
-                n.outside = numeric(length(clusts)),
-                seg.repJ = numeric(length(clusts)),
-                seg0.repJ = numeric(length(clusts)), 
-                corum.J = numeric(length(clusts)), stringsAsFactors = F)
-for (ii in 1:length(clusts)) {
-  print(ii)
-  prots = unlist(strsplit(df$clust[ii], ";"))
-  nn = length(prots)
-  i.within = (ints.corum$protA %in% prots & ints.corum$protB %in% prots)
-  i.without = (ints.corum$protA %in% prots | ints.corum$protB %in% prots) & !i.within
-  
-  df$size[ii] = nn
-  df$density[ii] = sum(i.within) / (nn) / (nn-1) * 2
-  df$n.outside[ii] = sum(i.without)
-  
-  df$seg.repJ[ii] = mean(broken$Ji[broken$id.clust==ii])# & broken$frac.scrambled<=0.99])
-  df$seg0.repJ[ii] = mean(broken$Ji[broken$id.clust==ii & broken$frac.scrambled==0])
-  
-  df$corum.J[ii] = calcA(df$clust[ii], corum$`subunits(UniProt IDs)`)
-}
-df[df$density==0,] = NA
 
 
 # tool figure
@@ -87,12 +62,19 @@ ggsave("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fi
 ###
 load("../data/enrichment_clustperturb_kmed.Rda")
 tmp = clusters.kmed
+load("../data/enrichment_clustperturb_mcl.Rda")
+tmp2 = clusters.mcl
 load("../data/enrichment_clustperturb.Rda")
 clusters.kmed = tmp
+clusters.mcl = tmp2
 rm(tmp)
+rm(tmp2)
+clusts = list("clusters.kmed" = clusters.kmed,
+                "clusters.mcl" = clusters.mcl,
+                "clusters.walk" = clusters.walk,
+                "clusters.co" = clusters.co)
+algs = c("k-Med","MCL", "walktrap", "CO")
 ###
-algs = c("CO", "k-Med", "walktrap")
-clusts = list(clusters.co,clusters.kmed,clusters.walk) # add mcl
 jmat = list()
 for (ii in 1:length(clusts)) {
   clusts[[ii]]$size = sapply((sapply(clusts[[ii]]$cluster, strsplit, ";")), length)
@@ -117,17 +99,50 @@ df2 = df2[1:cc,]
 ggplot(df2, aes(x=algorithm, y=rr)) + 
   geom_boxplot(alpha = 0) + geom_jitter(alpha=.002, width = .25) + 
   theme_bw() + xlab("Clustering algorithm") +
-  ylab("Single iteration Ji correlation (Pearson)")
-ggsave("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5c_v01.pdf",
+  ylab("Noise iteration pairs,\nJi correlation (Pearson)")
+ggsave("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5c_v01.png",
        width=3, height=3)
+
+
 
 # fig 5d
 # breaking clusters are low density
-df$good.or.bad = NA
-df$good.or.bad[df$repJ>0.9 & df$size>3] = 1
-df$good.or.bad[df$repJ<0.5 & df$size>3] = 0
+load("../data/clusters_with_groundtruth.Rda")
+cc =0
+df = data.frame(repJ = numeric(1e5),
+                algorithm = numeric(1e5),
+                size = numeric(1e5),
+                density = numeric(1e5),
+                corum.J = numeric(1e5), stringsAsFactors = F)
+algs = c("k-Med", "MCL", "walktrap", "CO")
+for (ii in 1:length(clusters)) {
+  for (jj in 1:nrow(clusters[[ii]])) {
+    print(jj)
+    prots = unlist(strsplit(clusters[[ii]]$cluster[jj], ";"))
+    nn = length(prots)
+    i.within = (ints.corum$protA %in% prots & ints.corum$protB %in% prots)
+    #i.without = (ints.corum$protA %in% prots | ints.corum$protB %in% prots) & !i.within
+    #df$n.outside[ii] = sum(i.without)
+    
+    #df$seg.repJ[ii] = mean(broken$Ji[broken$id.clust==ii])# & broken$frac.scrambled<=0.99])
+    #df$seg0.repJ[ii] = mean(broken$Ji[broken$id.clust==ii & broken$frac.scrambled==0])
+    
+    cc = cc+1
+    df$size[cc] = nn
+    df$density[cc] = sum(i.within) / (nn) / (nn-1) * 2
+    df$corum.J[cc] = clusters[[ii]]$corumJ[jj]
+    df$repJ[cc] = clusters[[ii]]$reproducibility.J[jj]
+    df$algorithm[cc] = algs[ii]
+  }
+}
+df = df[1:cc,]
+df = df[df$density>0, ]
+df$good.or.bad = rep(NA, nrow(df))
+df$good.or.bad[df$repJ<0.5] = "bad"
+df$good.or.bad[df$repJ>0.75] = "good"
+
 # density
-ggplot(df[!is.na(df$good.or.bad),], aes(x=factor(good.or.bad), y=density)) + 
+ggplot(df[!is.na(df$good.or.bad),], aes(x=factor(algorithm), color=good.or.bad, fill=good.or.bad, y=density)) + 
   geom_jitter(alpha=.5, width=.25) + geom_boxplot(alpha=0) + theme_bw() +
   scale_x_discrete(labels=c("0" = "Less reproducible\n(Ji<0.5)", 
                             "1" = "More reproducible\n(Ji>0.9)")) + xlab("") +
@@ -135,13 +150,9 @@ ggplot(df[!is.na(df$good.or.bad),], aes(x=factor(good.or.bad), y=density)) +
 ggsave("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5d_v01.pdf",
        width=2.5, height=3)
 
-# stats supporting density + n.outside lead to worse clusters
-summary(lm(seg.repJ ~ density + n.outside + size, data=df))
-summary(lm(repJ ~ density + n.outside + size, data=df[df$size>3, ]))
+ggplot(df, aes(x=density, y=repJ, color=algorithm, size=size)) + geom_point(alpha=.4) +
+  theme_bw() + geom_smooth(se=F, method="lm")
 
-
-
-
-
-
+alg = "k-Med"
+cor.test(df$density[df$algorithm==alg], df$repJ[df$algorithm==alg])
 
