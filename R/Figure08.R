@@ -206,5 +206,5 @@ for (ii in 1:length(sets)) {
   df.predrep$set2[I] = paste(x1, collapse = ";")
   cc = cc+nrow(clust2)
 }
-
-
+df.predrep = df.predrep[1:cc,]
+write_tsv(df.predrep, path = "../data/pred_J_expreps.txt")
