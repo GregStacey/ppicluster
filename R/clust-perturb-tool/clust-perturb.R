@@ -35,12 +35,12 @@
 #' 
 #' second example
 
-clust.perturb = function(network, 
-                         clustering.algorithm, 
-                         noise = 0.5, 
-                         iters = 100, 
-                         edge.list.format = NULL,
-                         cluster.format = NULL) {
+clust.perturb0 = function(network, 
+                          clustering.algorithm, 
+                          noise = 0.5, 
+                          iters = 100, 
+                          edge.list.format = NULL,
+                          cluster.format = NULL) {
   
   #print(clustering.algorithm)
   #print(edge.list.format)
@@ -157,7 +157,7 @@ clust.perturb2 = function(network,
   rm(tmp)
   str(clusters0)
   if (iters==0) return(clusters0)
-
+  
   # cluster with noise
   n.changed = matrix(nrow = iters*length(noise), ncol = nrow(clusters0))
   clusters.noise = data.frame(iter = numeric(10^6),
@@ -187,7 +187,7 @@ clust.perturb2 = function(network,
       
       # cluster
       these.clusters = clustering.algorithm(ints.shuffle)
-
+      
       # transform clusters to list (if needed)
       if (!is.null(cluster.format)) these.clusters = cluster.format(these.clusters, unqprots)
       
@@ -236,4 +236,109 @@ clust.perturb2 = function(network,
   return(clusters0)
   #tmp = list(clusters0, clusters.noise, ints.shuffle)
   #return(tmp)
+}
+
+
+
+clust.perturb = function(network, 
+                         clustering.algorithm, 
+                         noise = 0.5, 
+                         iters = 100, 
+                         edge.list.format = NULL,
+                         cluster.format = NULL,
+                         verbose = F) {
+  
+  # set formatting functions
+  # edge.list.format: takes edge list, returns format required by clustering
+  # cluster.format: takes cluster output, returns list of clusters
+  if (is.null(edge.list.format)) edge.list.format = function(x, unqprots) return(x)
+  if (is.null(cluster.format)) cluster.format = function(x, unqprots) return(x)
+  
+  # handle unqprots argument to cluster.format
+  ncfargs = length(formals(cluster.format))
+  
+  # initialise
+  unqprots0 = unique(c(network[,1], network[,2]))
+  network = unique(network[,1:2])
+  
+  # cluster without noise
+  if (ncfargs==2) {
+    tmp = cluster.format(clustering.algorithm(edge.list.format(network)), unqprots = unqprots0)
+  } else if (ncfargs==1) {
+    tmp = cluster.format(clustering.algorithm(edge.list.format(network)))
+  } else error
+  
+  
+  # store clusters
+  clusters0 = data.frame(cluster = character(length(tmp)),
+                         reproducibility.J = rep(NA, length(tmp)),
+                         all.iterations.repJ = rep(NA, length(tmp)),
+                         best.match = rep(NA, length(tmp)),
+                         stringsAsFactors = F)
+  for (jj in 1:length(tmp)) clusters0$cluster[jj] = paste(tmp[[jj]], collapse=";")
+  if (iters==0) return(clusters0)
+  
+  # cluster with noise
+  clusters.noise = data.frame(iter = numeric(10^6),
+                              cluster = character(10^6), stringsAsFactors = F)
+  cc = 0
+  for (iter in 1:iters) {
+    # add noise to network
+    ints.shuffle = shufflenetwork(network, noise)
+    unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
+    
+    # cluster
+    these.clusters = cluster.format(clustering.algorithm(edge.list.format(ints.shuffle)), unqprots)
+    
+    # store these.clusters
+    for (jj in 1:length(these.clusters)) {
+      cc = cc+1
+      clusters.noise$iter[cc] = iter
+      clusters.noise$cluster[cc] = paste(these.clusters[[jj]], collapse=";")
+    }
+  }
+  clusters.noise = clusters.noise[1:cc,]
+  
+  
+  # calculate J for every cluster in clusters0
+  for (ii in 1:nrow(clusters0)) {
+    print(paste("cluster", ii))
+    tmp.j = numeric(iters * length(noise))
+    best.match = character(iters* length(noise))
+    cc = 0
+    for (jj in 1:iters) {
+      for (kk in 1:length(noise)) {
+        noise.clusters = clusters.noise$cluster[clusters.noise$iter==jj]
+        cc = cc+1
+        tmp = calcA2(clusters0$cluster[ii], noise.clusters)
+        tmp.j[cc] = tmp[[1]]
+        best.match[cc] = tmp[[2]]
+        
+        # control. check jaccard(clusters0, best.match) == tmp.j
+        prots0 = unlist(strsplit(clusters0$cluster[ii], ";"))
+        prots = unlist(strsplit(best.match[cc], ";"))
+        jcalc = sum(prots0 %in% prots)/(length(unique(c(prots0, prots))))
+        if (!jcalc==tmp.j[cc]) error
+      }
+    }
+    
+    clusters0$reproducibility.J[ii] = mean(tmp.j, na.rm=T)
+    clusters0$all.iterations.repJ[ii] = paste(tmp.j, collapse = ";")
+    clusters0$best.match[ii] = paste(best.match, collapse = " | ")
+  }
+  
+  # calculate fnode
+  clusters0$fnode = character(nrow(clusters0))
+  for (jj in 1:nrow(clusters0)) {
+    print(jj)
+    noiseclusts = unlist(strsplit(clusters0$best.match[jj], " | ", fixed=T))
+    prots = unlist(strsplit(clusters0$cluster[jj], ";"))
+    fnode = numeric(length(prots))
+    for (kk in 1:length(fnode)) {
+      fnode[kk] = sum(grepl(prots[kk], noiseclusts))
+    }
+    clusters0$fnode[jj] = paste(fnode, collapse = ";")
+  }
+  
+  return(clusters0)
 }

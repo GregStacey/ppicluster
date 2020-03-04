@@ -657,3 +657,38 @@ binarize.corum = function(corum) {
   
   return(ints.corum)
 }
+
+
+netdiff = function(g1, g2) {
+  
+  df = data.frame(edge.gain = numeric(1), 
+                  edge.loss = numeric(1), 
+                  node.gain = numeric(1),
+                  node.loss = numeric(1),
+                  En1n1 = numeric(1),
+                  En1n2 = numeric(1),
+                  En2n2 = numeric(1))
+  
+  prots1 = names(V(g1))
+  prots2 = names(V(g2))
+  ints1 = attr(E(g1), "vnames")
+  ints2 = attr(E(g2), "vnames")
+  
+  df$edge.gain = sum(! ints2 %in% ints1)
+  df$edge.loss = sum(! ints1 %in% ints2)
+  df$node.gain = sum(! prots2 %in% prots1)
+  df$node.loss = sum(! prots1 %in% prots2)
+  
+  n2 = prots2[!prots2 %in% prots1] # nodes only in net2
+
+  tmp = sapply(ints2, FUN = function(x) strsplit(x, "|", fixed=T))
+  na = unlist(sapply(tmp, "[", 1))
+  nb = unlist(sapply(tmp, "[", 2))
+  i.new = !ints2 %in% ints1
+  
+  df$En1n1 = sum(!na[i.new]%in%n2 & !nb[i.new]%in%n2) # edge between original nodes
+  df$En2n2 = sum(na[i.new]%in%n2 & nb[i.new]%in%n2) # edge between new nodes
+  df$En1n2 = sum(i.new) - df$En1n1 - df$En2n2
+  
+  return(df)
+}
