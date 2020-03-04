@@ -6,12 +6,12 @@ source("./clust-perturb-tool/functions.R")
 source("clusterone_java.R")
 
 # load networks
-# corum
-load("../data/corum_old/all_corum_ints.Rda") # ints.old.corum
-all.corum.ints = list()
-for (ii in 1:5) {
-  all.corum.ints[[ii]] = paste(ints.old.corum[[ii]]$protA, ints.old.corum[[ii]]$protB, sep="-")
-}
+# # corum
+# load("../data/corum_old/all_corum_ints.Rda") # ints.old.corum
+# all.corum.ints = list()
+# for (ii in 1:5) {
+#   all.corum.ints[[ii]] = paste(ints.old.corum[[ii]]$protA, ints.old.corum[[ii]]$protB, sep="-")
+# }
 # co-fractionation datasets
 fn = "../data/interactomes_moredata.txt"
 ints.c = as.data.frame(read_tsv(fn))
