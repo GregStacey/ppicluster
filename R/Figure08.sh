@@ -8,4 +8,4 @@
 
 module load r/3.4.3
 
-Rscript Figure.R
+Rscript Figure08.R
