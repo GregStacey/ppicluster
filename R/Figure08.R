@@ -209,8 +209,7 @@ for (ii in 1:length(sets)) {
   cc = cc+nrow(clust2)
   
   # save in case of crash
-  df.predrep = df.predrep[1:cc,]
-  write_tsv(df.predrep, path = "../data/pred_J_expreps.txt")
+  write_tsv(df.predrep[1:cc,], path = "../data/pred_J_expreps.txt")
 }
 df.predrep = df.predrep[1:cc,]
 write_tsv(df.predrep, path = "../data/pred_J_expreps.txt")
