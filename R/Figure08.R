@@ -176,11 +176,13 @@ for (ii in 1:length(sets)) {
   net1 = ints.c[ia,1:2]
   net2 = ints.c[ib,1:2]
   
+  if (nrow(net1)<1000 | nrow(net2)<1000) next
+  
   # cluster with clust.perturb
   alg.names = c("k-Med", "MCL", "walktrap", "CO")
   alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
   clust1 = clust.perturb2(net1, clustering.algorithm = alg, noise = 0.15, iters = 5)
-  clust2 = clust.perturb2(net2, clustering.algorithm = alg, noise = 0.15, iters = 4)
+  clust2 = clust.perturb2(net2, clustering.algorithm = alg, noise = 0.15, iters = 5)
   
   # calc diff b/w sets
   clust1$repJ.clust2 = numeric(nrow(clust1))
@@ -205,6 +207,10 @@ for (ii in 1:length(sets)) {
   df.predrep$set1[I] = paste(x2, collapse = ";")
   df.predrep$set2[I] = paste(x1, collapse = ";")
   cc = cc+nrow(clust2)
+  
+  # save in case of crash
+  df.predrep = df.predrep[1:cc,]
+  write_tsv(df.predrep, path = "../data/pred_J_expreps.txt")
 }
 df.predrep = df.predrep[1:cc,]
 write_tsv(df.predrep, path = "../data/pred_J_expreps.txt")
