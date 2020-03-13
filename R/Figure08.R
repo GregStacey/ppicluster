@@ -169,7 +169,7 @@ cluster.format = list(function(x) pam.cluster.format(x,unqprots = unqprots),
                       mcl.cluster.format,
                       NULL,
                       NULL)
-if (1) {
+if (0) {
   df.predrep = as.data.frame(read_tsv("../data/pred_J_expreps.txt"))
 } else {
   cc = 0
