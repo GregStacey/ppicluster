@@ -156,60 +156,96 @@ sets = list(c(1:4),c(5:8),
             c(9:11),c(12:14), 
             c(15:17),c(18:20), 
             c(21:24),c(25:28))
-cc = 0
-df.predrep = data.frame(predJ = numeric(1e5), # from clust.perturb
-                        repJ = numeric(1e5), # comparing to other set
-                        set1 = character(1e5),
-                        set2 = character(1e5), stringsAsFactors = F)
-for (ii in 1:length(sets)) {
-  nn = length(sets[[ii]])
-  x1 = sample(sets[[ii]], floor(nn/2))
-  x2 = sets[[ii]][!sets[[ii]] %in% x1]
-  x1 = sapply(x1, FUN = function(x) paste("us_",x,sep=""))
-  x2 = sapply(x2, FUN = function(x) paste("us_",x,sep=""))
-  
-  # make interactome from subset of replicates
-  ia = ints.c$dataset %in% x1 & ints.c$noise_mag==0
-  ib = ints.c$dataset %in% x2 & ints.c$noise_mag==0
-  protsa = unique(c(ints.c$protA[ia], ints.c$protB[ia]))
-  protsb = unique(c(ints.c$protA[ib], ints.c$protB[ib]))
-  net1 = ints.c[ia,1:2]
-  net2 = ints.c[ib,1:2]
-  
-  if (nrow(net1)<1000 | nrow(net2)<1000) next
-  
-  # cluster with clust.perturb
-  alg.names = c("k-Med", "MCL", "walktrap", "CO")
-  alg = function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar")
-  clust1 = clust.perturb2(net1, clustering.algorithm = alg, noise = 0.15, iters = 5)
-  clust2 = clust.perturb2(net2, clustering.algorithm = alg, noise = 0.15, iters = 5)
-  
-  # calc diff b/w sets
-  clust1$repJ.clust2 = numeric(nrow(clust1))
-  for (ii in 1:nrow(clust1)) {
-    clust1$repJ.clust2[ii] = calcA(clust1$cluster[ii], clust2$cluster)
+alg.names = c("k-Med", "MCL", "walktrap", "CO")
+alg = c(function(x) pam(x, 50),
+        function(x) mcl(x, addLoops = FALSE),
+        walktrap.community,
+        function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
+edge.list.format = list(pam.edge.list.format, 
+                        mcl.edge.list.format, 
+                        function(x) graph_from_edgelist(as.matrix(x), directed = F),
+                        NULL)
+cluster.format = list(function(x) pam.cluster.format(x,unqprots = unqprots),
+                      mcl.cluster.format,
+                      NULL,
+                      NULL)
+if (1) {
+  df.predrep = as.data.frame(read_tsv("../data/pred_J_expreps.txt"))
+} else {
+  cc = 0
+  df.predrep = data.frame(algorithm = character(1e5),
+                          predJ = numeric(1e5), # from clust.perturb
+                          repJ = numeric(1e5), # comparing to other set
+                          set1 = character(1e5),
+                          set2 = character(1e5), stringsAsFactors = F)
+  for (ii in 1:length(sets)) {
+    nn = length(sets[[ii]])
+    x1 = sample(sets[[ii]], floor(nn/2))
+    x2 = sets[[ii]][!sets[[ii]] %in% x1]
+    x1 = sapply(x1, FUN = function(x) paste("us_",x,sep=""))
+    x2 = sapply(x2, FUN = function(x) paste("us_",x,sep=""))
+    
+    # make interactome from subset of replicates
+    ia = ints.c$dataset %in% x1 & ints.c$noise_mag==0
+    ib = ints.c$dataset %in% x2 & ints.c$noise_mag==0
+    protsa = unique(c(ints.c$protA[ia], ints.c$protB[ia]))
+    protsb = unique(c(ints.c$protA[ib], ints.c$protB[ib]))
+    net1 = ints.c[ia,1:2]
+    net2 = ints.c[ib,1:2]
+    
+    if (nrow(net1)<1000 | nrow(net2)<1000) next
+    
+    # cluster with clust.perturb
+    for (jj in 1:4) {
+      clust1 = clust.perturb2(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
+                              edge.list.format = edge.list.format[[jj]], 
+                              cluster.format = cluster.format[[jj]])
+      clust2 = clust.perturb2(net2, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
+                              edge.list.format = edge.list.format[[jj]], 
+                              cluster.format = cluster.format[[jj]])
+      
+      # calc diff b/w sets
+      clust1$repJ.clust2 = numeric(nrow(clust1))
+      for (ii in 1:nrow(clust1)) {
+        clust1$repJ.clust2[ii] = calcA(clust1$cluster[ii], clust2$cluster)
+      }
+      clust2$repJ.clust1 = numeric(nrow(clust2))
+      for (ii in 1:nrow(clust2)) {
+        clust2$repJ.clust1[ii] = calcA(clust2$cluster[ii], clust1$cluster)
+      }
+      
+      # store in dataframe
+      I = (cc+1) : (cc+nrow(clust1))
+      df.predrep$alg[I] = alg.names[jj]
+      df.predrep$predJ[I] = clust1$reproducibility.J
+      df.predrep$repJ[I] = clust1$repJ.clust2
+      df.predrep$set1[I] = paste(x1, collapse = ";")
+      df.predrep$set2[I] = paste(x2, collapse = ";")
+      cc = cc+nrow(clust1)
+      I = (cc+1) : (cc+nrow(clust2))
+      df.predrep$alg[I] = alg.names[jj]
+      df.predrep$predJ[I] = clust2$reproducibility.J
+      df.predrep$repJ[I] = clust2$repJ.clust1
+      df.predrep$set1[I] = paste(x2, collapse = ";")
+      df.predrep$set2[I] = paste(x1, collapse = ";")
+      cc = cc+nrow(clust2)
+      
+      # save in case of crash
+      write_tsv(df.predrep[1:cc,], path = "../data/pred_J_expreps.txt")
+    }
   }
-  clust2$repJ.clust1 = numeric(nrow(clust2))
-  for (ii in 1:nrow(clust2)) {
-    clust2$repJ.clust1[ii] = calcA(clust2$cluster[ii], clust1$cluster)
-  }
-  
-  # store in dataframe
-  I = (cc+1) : (cc+nrow(clust1))
-  df.predrep$predJ[I] = clust1$reproducibility.J
-  df.predrep$repJ[I] = clust1$repJ.clust2
-  df.predrep$set1[I] = paste(x1, collapse = ";")
-  df.predrep$set2[I] = paste(x2, collapse = ";")
-  cc = cc+nrow(clust1)
-  I = (cc+1) : (cc+nrow(clust2))
-  df.predrep$predJ[I] = clust2$reproducibility.J
-  df.predrep$repJ[I] = clust2$repJ.clust1
-  df.predrep$set1[I] = paste(x2, collapse = ";")
-  df.predrep$set2[I] = paste(x1, collapse = ";")
-  cc = cc+nrow(clust2)
-  
-  # save in case of crash
-  write_tsv(df.predrep[1:cc,], path = "../data/pred_J_expreps.txt")
+  df.predrep = df.predrep[1:cc,]
+  write_tsv(df.predrep, path = "../data/pred_J_expreps.txt")
 }
-df.predrep = df.predrep[1:cc,]
-write_tsv(df.predrep, path = "../data/pred_J_expreps.txt")
+
+
+
+# analyze
+ggplot(df, aes(x=predJ, y=repJ)) + geom_point(alpha = .25) + 
+  geom_smooth(method = "lm") +
+  xlab("Predicted reproducibility (clust.perturb, Ji)") +
+  ylab("Actual reproducibility\n(experiment-to-experiment)") + 
+  theme_bw() 
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_8a_v01.pdf"
+ggsave(fn, width=3.4, height=3)
+
