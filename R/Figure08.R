@@ -158,7 +158,7 @@ sets = list(c(1:4),c(5:8),
             c(21:24),c(25:28))
 alg.names = c("k-Med", "MCL", "walktrap", "CO")
 alg = c(function(x) pam(x, 50),
-        function(x) mcl(x, addLoops = FALSE),
+        function(x) mcl(x, infl = 2, remove.self.loops = FALSE),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
 edge.list.format = list(pam.edge.list.format, 
@@ -205,42 +205,43 @@ if (0) {
     
     # cluster with clust.perturb
     #for (jj in 1:4) {
-      print(paste("jj=",jj,",  ii=",ii))
-      clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
-                             edge.list.format = edge.list.format[[jj]], 
-                             cluster.format = cluster.format[[jj]])
-      clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
-                             edge.list.format = edge.list.format[[jj]], 
-                             cluster.format = cluster.format[[jj]])
-      
-      # calc diff b/w sets
-      clust1$repJ.clust2 = numeric(nrow(clust1))
-      for (ii in 1:nrow(clust1)) {
-        clust1$repJ.clust2[ii] = calcA(clust1$cluster[ii], clust2$cluster)
-      }
-      clust2$repJ.clust1 = numeric(nrow(clust2))
-      for (ii in 1:nrow(clust2)) {
-        clust2$repJ.clust1[ii] = calcA(clust2$cluster[ii], clust1$cluster)
-      }
-      
-      # store in dataframe
-      I = (cc+1) : (cc+nrow(clust1))
-      df.predrep$alg[I] = alg.names[jj]
-      df.predrep$predJ[I] = clust1$reproducibility.J
-      df.predrep$repJ[I] = clust1$repJ.clust2
-      df.predrep$set1[I] = paste(x1, collapse = ";")
-      df.predrep$set2[I] = paste(x2, collapse = ";")
-      cc = cc+nrow(clust1)
-      I = (cc+1) : (cc+nrow(clust2))
-      df.predrep$alg[I] = alg.names[jj]
-      df.predrep$predJ[I] = clust2$reproducibility.J
-      df.predrep$repJ[I] = clust2$repJ.clust1
-      df.predrep$set1[I] = paste(x2, collapse = ";")
-      df.predrep$set2[I] = paste(x1, collapse = ";")
-      cc = cc+nrow(clust2)
-      
-      # save in case of crash
-      write_tsv(df.predrep[1:cc,], path = sf)
+    print(paste("jj=",jj,",  ii=",ii, ", net1"))
+    clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
+                           edge.list.format = edge.list.format[[jj]], 
+                           cluster.format = cluster.format[[jj]])
+    print(paste("jj=",jj,",  ii=",ii, ", net2"))
+    clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
+                           edge.list.format = edge.list.format[[jj]], 
+                           cluster.format = cluster.format[[jj]])
+    
+    # calc diff b/w sets
+    clust1$repJ.clust2 = numeric(nrow(clust1))
+    for (ii in 1:nrow(clust1)) {
+      clust1$repJ.clust2[ii] = calcA(clust1$cluster[ii], clust2$cluster)
+    }
+    clust2$repJ.clust1 = numeric(nrow(clust2))
+    for (ii in 1:nrow(clust2)) {
+      clust2$repJ.clust1[ii] = calcA(clust2$cluster[ii], clust1$cluster)
+    }
+    
+    # store in dataframe
+    I = (cc+1) : (cc+nrow(clust1))
+    df.predrep$alg[I] = alg.names[jj]
+    df.predrep$predJ[I] = clust1$reproducibility.J
+    df.predrep$repJ[I] = clust1$repJ.clust2
+    df.predrep$set1[I] = paste(x1, collapse = ";")
+    df.predrep$set2[I] = paste(x2, collapse = ";")
+    cc = cc+nrow(clust1)
+    I = (cc+1) : (cc+nrow(clust2))
+    df.predrep$alg[I] = alg.names[jj]
+    df.predrep$predJ[I] = clust2$reproducibility.J
+    df.predrep$repJ[I] = clust2$repJ.clust1
+    df.predrep$set1[I] = paste(x2, collapse = ";")
+    df.predrep$set2[I] = paste(x1, collapse = ";")
+    cc = cc+nrow(clust2)
+    
+    # save in case of crash
+    write_tsv(df.predrep[1:cc,], path = sf)
     #}
   }
   write_tsv(df.predrep[1:cc,], path = sf)
