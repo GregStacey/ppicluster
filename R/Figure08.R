@@ -174,7 +174,8 @@ if (0) {
 } else {
   # handle command line args
   jj = as.numeric(commandArgs(trailingOnly = T))
-  sf = paste("../data/pred_J_expreps_",alg.names[jj],".txt")
+  sf = paste("../data/pred_J_expreps_",alg.names[jj],".txt", sep="")
+  print(paste("saving data to", sf))
   
   cc = 0
   df.predrep = data.frame(algorithm = character(1e5),
