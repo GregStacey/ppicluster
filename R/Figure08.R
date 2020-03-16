@@ -201,12 +201,12 @@ if (0) {
     # cluster with clust.perturb
     for (jj in 1:4) {
       print(paste("jj=",jj,",  ii=",ii))
-      clust1 = clust.perturb2(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
-                              edge.list.format = edge.list.format[[jj]], 
-                              cluster.format = cluster.format[[jj]])
-      clust2 = clust.perturb2(net2, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
-                              edge.list.format = edge.list.format[[jj]], 
-                              cluster.format = cluster.format[[jj]])
+      clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
+                             edge.list.format = edge.list.format[[jj]], 
+                             cluster.format = cluster.format[[jj]])
+      clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
+                             edge.list.format = edge.list.format[[jj]], 
+                             cluster.format = cluster.format[[jj]])
       
       # calc diff b/w sets
       clust1$repJ.clust2 = numeric(nrow(clust1))
