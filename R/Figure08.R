@@ -165,13 +165,17 @@ edge.list.format = list(pam.edge.list.format,
                         mcl.edge.list.format, 
                         function(x) graph_from_edgelist(as.matrix(x), directed = F),
                         NULL)
-cluster.format = list(function(x) pam.cluster.format(x,unqprots = unqprots),
+cluster.format = list(pam.cluster.format,
                       mcl.cluster.format,
                       NULL,
                       NULL)
 if (0) {
   df.predrep = as.data.frame(read_tsv("../data/pred_J_expreps.txt"))
 } else {
+  # handle command line args
+  jj = as.numeric(commandArgs(trailingOnly = T))
+  sf = paste("../data/pred_J_expreps_",alg.names[jj],".txt")
+  
   cc = 0
   df.predrep = data.frame(algorithm = character(1e5),
                           predJ = numeric(1e5), # from clust.perturb
@@ -199,7 +203,7 @@ if (0) {
     }
     
     # cluster with clust.perturb
-    for (jj in 1:4) {
+    #for (jj in 1:4) {
       print(paste("jj=",jj,",  ii=",ii))
       clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
                              edge.list.format = edge.list.format[[jj]], 
@@ -235,21 +239,20 @@ if (0) {
       cc = cc+nrow(clust2)
       
       # save in case of crash
-      write_tsv(df.predrep[1:cc,], path = "../data/pred_J_expreps.txt")
-    }
+      write_tsv(df.predrep[1:cc,], path = sf)
+    #}
   }
-  df.predrep = df.predrep[1:cc,]
-  write_tsv(df.predrep, path = "../data/pred_J_expreps.txt")
+  write_tsv(df.predrep[1:cc,], path = sf)
 }
 
 
-
-# analyze
-ggplot(df, aes(x=predJ, y=repJ)) + geom_point(alpha = .25) + 
-  geom_smooth(method = "lm") +
-  xlab("Predicted reproducibility (clust.perturb, Ji)") +
-  ylab("Actual reproducibility\n(experiment-to-experiment)") + 
-  theme_bw() 
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_8a_v01.pdf"
-ggsave(fn, width=3.4, height=3)
-
+# 
+# # analyze
+# ggplot(df, aes(x=predJ, y=repJ)) + geom_point(alpha = .25) + 
+#   geom_smooth(method = "lm") +
+#   xlab("Predicted reproducibility (clust.perturb, Ji)") +
+#   ylab("Actual reproducibility\n(experiment-to-experiment)") + 
+#   theme_bw() 
+# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_8a_v01.pdf"
+# ggsave(fn, width=3.4, height=3)
+# 
