@@ -193,10 +193,14 @@ if (0) {
     net1 = ints.c[ia,1:2]
     net2 = ints.c[ib,1:2]
     
-    if (nrow(net1)<1000 | nrow(net2)<1000) next
+    if (nrow(net1)<1000 | nrow(net2)<1000) {
+      print(paste("skipping sets", ii))
+      next
+    }
     
     # cluster with clust.perturb
     for (jj in 1:4) {
+      print(paste("jj=",jj,",  ii=",ii))
       clust1 = clust.perturb2(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
                               edge.list.format = edge.list.format[[jj]], 
                               cluster.format = cluster.format[[jj]])
