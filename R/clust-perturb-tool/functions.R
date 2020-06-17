@@ -6,6 +6,7 @@ require(readr)
 require(ggplot2)
 require(reshape2)
 require(igraph)
+require(cluster)
 
 
 # functions
@@ -172,6 +173,7 @@ pam.cluster.format = function(clusts, unqprots) {
   return(clusts.prots)
 }
 
+
 # mcl
 # requires passing cluster.format the unqprots from the edge list
 # this is so clusters, e.g. "1;2;3" are matched to proteins
@@ -188,14 +190,27 @@ mcl.cluster.format = function(tmp, unqprots) {
     if (sum(I)<3) next
     clusts[ii] = paste(unqprots[I], collapse = ";")
   }
-  #str(clusts)
-  #print(" x ")
   clusts = clusts[!clusts==""]
   clusts = clusts[!is.na(clusts)]
-  #print(clusts)
   return(clusts)
 }
 
+
+# # hierachical
+# hierarch.edge.list.format = function(ints) {
+#   return(pam.edge.list.format(ints))
+# }
+hierarch.cluster.format = function(tmp, unqprots) {
+  clusts = character()
+  unqclusts = unique(tmp)
+  for (ii in 1:length(unqclusts)) {
+    I = tmp == unqclusts[ii]
+    clusts[ii] = paste(unqprots[I], collapse = ";")
+  }
+  clusts = clusts[!clusts==""]
+  clusts = clusts[!is.na(clusts)]
+  return(clusts)
+}
 
 
 

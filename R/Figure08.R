@@ -169,8 +169,13 @@ cluster.format = list(pam.cluster.format,
                       mcl.cluster.format,
                       NULL,
                       NULL)
-if (0) {
-  df.predrep = as.data.frame(read_tsv("../data/pred_J_expreps.txt"))
+if (1) {
+  fns = list.files(path = "../data/", pattern = "^pred_J_expreps_", full.names = T)
+  tmp = list()
+  for (ii in 1:length(fns)) {
+    tmp[[ii]] = as.data.frame(read_tsv(fns[[ii]]))
+  }
+  df.predrep = bind_rows(tmp, .id = "column_label")
 } else {
   # handle command line args
   jj = as.numeric(commandArgs(trailingOnly = T))
@@ -248,13 +253,14 @@ if (0) {
 }
 
 
-# 
-# # analyze
-# ggplot(df, aes(x=predJ, y=repJ)) + geom_point(alpha = .25) + 
-#   geom_smooth(method = "lm") +
-#   xlab("Predicted reproducibility (clust.perturb, Ji)") +
-#   ylab("Actual reproducibility\n(experiment-to-experiment)") + 
-#   theme_bw() 
-# fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_8a_v01.pdf"
-# ggsave(fn, width=3.4, height=3)
-# 
+
+
+ggplot(df.predrep, aes(x=predJ, y=repJ)) + geom_point(alpha = .25) +
+  geom_smooth(method = "lm") + facet_grid(~alg) + 
+  xlab("Predicted reproducibility (clust.perturb, repJ)") +
+  ylab("Actual reproducibility\n(experiment-to-experiment, Ji)") +
+  theme_bw()
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/Figure08_v01.pdf"
+ggsave(fn, width=10, height=2.6)
+
+

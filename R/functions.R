@@ -19,6 +19,9 @@ require(hbm)
 mcl = hbm::mcl
 require(ontologyIndex)
 require(flavin)
+require(resolution) # louvain clustering with resolution
+require(leiden)
+require(ProNet)
 source("clusterone_java.R")
 source("mymcl.R")
 
@@ -218,57 +221,6 @@ matchingratio = function(predComplex, refComplex){
 }
 
 
-hairball = function(adjmat, this.cluster, allProts){
-  # convert to graph
-  g = graph_from_adjacency_matrix(adjmat, mode = 'undirected', weighted=T)
-  I.orig = (allProts %in% this.cluster)
-  
-  # add information to each node 
-  nodes = allProts
-  palette = colorRamp(ggsci::pal_gsea()(n = 12))(seq(100) / 100)
-  colors = palette[E(g)$weight * 255]
-  V(g)$color[I.orig] = "black"
-  V(g)$color[!I.orig] = "white"
-  V(g)$size[I.orig] = .25
-  V(g)$size[!I.orig] = 0
-  E(g)$alpha = E(g)$weight
-  E(g)$size = E(g)$weight
-  I.orig = which(I.orig)
-  I.orig.pairs = numeric(length(I.orig) * (length(I.orig)-1) / 2)
-  cc = 0
-  for (ii in 1:length(I.orig)) {
-    for (jj in 1:length(I.orig)) {
-      if (ii>=jj) next
-      cc = cc+1
-      I.orig.pairs[cc] = I.orig[ii]
-      cc = cc+1
-      I.orig.pairs[cc] = I.orig[jj]
-    }
-  }
-  E(g)$color = 0
-  E(g, P = I.orig.pairs)$color = 1
-  
-  layout = layout.lgl(g)
-  N = ggnetwork(g, layout = layout)
-  N$cluster0 = as.numeric(N$vertex.names %in% I.orig)
-  # add two extra line to prevent normalizing
-  N$size.x = N$size.x / 4
-  x = N[nrow(N),]
-  N = rbind(N,x)
-  N = rbind(N,x)
-  iend = nrow(N)
-  N[iend,c("weight","size.x","color.y","alpha","cluster0")] = 1
-  N[iend-1,c("weight","size.x","color.y","alpha","cluster0")] = 0
-  N[iend,c("x","y","xend","yend")] = 0
-  N$x[iend] = 0.125
-  
-  p = ggplot(N, aes(x = x, y = y, xend = xend, yend = yend)) + 
-    geom_edges(aes(size=size.x, color=color.y, alpha=alpha)) + 
-    geom_nodes(aes(color=cluster0, size = cluster0)) +
-    theme_void() + theme(legend.position="none")
-  return(p)
-}
-
 
 hiclust = function(ints, nclust){
   unqprots = unique(c(ints$protA, ints$protB))
@@ -346,6 +298,22 @@ hiclust = function(ints, nclust){
 }
 
 
+# hierachical
+hierarch.edge.list.format = function(ints) {
+  return(pam.edge.list.format(ints))
+}
+
+hierarch.cluster.format = function(tmp, unqprots) {
+  clusts = character()
+  unqclusts = unique(tmp)
+  for (ii in 1:length(unqclusts)) {
+    I = tmp == unqclusts[ii]
+    clusts[ii] = paste(unqprots[I], collapse = ";")
+  }
+  clusts = clusts[!clusts==""]
+  clusts = clusts[!is.na(clusts)]
+  return(clusts)
+}
 
 
 pamclust = function(ints, nclust){
@@ -692,3 +660,172 @@ netdiff = function(g1, g2) {
   
   return(df)
 }
+
+
+
+# dependencies
+require(igraph)
+require(readr)
+require(Matrix)
+require(cluster)
+
+# functions
+
+calcJ = function(this.cluster, clusters) {
+  # J, Ji
+  # assignment reproducibility
+  # essentially the maximum Jaccard index
+  #
+  # this.cluster = single string, with semicolon-delimited IDs
+  # clusters = vector of strings, all semicolon-delimited IDs
+  
+  this.cluster = unlist(strsplit(this.cluster, ";"))
+  JJ = numeric(length(clusters))
+  for (ii in 1:length(clusters)) {
+    that.cluster = unlist(strsplit(clusters[ii], ";"))
+    JJ[ii] = length(intersect(this.cluster, that.cluster)) / 
+      length(unique(c(this.cluster, that.cluster)))
+  }
+  Ji = max(JJ, na.rm=T)
+  tmp = list(Ji = Ji, best.cluster = clusters[which.max(JJ)])
+  
+  return(tmp)
+}
+
+shufflecorum = function(ints.corum, ff){
+  unqprots = sort(unique(c(ints.corum[,1], ints.corum[,2])))
+  unqprots = unqprots[!unqprots==""]
+  
+  #
+  ints.shuffle = ints.corum
+  N.replace = round(nrow(ints.corum) * ff)
+  I.replace = sample(nrow(ints.corum), N.replace)
+  
+  # indices of unshuffled
+  ia0 = match(ints.corum[,1], unqprots)
+  ib0 = match(ints.corum[,2], unqprots)
+  
+  # indices of shuffled
+  ia = ia0
+  ib = ib0
+  ia[I.replace] = sample(length(unqprots), N.replace, replace = T)
+  ib[I.replace] = sample(length(unqprots), N.replace, replace = T)
+  
+  # ensure no self-interactions
+  while (sum(ia==ib)>0) {
+    I = ia==ib
+    ib[I] = sample(length(unqprots), sum(I), replace = T)
+  }
+  
+  #
+  ints.shuffle[,1] = unqprots[ia]
+  ints.shuffle[,2] = unqprots[ib]
+  
+  # quality control: make sure you shuffled N.replace interactions
+  N.diff = sum(!ia0==ia | !ib0==ib)
+  #if (abs(N.replace - N.diff)>5) print(paste("shuffling missed", N.replace-N.diff, "interactions"))
+  
+  return(ints.shuffle) 
+}
+
+
+pam.edge.list.format = function(ints) {
+  unqprots = unique(c(ints[,1], ints[,2]))
+  nn = length(unqprots)
+  
+  # create adjacency matrix in the style of `dist` object
+  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
+  I.row = match(ints[,1], unqprots) # row
+  I.col = match(ints[,2], unqprots) # column
+  
+  unqprots = unique(c(ints[,1], ints[,2]))
+  nn = length(unqprots)
+  
+  # create adjacency matrix in the style of `dist` object
+  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
+  I.row = match(ints[,1], unqprots) # row
+  I.col = match(ints[,2], unqprots) # column
+  
+  I.fill = numeric(length(I.row))
+  for (ii in 1:length(I.row)) {
+    a = I.row[ii]
+    b = I.col[ii]
+    # ensure I.col < I.row, i.e. upper triangular
+    if (I.row[ii] < I.col[ii]) {
+      a = I.col[ii]
+      b = I.row[ii]
+    }
+    
+    I.fill[ii] = a - 1
+    if (b>1) {
+      colsum = 0
+      for (jj in 1:(b-1)) {
+        colsum = colsum + (nn-jj) - 1
+      }
+      I.fill[ii] = colsum + a - 1
+    }
+  }
+  
+  # dummy dist object
+  x = matrix(stats::runif(nn * 10), nrow = nn, ncol=10)
+  d = stats::dist(x)
+  attr(d, 'Upper') = T
+  d[1:length(d)] = 1
+  d[I.fill] = 0
+  
+  return(d)
+}
+
+pam.cluster.format = function(clusts, unqprots) {
+  # compile `clusts` into lists of proteins
+  unqclusts = unique(clusts$clustering)
+  Nmembers = numeric(length(unqclusts))
+  clusts.prots = character(length(unqclusts))
+  for (ii in 1:length(unqclusts)) {
+    I = clusts$cluster==unqclusts[ii]
+    clusts.prots[ii] = paste(unqprots[I], collapse=";")
+    Nmembers[ii] = sum(I)
+  }
+  #clusts.prots = clusts.prots[Nmembers>=3]
+  #clusts.prots = as.list(clusts.prots)
+  
+  return(clusts.prots)
+}
+
+
+mcl.edge.list.format = function(ints.corum) {
+  G = igraph::graph.data.frame(ints.corum,directed=FALSE)
+  A = igraph::as_adjacency_matrix(G,type="both",names=TRUE,sparse=FALSE)
+}
+
+mcl.cluster.format = function(tmp, unqnodes) {
+  tmp = tmp$Cluster
+  clusts = character()
+  unqclusts = unique(tmp)
+  for (ii in 1:length(unqclusts)) {
+    I = tmp == unqclusts[ii]
+    #if (sum(I)<3) next
+    clusts[ii] = paste(unqnodes[I], collapse = ";")
+  }
+  clusts = clusts[!clusts==""]
+  clusts = clusts[!is.na(clusts)]
+  return(clusts)
+}
+
+# hierachical
+hierarch.edge.list.format = function(ints) {
+  return(pam.edge.list.format(ints))
+}
+
+hierarch.cluster.format = function(tmp, unqprots) {
+  clusts = character()
+  unqclusts = unique(tmp)
+  for (ii in 1:length(unqclusts)) {
+    I = tmp == unqclusts[ii]
+    clusts[ii] = paste(unqprots[I], collapse = ";")
+  }
+  clusts = clusts[!clusts==""]
+  clusts = clusts[!is.na(clusts)]
+  return(clusts)
+}
+

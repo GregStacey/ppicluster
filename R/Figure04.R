@@ -131,7 +131,7 @@ df$algorithm[df$algorithm=="mcl"] = "MCL"
 df$algorithm[df$algorithm=="pam"] = "k-Med"
 df$algorithm[df$algorithm=="walk"] = "walktrap"
 
-write_tsv(df, path="../data/interactomes_moredata.txt")
+#write_tsv(df, path="../data/interactomes_moredata.txt")
 
 
 # get averages for figures
@@ -307,12 +307,12 @@ for (ii in 1:length(unqmags)) {
   df.intJ$avg.intJ[I] = mean(df.intJ$intJ[I], na.rm=T)
 }
 
-ggplot(df.intJ, aes(x=noise_mag, y=coint)) + geom_point(alpha=.1) +
-  geom_line(aes(x=noise_mag, y=avg.coint)) +
+ggplot(df.intJ, aes(x=noise_mag*100, y=coint)) + geom_point(alpha=.1) +
+  geom_line(aes(x=noise_mag*100, y=avg.coint)) +
   xlab("Noise magnitude, %") + ylab("Interactome Jaccard") +
   theme_bw()
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v04.pdf"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v05.pdf"
 ggsave(fn,width=3.4, height=3)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v04.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3D_v05.png"
 ggsave(fn,width=3.4, height=3)
 

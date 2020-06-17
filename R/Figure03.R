@@ -195,11 +195,30 @@ I = sim$measure=="ai" & sim$measure=="ai" & sim$network=="CORUM"
 ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
   geom_point(data = Ji[Ji$network=="CORUM",], alpha=0.025, color="black") +
-  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v08.png"
+  ylab("Similarity to un-noised clusters (Ji)") + xlab("Network noise level")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v09.png"
 ggsave(fn,width=10, height=2.6)
 
 
+# test - small clusters
+I = Ji$network == "CORUM" & Ji$noise_mag==0.02 & Ji$cluster.size<=5
+agg = aggregate(Ji$Ji1[I],
+                by = list(Ji$algorithm[I]),
+                FUN = mean)
+print(paste(min(agg$x), " , ", max(agg$x)))
+I = Ji$network == "CORUM" & Ji$noise_mag==0.02 & Ji$cluster.size%in%(6:20)
+agg = aggregate(Ji$Ji1[I],
+                by = list(Ji$algorithm[I]),
+                FUN = mean)
+print(paste(min(agg$x), " , ", max(agg$x)))
+I = Ji$network == "CORUM" & Ji$noise_mag==0.02 & Ji$cluster.size%in%(21:1000)
+agg = aggregate(Ji$Ji1[I],
+                by = list(Ji$algorithm[I]),
+                FUN = mean)
+print(paste(min(agg$x), " , ", max(agg$x)))
+
+I = Ji$network == "CORUM" & Ji$algorithm=="CO"
+cor.test(Ji$cluster.size[I], Ji$Ji1[I])
 
 # 2C ##### ------------------------------------------- #####
 # violin plots of Ji1 vs noise
@@ -207,7 +226,7 @@ ggsave(fn,width=10, height=2.6)
 I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network=="CORUM"
 ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
   geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(~algorithm) +
-  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR") + 
+  ylab("Similarity to un-noised clusters (Ji)") + xlab("Network noise level") + 
   coord_cartesian(ylim=c(0,1)) + theme_bw()
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v06.pdf"
 ggsave(fn,width=10, height=2.6)
@@ -240,7 +259,7 @@ ggsave(fn,width=4, height=2.5)
 
 ggplot(df.change, aes(x=noise, y=n.rearranged.edges/n.shuffled.interactions, color=algorithm)) + 
   geom_line() + geom_abline(linetype="dashed") +theme_bw() +
-  xlab("Interactome FPR") + 
+  xlab("Network noise level") + 
   ylab("Ratio of rearranged cluster edges\nto shuffled network edges") + theme(legend.position="none") +
   scale_colour_grey()
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2D2_v04.pdf"
@@ -253,19 +272,19 @@ I = sim$measure=="ai" & sim$measure=="ai" & sim$network %in% c("DrugBank","email
 ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
   theme_bw() + theme(legend.position="none") + facet_grid(~network) +
   geom_point(data = Ji[Ji$network%in% c("DrugBank","email-Eu") &Ji$algorithm=="MCL",], alpha=0.1, color="black") +
-  ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2E_v01.png"
+  ylab("Similarity to un-noised clusters (Ji)") + xlab("Network noise level")
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2E_v02.png"
 ggsave(fn,width=4.2, height=2.6)
 
 I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network%in% c("DrugBank","email-Eu") & 
   Ji$algorithm=="MCL"
 ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
   geom_violin() + geom_jitter(width=.02,alpha=.1) + facet_grid(~network) +
-  ylab("Similarity to un-noised (Ji)") + xlab("Interactome FPR") + 
+  ylab("Similarity to un-noised (Ji)") + xlab("Network noise level") + 
   coord_cartesian(ylim=c(0,1)) + theme_bw()
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2F_v01.pdf"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2F_v02.pdf"
 ggsave(fn,width=4.2, height=2.6)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2F_v01.png"
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2F_v02.png"
 ggsave(fn,width=4.2, height=2.6)
 
 
@@ -279,19 +298,19 @@ for (ss in 1:2) {
   ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
     facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
     geom_point(data = Ji[Ji$network==sets[ss],], alpha=0.025, color="black") +
-    ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR")
-  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A",ss,".png", sep="")
+    ylab("Similarity to un-noised clusters (Ji)") + xlab("Network noise level")
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1A",ss,"_v02.png", sep="")
   ggsave(fn,width=10, height=2.6)
   
   # violin plots of Ji1 vs noise
   I = (Ji$noise_mag %in% 0 | Ji$noise_mag %in% 0.01 | Ji$noise_mag %in% 0.02) & Ji$network==sets[ss]
   ggplot(Ji[I,], aes(factor(noise_mag), y=Ji1)) + 
     geom_violin() + geom_jitter(width=.02,alpha=.05) + facet_grid(~algorithm) +
-    ylab("Similarity to un-noised clusters (Ji)") + xlab("Interactome FPR") + 
+    ylab("Similarity to un-noised clusters (Ji)") + xlab("Network noise level") + 
     coord_cartesian(ylim=c(0,1)) + theme_bw()
-  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B",ss,".png", sep="")
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B",ss,"_v02.png", sep="")
   ggsave(fn,width=10, height=2.6)
-  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B",ss,".pdf", sep="")
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1B",ss,"_v02.pdf", sep="")
   ggsave(fn,width=10, height=2.6)
   
   # noise-amplification
@@ -300,10 +319,10 @@ for (ss in 1:2) {
   ggplot(sim[I,], aes(x=noise_mag, y=(noise.amplification))) + geom_line() + 
     facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
     geom_hline(yintercept = 1, linetype="dashed") +
-    ylab("Error amplification by clustering") + xlab("Interactome FPR") +
+    ylab("Error amplification by clustering") + xlab("Network noise level") +
     scale_y_continuous(breaks = c(1,10,20),
                        labels=c("1x","10x", "20x"))
-  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C",ss,".pdf", sep="")
+  fn = paste("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_sup1C",ss,"_v02.pdf", sep="")
   ggsave(fn,width=10, height=2.6)
 }
 
@@ -345,7 +364,7 @@ for (ii in 1:length(unqalgs)) {
 # (not sure about this)
 # ##### ------------------------------------------- #####
 I = Ji$network=="CORUM"
-summary(glm(Ji1 ~ noise_mag + algorithm + cluster.size, data = Ji[I,]))
+summary(lm(Ji1 ~ noise_mag + algorithm + cluster.size, data = Ji[I,]))
 
 ggplot(Ji[I,], aes(x=log10(cluster.size), y=Ji1)) + 
   facet_grid(noise_mag~algorithm) + 

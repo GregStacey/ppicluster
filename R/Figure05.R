@@ -35,12 +35,12 @@ for (ii in 1:length(clusts)) {
 # fig 5A
 # scatter of individual replicates
 tmp = as.data.frame(jmat)
-tmp$size = df$size
+tmp$size = sapply(sapply(clust.iters1$cluster, strsplit, ";"), length)
 ggplot(tmp, aes(x=V4, y=V10, size=size)) + 
-  geom_jitter(alpha=.4, height = .015, width=.015) +
+  geom_jitter(alpha=.25, height = .015, width=.015) +
   theme_bw() + xlab("Ji (iteration 1)\n10% noise") + ylab("Ji (iteration 2)\n10% noise") +
   theme(legend.position = "none")
-ggsave("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5a_v01.pdf",
+ggsave("/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_5a_v02.pdf",
        width=3, height=3)
 
 # fig 5B
