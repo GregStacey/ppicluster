@@ -7,7 +7,7 @@
 #SBATCH --mem=8G
 #SBATCH --array=1-150
 
-module load r/3.6
-module load gcc/5.4.0
+module load gcc/7.3.0
+module load r/3.6.0
 
-Rscript experiment-architecture-ms.R $SLURM_ARRAY_TASK_ID
+Rscript 00hyperparam-tune.R $SLURM_ARRAY_TASK_ID
