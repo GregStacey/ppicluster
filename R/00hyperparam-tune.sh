@@ -10,5 +10,6 @@
 
 module load gcc/7.3.0
 module load r/3.6.0
+source ~/ENV3/bin/activate
 
 Rscript 00hyperparam-tune.R $SLURM_ARRAY_TASK_ID

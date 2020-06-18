@@ -5,7 +5,6 @@
 # - Louvain
 # - Leiden
 
-
 source("functions.R")
 
 
@@ -88,10 +87,9 @@ if (!hparams==-1) {
 # cluster
 if (df.params$algorithm == "hierarchical") {
   # 1. hierarchical
-  nclusters = c(50, 100, 250, 500, 1000, 1500, 2000, 5000)
-  x = as.dist(get.adjacency(graph.data.frame(ints.corum)))
+  x = hierarch.edge.list.format(ints.corum)
   tmp = stats::cutree(stats::hclust(d = x, method="average"), k = params[1])
-
+  
   clusts = list()
   for (ii in 1:params[1]) {
     clusts[[ii]] = unqprots[tmp == ii]
@@ -142,6 +140,9 @@ if (df.params$algorithm == "hierarchical") {
   }
 }
 
+# remove clusts with N<3
+nn = unlist(lapply(clusts, length))
+clusts = clusts[nn>2]
 
 
 # compare to ground truth
@@ -154,3 +155,65 @@ df$params = df.params$params
 # write
 sf = paste("../data/00hyperparam_tune/", hparams, "_paramtune.txt", sep="")
 write_tsv(df, path = sf)
+
+
+
+# read all files and get optimal sets for each algorithm
+fns = list.files("../data/00hyperparam_tune/", pattern = "*paramtune.txt", full.names = T)
+df = as.data.frame(read_tsv(fns[1]))
+for (ii in 2:length(fns)) {
+  print(ii)
+  df = rbind(df, as.data.frame(read_tsv(fns[ii])))
+}
+df = df[!is.na(df$algorithm), ]
+
+df.best = data.frame(algorithm = unique(df$algorithm),
+                     params = rep(NA, length(unique(df$algorithm))), stringsAsFactors = F)
+for (ii in 1:nrow(df.best)) {
+  I = df$algorithm == df.best$algorithm[ii]
+  unqparams = unique(df$params[I])
+  JJ = numeric(length(unqparams))
+  for (jj in 1:length(unqparams)) {
+    ia = I & df$params == unqparams[jj]
+    JJ[jj] = mean(df$Ji[ia], na.rm=T)
+  }
+  
+  ib = which.max(JJ)
+  df.best$params = unqparams[ib]
+  print(paste(df.best$algorithm[ii], df.best$params[ii], sep=" : "))
+}
+write_tsv(df.best, path = "../data/00hyperparam_tune/optim_params.txt")
+
+
+
+
+## debug
+# do some algorithms really cluster so poorly?
+
+# 1. hierarchical
+x = as.dist(get.adjacency(graph.data.frame(ints.corum)))
+tmp = stats::cutree(stats::hclust(d = x, method="complete"), k = 500)
+clusts = list()
+for (ii in 1:500) {
+  clusts[[ii]] = unqprots[tmp == ii]
+}
+
+meths = c("ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median", "centroid")
+nn1 = nn = numeric(length(meths))
+for (ii in 1:length(meths)) {
+  print(paste(ii, meths[ii]))
+  tmp = stats::cutree(stats::hclust(d = 1-x, method=meths[ii]), k = 2000)
+  nn[ii] = sd(table(tmp))
+  
+  x1 = pam.edge.list.format(ints.corum)
+  tmp1 = stats::cutree(stats::hclust(d = x1, method=meths[ii]), k = 2000)
+  nn1[ii] = sd(table(tmp1))
+}
+
+df = data.frame(cluster = unlist(lapply(clusts, paste, collapse = ";")), stringsAsFactors = F)
+df$Ji = unlist(sapply(df$cluster, FUN = function(x) calcA(x, corum$`subunits(UniProt IDs)`)))
+df$algorithm = df.params$algorithm
+df$params = df.params$params
+df$nsize = unlist(sapply(df$cluster, FUN = function(x) length(unlist(strsplit(x, ";")))))
+
+
