@@ -3,7 +3,7 @@
 #SBATCH -e 00hyperparam-tune.err
 #SBATCH --mail-user=richard.greg.stacey@gmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --time=023:55:00
+#SBATCH --time=02:55:00
 #SBATCH --mem=8G
 #SBATCH --array=1-150
 
