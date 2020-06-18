@@ -6,7 +6,7 @@
 #SBATCH --time=02:55:00
 #SBATCH --mem=8G
 #SBATCH --array=1-150
-#SBATCH --acount=rrg-ljfoster-ab
+#SBATCH --account=rrg-ljfoster-ab
 
 module load gcc/7.3.0
 module load r/3.6.0
