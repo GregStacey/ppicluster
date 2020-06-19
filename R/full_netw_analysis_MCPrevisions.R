@@ -100,7 +100,7 @@ if (file.exists(sf)) {
   
   
   # cluster
-  if (df.params$algorithm == "hierarchical") {
+  if (params$algorithm == "hierarchical") {
     # 1. hierarchical
     x = as.dist(get.adjacency(graph.data.frame(ints.corum)))
     tmp = stats::cutree(stats::hclust(d = x, method="average"), k = nclust)
@@ -110,13 +110,13 @@ if (file.exists(sf)) {
       clusts[[ii]] = unqprots[tmp == ii]
     }
     
-  } else if (df.params$algorithm == "mcode") {
+  } else if (params$algorithm == "mcode") {
     # 3. MCODE
     x = graph.data.frame(ints.corum)
     clusts = mcode(x, vwp = params[4], haircut = as.logical(params[1]), fluff = as.logical(params[2]), fdt = params[3])
     clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     
-  } else if (df.params$algorithm == "louvain") {
+  } else if (params$algorithm == "louvain") {
     # 4. Louvain
     x = ints.corum
     x$weights = 1
@@ -128,7 +128,7 @@ if (file.exists(sf)) {
       clusts[[ii]] = unqprots[tmp$community == unqclusts[ii]]
     }
     
-  } else if (df.params$algorithm == "leiden") {
+  } else if (params$algorithm == "leiden") {
     # 5. Leiden
     x = as.matrix(ints.corum)
     adjmat = as_adjacency_matrix(graph_from_edgelist(x))
@@ -139,23 +139,23 @@ if (file.exists(sf)) {
     for (ii in 1:length(unqclusts)) {
       clusts[[ii]] = unqprots[tmp == unqclusts[ii]]
     }
-  } else if (df.params$algorithm == "walk") {
+  } else if (params$algorithm == "walk") {
     # walktrap
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
     clusts = walktrap.community(graph.object)
     
-  } else if (df.params$algorithm == "pam") {
+  } else if (params$algorithm == "pam") {
     # pam (k-med)
     names(ints.shuffle) = c("protA", "protB")
     tmp = pamclust(ints.shuffle, nclust)
     clusts = sapply(tmp, strsplit, ";")
     
-  } else if (df.params$algorithm == "CO") {
+  } else if (params$algorithm == "CO") {
     # cluster one
     tmp = unlist(clusteroneR(ints.shuffle, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
     clusts = sapply(tmp, strsplit, ";")
     
-  } else if (df.params$algorithm == "MCL") {
+  } else if (params$algorithm == "MCL") {
     # mcl
     G = graph.data.frame(ints.shuffle, directed=FALSE)
     A = as_adjacency_matrix(G,type="both", names=TRUE,sparse=FALSE)
