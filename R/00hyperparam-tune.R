@@ -5,6 +5,7 @@
 # - Louvain
 # - Leiden
 
+  
 source("functions.R")
 
 
@@ -129,8 +130,7 @@ if (df.params$algorithm == "hierarchical") {
   
 } else if (df.params$algorithm == "leiden") {
   # 5. Leiden
-  x = as.matrix(ints.corum)
-  adjmat = as_adjacency_matrix(graph_from_edgelist(x))
+  adjmat = graph_from_edgelist(as.matrix(ints.corum))
   tmp = leiden(adjmat, resolution_parameter = params[1])
   
   clusts = list()
@@ -168,6 +168,7 @@ for (ii in 2:length(fns)) {
 df = df[!is.na(df$algorithm), ]
 
 df.best = data.frame(algorithm = unique(df$algorithm),
+                     J = rep(NA, length(unique(df$algorithm))),
                      params = rep(NA, length(unique(df$algorithm))), stringsAsFactors = F)
 for (ii in 1:nrow(df.best)) {
   I = df$algorithm == df.best$algorithm[ii]
@@ -179,7 +180,8 @@ for (ii in 1:nrow(df.best)) {
   }
   
   ib = which.max(JJ)
-  df.best$params = unqparams[ib]
+  df.best$params[ii] = unqparams[ib]
+  df.best$J[ii] = max(JJ, na.rm=T)
   print(paste(df.best$algorithm[ii], df.best$params[ii], sep=" : "))
 }
 write_tsv(df.best, path = "../data/00hyperparam_tune/optim_params.txt")

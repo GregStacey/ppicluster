@@ -16,7 +16,8 @@ require(igraph)
 require(dils)
 #require(MCL)
 require(hbm)
-mcl = hbm::mcl
+require(tools)
+mcl = MCL::mcl
 #require(ontologyIndex)
 require(flavin)
 require(resolution) # louvain clustering with resolution
