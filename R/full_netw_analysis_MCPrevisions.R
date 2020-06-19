@@ -102,7 +102,7 @@ if (file.exists(sf)) {
   # cluster
   if (params$algorithm == "hierarchical") {
     # 1. hierarchical
-    x = as.dist(get.adjacency(graph.data.frame(ints.shuffle)))
+    x = hierarch.edge.list.format(ints.corum)
     tmp = stats::cutree(stats::hclust(d = x, method="average"), k = nclust)
     
     clusts = list()
@@ -113,14 +113,14 @@ if (file.exists(sf)) {
   } else if (params$algorithm == "mcode") {
     # 3. MCODE
     x = graph.data.frame(ints.shuffle)
-    clusts = mcode(x, vwp = params[4], haircut = as.logical(params[1]), fluff = as.logical(params[2]), fdt = params[3])
+    clusts = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
     clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     
   } else if (params$algorithm == "louvain") {
     # 4. Louvain
     x = ints.shuffle
     x$weights = 1
-    tmp = cluster_resolution(x, params[1])
+    tmp = cluster_resolution(x, 1)
     
     clusts = list()
     unqclusts = unique(tmp$community)
@@ -132,7 +132,7 @@ if (file.exists(sf)) {
     # 5. Leiden
     x = as.matrix(ints.shuffle)
     adjmat = as_adjacency_matrix(graph_from_edgelist(x))
-    tmp = leiden(adjmat, resolution_parameter = params[1])
+    tmp = leiden(adjmat, resolution_parameter = 1)
     
     clusts = list()
     unqclusts = unique(tmp)
