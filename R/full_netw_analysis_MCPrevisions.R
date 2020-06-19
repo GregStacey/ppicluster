@@ -39,7 +39,7 @@ if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
   fns = c("../data/corum_pairwise.txt","../data/ChCh-Miner_durgbank-chem-chem.tsv","../data/email-Eu-core.txt", 
           fns)
 } else {
-  data.dir = "../data/dbs/"
+  data.dir = "../data/interactomes/"
   fns = paste(data.dir,c("corum_pairwise.txt",
                          "ChCh-Miner_durgbank-chem-chem.tsv",
                          "email-Eu-core.txt",
