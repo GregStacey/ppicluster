@@ -95,7 +95,7 @@ if (file.exists(sf)) {
   
   
   # shuffle network
-  ints.shuffle = shufflecorum(data, params$noise.range[ii])
+  ints.shuffle = shufflecorum(data, params$noise.range)
   unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
   
   
