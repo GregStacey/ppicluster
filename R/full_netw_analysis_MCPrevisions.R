@@ -102,11 +102,11 @@ if (file.exists(sf)) {
   # cluster
   if (params$algorithm == "hierarchical") {
     # 1. hierarchical
-    x = hierarch.edge.list.format(ints.corum)
+    x = hierarch.edge.list.format(ints.shuffle)
     tmp = stats::cutree(stats::hclust(d = x, method="average"), k = nclust)
     
     clusts = list()
-    for (ii in 1:params[1]) {
+    for (ii in 1:nclust) {
       clusts[[ii]] = unqprots[tmp == ii]
     }
     
