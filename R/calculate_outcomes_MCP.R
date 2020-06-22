@@ -26,7 +26,7 @@ params2 = do.call(expand.grid, list(dataset = fns, algorithm = algorithms))
 noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 
 # check what files exist
-ii = commandArgs(trailingOnly = T)
+ii = as.integer(as.numeric(commandArgs(trailingOnly = T)))
 # what noise ranges are there?
 sfs = paste("../data/clusters/", 
             basename(tools::file_path_sans_ext(params2$dataset[ii])),
