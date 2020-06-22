@@ -3,7 +3,7 @@
 #SBATCH -e full_netw_analysis_MCPrevisions.err
 #SBATCH --mail-user=richard.greg.stacey@gmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --time=23:55:00
+#SBATCH --time=71:55:00
 #SBATCH --mem=16G
 #SBATCH --array=1-396
 #SBATCH --account=rrg-ljfoster-ab
