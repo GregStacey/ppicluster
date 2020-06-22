@@ -1,5 +1,7 @@
 # calculate Ji for all algorithm/datasets
 
+source("functions.R")
+
 if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
   data.dir = "/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/"
   fns = paste(data.dir,c("BIOGRID-ALL-3.5.186.tab3.txt",
