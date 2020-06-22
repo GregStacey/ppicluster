@@ -49,7 +49,7 @@ if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
                          "HuRI.tsv"), sep="")
 }
 
-algorithms = c("CO","pam","MCL","walk", "hierarchical", "MCODE", "Louvain", "Leiden")
+algorithms = c("co","pam","mcl","walk", "hierarchical", "mcode", "louvain", "leiden")
 noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.range = noise.range)) %>%
   mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
@@ -150,12 +150,12 @@ if (file.exists(sf)) {
     tmp = pamclust(ints.shuffle, nclust)
     clusts = sapply(tmp, strsplit, ";")
     
-  } else if (params$algorithm == "CO") {
+  } else if (params$algorithm == "co") {
     # cluster one
     tmp = unlist(clusteroneR(ints.shuffle, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
     clusts = sapply(tmp, strsplit, ";")
     
-  } else if (params$algorithm == "MCL") {
+  } else if (params$algorithm == "mcl") {
     # mcl
     G = graph.data.frame(ints.shuffle, directed=FALSE)
     A = as_adjacency_matrix(G,type="both", names=TRUE,sparse=FALSE)
