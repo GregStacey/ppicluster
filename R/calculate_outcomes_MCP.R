@@ -37,6 +37,8 @@ sfs = paste("../data/clusters/",
 
 # if there's not a full noise set, abort
 if (!sum(sapply(sfs, file.exists)) == length(noise.range)){
+  print("found these files: ")
+  print(sfs[sapply(sfs, file.exists)])
   stop(paste("full noise range not run for dataset", 
              params2$dataset[ii],
              "and algorithm", params2$algorithm[ii]))
