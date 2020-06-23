@@ -24,6 +24,7 @@ require(resolution) # louvain clustering with resolution
 require(leiden)
 require(ProNet)
 require(dbscan)
+require(clust.perturb)
 source("clusterone_java.R")
 source("mymcl.R")
 

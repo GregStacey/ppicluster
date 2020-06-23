@@ -1,153 +1,16 @@
 # predict real world cluster change
 
 source("functions.R")
-source("./clust-perturb-tool/clust-perturb.R")
-source("./clust-perturb-tool/functions.R")
+#source("./clust-perturb-tool/clust-perturb.R")
+#source("./clust-perturb-tool/functions.R")
 source("clusterone_java.R")
 
-# load networks
-# # corum
-# load("../data/corum_old/all_corum_ints.Rda") # ints.old.corum
-# all.corum.ints = list()
-# for (ii in 1:5) {
-#   all.corum.ints[[ii]] = paste(ints.old.corum[[ii]]$protA, ints.old.corum[[ii]]$protB, sep="-")
-# }
-# co-fractionation datasets
+# load  co-fractionation datasets
 fn = "../data/interactomes_moredata.txt"
 ints.c = as.data.frame(read_tsv(fn))
 ints.c = ints.c[ints.c$noise_mag==0, ]
 ints.c$ppi = paste(ints.c$protA, ints.c$protB, sep="-")
 ints.c = ints.c[ints.c$noise_mag==0,]
-
-
-
-# # describe network changes
-# # gain and loss between successive CORUM versions
-# df = data.frame(edge.gain = numeric(1e3), 
-#                         edge.loss = numeric(1e3), 
-#                         node.gain = numeric(1e3),
-#                         node.loss = numeric(1e3),
-#                         n0n0 = numeric(1e3),
-#                         n0n1 = numeric(1e3),
-#                         n1n1 = numeric(1e3),
-#                         nedge1 = numeric(1e3),
-#                         nnode1 = numeric(1e3),
-#                         network = character(1e3), stringsAsFactors = F)
-# for (ii in 2:5) {
-#   g1 = graph_from_data_frame(d=ints.old.corum[[ii-1]], directed = F)
-#   g2 = graph_from_data_frame(d=ints.old.corum[[ii]], directed = F)
-#   df0 = netdiff(g1, g2)
-#   df[ii-1,1:7] = df0
-#   df$nedge1[ii-1] = length(E(g1))
-#   df$nnode1[ii-1] = length(V(g1))
-#   df$network[ii-1] = "Successive CORUM releases"
-# }
-# 
-# # gain and loss between replicate pairs
-# # load experimental interactomes
-# sets = list(c(1:4),c(5:8), 
-#             c(9:11),c(12:14), 
-#             c(15:17),c(18:20), 
-#             c(21:24),c(25:28))
-# unqsets = unique(ints.c$dataset)
-# cc = 4
-# for (ii in 1:length(sets)) {
-#   this.set = sets[[ii]]
-#   for (jj in 1:length(this.set)) {
-#     ia = which(ints.c$dataset==unqsets[this.set[jj]])
-#     for (kk in 1:length(this.set)) {
-#       if (jj==kk) next
-#       cc = cc+1
-#       ib = which(ints.c$dataset==unqsets[this.set[kk]])
-#       
-#       g1 = graph_from_data_frame(d=ints.c[ia,], directed = F)
-#       g2 = graph_from_data_frame(d=ints.c[ib,], directed = F)
-#       df0 = netdiff(g1, g2)
-#       df[cc,1:7] = df0
-#       df$nedge1[cc] = length(E(g1))
-#       df$nnode1[cc] = length(V(g1))
-#       df$network[cc] = "Experiment, rep-rep"
-#       if (df$edge.gain[cc]>1e5) error
-#     }
-#   }
-# }
-# 
-# # gain and loss introduced by experimental noise
-# for (ii in 1:length(unqsets)) {
-#   ia = ints.c$dataset==unqsets[ii] & ints.c$noise_mag==0
-#   ib = ints.c$dataset==unqsets[ii] & ints.c$noise_mag==0.1
-#   
-#   if (sum(ia)<100 & sum(ib)<100) next
-#   cc = cc+1
-#   g1 = graph_from_data_frame(d=ints.c[ia,], directed = F)
-#   g2 = graph_from_data_frame(d=ints.c[ib,], directed = F)
-#   
-#   df0 = netdiff(g1, g2)
-#   df[cc,1:7] = df0
-#   df$nedge1[cc] = length(E(g1))
-#   df$nnode1[cc] = length(V(g1))
-#   df$network[cc] = "Experiment, noise-induced (10%)"
-# }
-# df = df[1:cc,]
-# 
-# # make gain/loss relative to net1
-# df$frac.edge.loss = df$edge.loss / df$nedge1
-# df$frac.edge.gain = df$edge.gain / df$nedge1
-# df$frac.node.loss = df$node.loss / df$nedge1
-# df$frac.node.gain = df$node.gain / df$nedge1
-# 
-# # are new edges preferentially between n2-n2 nodes? n1-n1? n1-n2?
-# df$f.old = df$n0n0 / (df$nnode1^2)
-# df$f.mix = df$n0n1 / (df$nnode1 * df$node.gain)
-# df$f.new = df$n1n1 / (df$node.gain^2)
-# 
-# ggplot(df, aes(x=edge.loss, y=edge.gain)) + 
-#   geom_abline(linetype = "dashed") +
-#   facet_wrap(~network, scales = "free") + 
-#   geom_point(alpha = .6) + theme_bw() + 
-#   xlab("Interactions lost") + ylab("Interactions gained") + ggtitle("edge gain and loss")
-# 
-# ggplot(df, aes(x=node.loss, y=node.gain)) + 
-#   geom_abline(linetype = "dashed") +
-#   facet_wrap(~network, scales = "free") + 
-#   geom_point(alpha = .6) + theme_bw() + 
-#   xlab("Nodes lost") + ylab("Nodes gained") + ggtitle("node gain and loss")
-# 
-# I = df$frac.edge.gain<3 & df$frac.edge.loss<3
-# ggplot(df[I,], aes(x=frac.edge.loss, y=frac.edge.gain)) + 
-#   geom_abline(linetype = "dashed") +
-#   facet_wrap(~network, scales = "free") + 
-#   geom_point(alpha = .6) + theme_bw() + 
-#   xlab("Interactions lost") + ylab("Interactions gained") + 
-#   ggtitle("fraction edge gain and loss")
-# 
-# I = df$frac.node.loss<1 & df$frac.node.gain<1
-# ggplot(df[I,], aes(x=frac.node.loss, y=frac.node.gain)) + 
-#   geom_abline(linetype = "dashed") +
-#   facet_wrap(~network, scales = "free") + 
-#   geom_point(alpha = .6) + theme_bw() + 
-#   xlab("Nodes lost") + ylab("Nodes gained") + 
-#   ggtitle("fraction node gain and loss")
-# 
-# 
-# df2 = data.frame(frac = c(df$f.old, df$f.mix, df$f.new),
-#                  type = c(rep("n1-n1",nrow(df)), rep("n1-n2",nrow(df)), rep("n2-n2", nrow(df))),
-#                  network = rep(df$network, 3), stringsAsFactors = F)
-# df2$frac[df2$type=="n1-n1" & grepl("CORUM",df2$network)] = NA
-# ggplot(df2, aes(x=frac, fill=type)) + geom_density(alpha=.5) + 
-#   facet_wrap(~network, scales="free") +
-#   ggtitle("where are new edges in the adjacency matrix? (fraction)")
-# 
-# df3 = data.frame(count = c(df$n0n0, df$n0n1, df$n1n1),
-#                  type = c(rep("n1-n1",nrow(df)), rep("n1-n2",nrow(df)), rep("n2-n2", nrow(df))),
-#                  network = rep(df$network, 3), stringsAsFactors = F)
-# ggplot(df3, aes(x=log10(count), fill=type)) + geom_density(alpha=.5) + 
-#   facet_wrap(~network, scales="free") +
-#   ggtitle("where are new edges in the adjacency matrix? (count)")
-# 
-# ggplot(df, aes(x=(node.gain+node.loss)/nnode1, fill=network)) + 
-#   geom_density(alpha = .5) + coord_cartesian(xlim = c(0, 2.5))
-
 
 
 ## Okay
@@ -156,20 +19,41 @@ sets = list(c(1:4),c(5:8),
             c(9:11),c(12:14), 
             c(15:17),c(18:20), 
             c(21:24),c(25:28))
-alg.names = c("k-Med", "MCL", "walktrap", "CO")
+alg.names = c("k-Med", "MCL", "walktrap", "CO", 
+              "hierarchical", "mcode", "louvain", "leiden")
 alg = c(function(x) pam(x, 50),
         function(x) mcl(x, infl = 2, remove.self.loops = FALSE),
         walktrap.community,
-        function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
+        function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"),
+        function(x) stats::cutree(stats::hclust(d = hierarch.edge.list.format(x), method="average"), k = 500),
+        function(x) mcode(graph.data.frame(x), vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1),
+        function(x) {
+          x$weights = 1
+          return(cluster_resolution(x, 1))},
+        function(x) leiden(as_adjacency_matrix(graph_from_edgelist(as.matrix(x))), resolution_parameter = 1))
+
 edge.list.format = list(pam.edge.list.format, 
                         mcl.edge.list.format, 
                         function(x) graph_from_edgelist(as.matrix(x), directed = F),
-                        NULL)
+                        NULL, NULL, NULL, NULL, NULL)
 cluster.format = list(pam.cluster.format,
                       mcl.cluster.format,
                       NULL,
-                      NULL)
-if (1) {
+                      NULL,
+                      hierarch.cluster.format,
+                      function(x) lapply(x, FUN = function(y) unqprots[y]),
+                      function(x) {    clusts = list()
+                      unqclusts = unique(x$community)
+                      for (ii in 1:length(unqclusts)) {
+                        clusts[[ii]] = unqprots[x$community == unqclusts[ii]]
+                      }
+                      return(clusts)},
+                      function(x) {clusts = list()
+                      unqclusts = unique(x)
+                      for (ii in 1:length(unqclusts)) {
+                        clusts[[ii]] = unqprots[x == unqclusts[ii]]
+                      }})
+if (F) {
   fns = list.files(path = "../data/", pattern = "^pred_J_expreps_", full.names = T)
   tmp = list()
   for (ii in 1:length(fns)) {
