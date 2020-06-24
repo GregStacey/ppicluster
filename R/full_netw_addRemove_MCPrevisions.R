@@ -46,13 +46,13 @@ if (file.exists(sf)) {
   
   # read data
   nclust = 1500
-  data = as.data.frame(read_tsv(params$dataset))
+  ints.corum = as.data.frame(read_tsv(params$dataset))
   
   
   # shuffle network
   # get shuffled corum
-  tmp.add = addcorum(ints.corum, add.range[hh])
-  tmp.remove = removecorum(ints.corum, remove.range[ii])
+  tmp.add = addcorum(ints.corum, params$add_mag)
+  tmp.remove = removecorum(ints.corum, params$remove_mag)
   # find added + removed interactions
   i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% paste(ints.corum$protA, ints.corum$protB, sep="-")
   i.remove = !paste(ints.corum$protA, ints.corum$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
