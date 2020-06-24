@@ -128,14 +128,14 @@ if (F) {
     # store in dataframe
     I = (cc+1) : (cc+nrow(clust1))
     df.predrep$alg[I] = alg.names[jj]
-    df.predrep$predJ[I] = clust1$reproducibility.J
+    df.predrep$predJ[I] = clust1$repJ
     df.predrep$repJ[I] = clust1$repJ.clust2
     df.predrep$set1[I] = paste(x1, collapse = ";")
     df.predrep$set2[I] = paste(x2, collapse = ";")
     cc = cc+nrow(clust1)
     I = (cc+1) : (cc+nrow(clust2))
     df.predrep$alg[I] = alg.names[jj]
-    df.predrep$predJ[I] = clust2$reproducibility.J
+    df.predrep$predJ[I] = clust2$repJ
     df.predrep$repJ[I] = clust2$repJ.clust1
     df.predrep$set1[I] = paste(x2, collapse = ";")
     df.predrep$set2[I] = paste(x1, collapse = ";")
@@ -143,9 +143,7 @@ if (F) {
     
     # save in case of crash
     write_tsv(df.predrep[1:cc,], path = sf)
-    #}
   }
-  write_tsv(df.predrep[1:cc,], path = sf)
 }
 
 
