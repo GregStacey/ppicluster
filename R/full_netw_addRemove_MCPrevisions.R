@@ -21,7 +21,7 @@ hparams = as.integer(as.numeric(commandArgs(trailingOnly = T)))
 # set up all parameters
 # (new data) - (all algorithms)
 # (new algorithms) - (all data)
-fns = "../data/corum_pairwise.txt"
+fns = "../data/interactomes/corum_pairwise.txt"
 algorithms = c("hierarchical", "mcode", "louvain", "leiden")
 add.range = remove.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, add_mag = add.range, remove_mag = remove.range)) %>%
