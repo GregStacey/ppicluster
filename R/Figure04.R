@@ -28,6 +28,7 @@ unqdatasets = unique(data.c$data_type)
 unqmags = sort(unique(data.c$noise_mag))
 unqmags = unqmags[unqmags<=1]
 
+# add walktrap
 fn.walk = "../data/data_c_walktrap.txt"
 if (T) {
   load(fn.walk)
@@ -66,11 +67,12 @@ if (T) {
 }
 data.c = rbind(data.c, data.c.add)
 
+
 # calculate Ji
 fn = "../data/intJ_vs_clustJ_v03.Rda"
 if (T){
   load(fn)
-  df = df[!df$algorithm == "hierarchical",]
+  #df = df[!df$algorithm == "hierarchical",]
 } else {
   nn = 10^6
   df = data.frame(dataset = character(nn), algorithm = character(nn), noise_mag=numeric(nn),
@@ -118,6 +120,14 @@ if (T){
   
   save("df", file = fn)
 }
+df = df[, -11]
+
+# add mcode, louvain, and leiden
+tmp = as.data.frame(read_tsv("../data/data.c.add_cofracmcp.txt"))
+tmp = tmp[,6:15]
+names(tmp) = names(df)
+df = rbind(df, tmp)
+
 
 df$experiment = as.numeric(unlist(sapply(sapply(df$dataset, strsplit, "_"), "[", 2)))
 groups = list(c(1,2,3,4,5,6,7,8),c(9,10,11,12,13,14),c(15,16,17,18,19,20),c(21,22,23,24,25,26,27,28))

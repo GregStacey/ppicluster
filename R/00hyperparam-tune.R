@@ -132,6 +132,7 @@ if (df.params$algorithm == "hierarchical") {
   # 5. Leiden
   adjmat = graph_from_edgelist(as.matrix(ints.corum))
   tmp = leiden(adjmat, resolution_parameter = params[1])
+  unqprots = rownames(adjmat)
   
   clusts = list()
   unqclusts = unique(tmp)

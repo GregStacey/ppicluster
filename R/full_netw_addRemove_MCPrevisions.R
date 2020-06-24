@@ -22,6 +22,7 @@ hparams = as.integer(as.numeric(commandArgs(trailingOnly = T)))
 # (new data) - (all algorithms)
 # (new algorithms) - (all data)
 fns = "../data/interactomes/corum_pairwise.txt"
+#algorithms = c("hierarchical", "mcode", "louvain", "leiden")
 algorithms = c("hierarchical", "mcode", "louvain", "leiden")
 add.range = remove.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, add_mag = add.range, remove_mag = remove.range)) %>%
@@ -61,17 +62,19 @@ if (file.exists(sf)) {
   if (nrow(ints.shuffle) < 2500) next  
   
   unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
-  
+
   
   # cluster
   if (params$algorithm == "hierarchical") {
     # 1. hierarchical
-    x = hierarch.edge.list.format(ints.shuffle)
-    tmp = stats::cutree(stats::hclust(d = x, method="average"), k = nclust)
+    unqprots = unique(c(ints.corum$protA, ints.corum$protB))
+    x = hierarch.edge.list.format(ints.corum)
+    y = stats::hclust(d = x, method="average")
+    tmp = stats::cutree(y, k = N.range[ii])
     
     clusts = list()
-    for (ii in 1:nclust) {
-      clusts[[ii]] = unqprots[tmp == ii]
+    for (jj in 1:nclust) {
+      clusts[[jj]] = unqprots[tmp == jj]
     }
     
   } else if (params$algorithm == "mcode") {
@@ -97,6 +100,7 @@ if (file.exists(sf)) {
     x = as.matrix(ints.shuffle)
     adjmat = as_adjacency_matrix(graph_from_edgelist(x))
     tmp = leiden(adjmat, resolution_parameter = 1)
+    unqprots = rownames(adjmat)
     
     clusts = list()
     unqclusts = unique(tmp)
