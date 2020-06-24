@@ -15,7 +15,7 @@
 source("functions.R")
 
 # command line arguments
-hparams = as.integer(as.numeric(trailingOnly = T))
+hparams = as.integer(as.numeric(commandArgs(trailingOnly = T)))
 
 
 # set up all parameters
