@@ -41,18 +41,29 @@ cluster.format = list(pam.cluster.format,
                       NULL,
                       NULL,
                       hierarch.cluster.format,
-                      function(x) lapply(x, FUN = function(y) unqprots[y]),
-                      function(x) {    clusts = list()
-                      unqclusts = unique(x$community)
-                      for (ii in 1:length(unqclusts)) {
-                        clusts[[ii]] = unqprots[x$community == unqclusts[ii]]
-                      }
-                      return(clusts)},
-                      function(x) {clusts = list()
-                      unqclusts = unique(x)
-                      for (ii in 1:length(unqclusts)) {
-                        clusts[[ii]] = unqprots[x == unqclusts[ii]]
-                      }})
+                      function(x, unqprots) {
+                        clusts = list()
+                        unqclusts = unique(x)
+                        for (ii in 1:length(unqclusts)) {
+                          clusts[[ii]] = unqprots[x$community == unqclusts[ii]]
+                        }
+                        return(clusts)},
+                      function(x, unqprots) {    
+                        clusts = list()
+                        unqclusts = unique(x$community)
+                        for (ii in 1:length(unqclusts)) {
+                          clusts[[ii]] = unqprots[x$community == unqclusts[ii]]
+                        }
+                        return(clusts)},
+                      function(x, unqprots) {
+                        clusts = list()
+                        unqclusts = unique(x)
+                        for (ii in 1:length(unqclusts)) {
+                          tmp = unqprots[x == unqclusts[ii]]
+                          if (length(tmp)==0) next
+                          clusts[[ii]] = tmp
+                        }
+                        return(clusts)})
 if (F) {
   fns = list.files(path = "../data/", pattern = "^pred_J_expreps_", full.names = T)
   tmp = list()
@@ -95,11 +106,12 @@ if (F) {
     # cluster with clust.perturb
     #for (jj in 1:4) {
     print(paste("jj=",jj,",  ii=",ii, ", net1"))
-    clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
+    unqprots = unique(c(net1[,1], net1[,2]))
+    clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 2,
                            edge.list.format = edge.list.format[[jj]], 
                            cluster.format = cluster.format[[jj]])
     print(paste("jj=",jj,",  ii=",ii, ", net2"))
-    clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 10,
+    clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 2,
                            edge.list.format = edge.list.format[[jj]], 
                            cluster.format = cluster.format[[jj]])
     
