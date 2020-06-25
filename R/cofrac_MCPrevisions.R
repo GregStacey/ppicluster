@@ -84,8 +84,8 @@ for (ii in 1:length(unqmags)) {
     unqprots = rownames(adjmat)
     clusts = list()
     unqclusts = unique(tmp)
-    for (ii in 1:length(unqclusts)) {
-      clusts[[ii]] = unqprots[tmp == unqclusts[ii]]
+    for (jj in 1:length(unqclusts)) {
+      clusts[[jj]] = unqprots[tmp == unqclusts[jj]]
     }
     for (kk in 1:length(clusts)) {
       if (length(clusts[[kk]]) < 3) next
