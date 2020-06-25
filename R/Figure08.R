@@ -103,10 +103,16 @@ if (F) {
       next
     }
     
+    if (alg.names[jj] == "leiden") {
+      x = as.matrix(ints.shuffle)
+      adjmat = as_adjacency_matrix(graph_from_edgelist(x))
+      tmp = leiden(adjmat, resolution_parameter = 0)
+      unqprots = rownames(adjmat)
+    } else unqprots = unique(c(net1[,1], net1[,2]))
+    
     # cluster with clust.perturb
     #for (jj in 1:4) {
     print(paste("jj=",jj,",  ii=",ii, ", net1"))
-    unqprots = unique(c(net1[,1], net1[,2]))
     clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 2,
                            edge.list.format = edge.list.format[[jj]], 
                            cluster.format = cluster.format[[jj]])
