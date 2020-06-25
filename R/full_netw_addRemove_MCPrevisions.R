@@ -99,7 +99,7 @@ if (file.exists(sf)) {
     # 5. Leiden
     x = as.matrix(ints.shuffle)
     adjmat = as_adjacency_matrix(graph_from_edgelist(x))
-    tmp = leiden(adjmat, resolution_parameter = 1)
+    tmp = leiden(adjmat, resolution_parameter = 0)
     unqprots = rownames(adjmat)
     
     clusts = list()

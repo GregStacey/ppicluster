@@ -30,7 +30,7 @@ alg = c(function(x) pam(x, 50),
         function(x) {
           x$weights = 1
           return(cluster_resolution(x, 1))},
-        function(x) leiden(as_adjacency_matrix(graph_from_edgelist(as.matrix(x))), resolution_parameter = 1))
+        function(x) leiden(as_adjacency_matrix(graph_from_edgelist(as.matrix(x))), resolution_parameter = 0))
 
 edge.list.format = list(pam.edge.list.format, 
                         mcl.edge.list.format, 

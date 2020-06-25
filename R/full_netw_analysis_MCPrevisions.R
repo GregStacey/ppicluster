@@ -130,9 +130,9 @@ if (file.exists(sf)) {
     
   } else if (params$algorithm == "leiden") {
     # 5. Leiden
-    x = as.matrix(ints.shuffle)
-    adjmat = as_adjacency_matrix(graph_from_edgelist(x))
-    tmp = leiden(adjmat, resolution_parameter = 1)
+    adjmat = graph_from_edgelist(as.matrix(ints.shuffle))
+    tmp = leiden(adjmat, resolution_parameter = 0)
+    unqprots = rownames(adjmat)
     
     clusts = list()
     unqclusts = unique(tmp)
