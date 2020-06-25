@@ -26,7 +26,7 @@ alg = c(function(x) pam(x, 50),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"),
         function(x) stats::cutree(stats::hclust(d = hierarch.edge.list.format(x), method="average"), k = 500),
-        function(x) mcode(graph.data.frame(x), vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1),
+        function(x) mcode(graph.data.frame(x), vwp = 0.1, haircut = FALSE, fluff = FALSE, fdt = 0.1),
         function(x) {
           x$weights = 1
           return(cluster_resolution(x, 1))},
@@ -41,11 +41,11 @@ cluster.format = list(pam.cluster.format,
                       NULL,
                       NULL,
                       hierarch.cluster.format,
-                      function(x, unqprots) {
+                      function(x, unqprots) {    
                         clusts = list()
-                        unqclusts = unique(x)
+                        unqclusts = 1:length(x$COMPLEX)
                         for (ii in 1:length(unqclusts)) {
-                          clusts[[ii]] = unqprots[x$community == unqclusts[ii]]
+                          clusts[[ii]] = unqprots[x$COMPLEX[[ii]]]
                         }
                         return(clusts)},
                       function(x, unqprots) {    
