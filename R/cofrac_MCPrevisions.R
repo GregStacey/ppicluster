@@ -32,7 +32,7 @@ for (ii in 1:length(unqmags)) {
     
     # get shuffled network
     I = ints.c$noise_mag==unqmags[ii] & ints.c$dataset==unqdatasets[jj] & !ints.c$protA==ints.c$protB
-    if (sum(I)<190) next
+    if (sum(I, na.rm=T)<190) next
     these.ints = ints.c[I,c("protA", "protB")]
     ints.shuffle = shufflecorum(these.ints, unqmags[ii])
     unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
