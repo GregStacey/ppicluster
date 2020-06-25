@@ -26,7 +26,7 @@ alg = c(function(x) pam(x, 50),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"),
         function(x) stats::cutree(stats::hclust(d = hierarch.edge.list.format(x), method="average"), k = 500),
-        function(x) mcode(graph.data.frame(x), vwp = 0.1, haircut = FALSE, fluff = FALSE, fdt = 0.1),
+        function(x) mcode(graph.data.frame(x), vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1),
         function(x) {
           x$weights = 1
           return(cluster_resolution(x, 1))},
@@ -146,6 +146,14 @@ if (F) {
   }
 }
 
+
+# read and merge
+fns = list.files(path = "../data/", pattern = "^pred_J_expreps_", full.names = T)
+tmp = list()
+for (ii in 1:length(fns)) {
+  tmp[[ii]] = as.data.frame(read_tsv(fns[[ii]]))
+}
+df.predrep = bind_rows(tmp, .id = "column_label")
 
 
 
