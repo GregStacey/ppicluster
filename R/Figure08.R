@@ -26,11 +26,11 @@ alg = c(function(x) pam(x, 50),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"),
         function(x) stats::cutree(stats::hclust(d = hierarch.edge.list.format(x), method="average"), k = 100),
-        function(x) mcode(graph.data.frame(x), vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1),
+        function(x) mcode(graph.data.frame(x), vwp = 0.8, haircut = TRUE, fluff = TRUE, fdt = 0.5),
         function(x) {
           x$weights = 1
           return(cluster_resolution(x, 1))},
-        function(x) leiden(as_adjacency_matrix(graph_from_edgelist(as.matrix(x))), resolution_parameter = 0))
+        function(x) leiden(as_adjacency_matrix(graph_from_edgelist(as.matrix(x))), resolution_parameter = 1))
 
 edge.list.format = list(pam.edge.list.format, 
                         mcl.edge.list.format, 
@@ -103,23 +103,30 @@ if (F) {
       next
     }
     
+    # unqprots
+    if (alg.names[jj] == "leiden") {
+      unqprots.format = function(x) {
+        adjmat = as_adjacency_matrix(graph_from_edgelist(as.matrix(x)))
+        unqprots = rownames(adjmat)
+        return(unqprots)
+      }
+    } else unqprots.format = NULL
+    
     # cluster with clust.perturb
     print(paste("jj=",jj,",  ii=",ii, ", net1"))
-    if (alg.names[jj] == "leiden") {
-      adjmat = as_adjacency_matrix(graph_from_edgelist(as.matrix(net1)))
-      unqprots = rownames(adjmat)
-    } else unqprots = unique(c(net1[,1], net1[,2]))
-    clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 2,
+    clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.02, iters = 3,
                            edge.list.format = edge.list.format[[jj]], 
-                           cluster.format = cluster.format[[jj]])
+                           cluster.format = cluster.format[[jj]],
+                           unqprots.format = unqprots.format)
     print(paste("jj=",jj,",  ii=",ii, ", net2"))
-    if (alg.names[jj] == "leiden") {
-      adjmat = as_adjacency_matrix(graph_from_edgelist(as.matrix(net1)))
-      unqprots = rownames(adjmat)
-    } else unqprots = unique(c(net2[,1], net2[,2]))
-    clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.15, iters = 2,
+    clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.02, iters = 3,
                            edge.list.format = edge.list.format[[jj]], 
-                           cluster.format = cluster.format[[jj]])
+                           cluster.format = cluster.format[[jj]],
+                           unqprots.format = unqprots.format)
+    
+    # filter N>=3
+    clust1 = clust1[unlist(sapply(clust1$cluster, FUN = function(x) length(unlist(strsplit(x, ";")))))>=3,]
+    clust2 = clust2[unlist(sapply(clust2$cluster, FUN = function(x) length(unlist(strsplit(x, ";")))))>=3,]
     
     # calc diff b/w sets
     clust1$repJ.clust2 = numeric(nrow(clust1))
@@ -160,11 +167,10 @@ for (ii in 1:length(fns)) {
   tmp[[ii]] = as.data.frame(read_tsv(fns[[ii]]))
 }
 df.predrep = bind_rows(tmp, .id = "column_label")
+df.predrep$alg = factor(df.predrep$alg, levels = alg.names)
 
-
-
-ggplot(df.predrep, aes(x=predJ, y=repJ)) + geom_point(alpha = .25) +
-  geom_smooth(method = "lm") + facet_grid(~alg) + 
+ggplot(df.predrep, aes(x=predJ, y=repJ)) + geom_point(alpha = .1) +
+  geom_smooth(method = "lm") + facet_wrap(~alg, ncol=4) + 
   xlab("Predicted reproducibility (clust.perturb, repJ)") +
   ylab("Actual reproducibility\n(experiment-to-experiment, Ji)") +
   theme_bw()

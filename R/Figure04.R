@@ -123,9 +123,9 @@ if (T){
 df = df[, -11]
 
 # add mcode, louvain, and leiden
-tmp = as.data.frame(read_tsv("../data/data.c.add_cofracmcp.txt"))
-tmp = tmp[,6:15]
-names(tmp) = names(df)
+tmp = as.data.frame(read_tsv("../data/data.c.add_cofracmcp_summary.txt"))
+#tmp = tmp[,6:15]
+#names(tmp) = names(df)
 df = rbind(df, tmp)
 
 

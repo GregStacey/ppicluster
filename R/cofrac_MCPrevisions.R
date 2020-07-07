@@ -84,8 +84,8 @@ for (ii in 1:length(unqmags)) {
     unqprots = rownames(adjmat)
     clusts = list()
     unqclusts = unique(tmp)
-    for (jj in 1:length(unqclusts)) {
-      clusts[[jj]] = unqprots[tmp == unqclusts[jj]]
+    for (kk in 1:length(unqclusts)) {
+      clusts[[kk]] = unqprots[tmp == unqclusts[kk]]
     }
     for (kk in 1:length(clusts)) {
       if (length(clusts[[kk]]) < 3) next
@@ -156,5 +156,5 @@ for (ii in 1:length(unqdatasets)) {
 }
 df = df[1:cc,]
 
-# write finally
-write_tsv(cbind(data.c.add, df), path = "../data/data.c.add_cofracmcp.txt")
+# write summary
+write_tsv(df, path = "../data/data.c.add_cofracmcp_summary.txt")
