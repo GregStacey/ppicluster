@@ -97,6 +97,8 @@ if (file.exists(sf)) {
   # shuffle network
   ints.shuffle = shufflecorum(data, params$noise.range)
   unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
+  if (ncol(ints.shuffle)==2) {names(ints.shuffle) = c("protA", "protB")
+  } else names(ints.shuffle) = c("protA", "protB", "score")
   
   
   # cluster
@@ -146,7 +148,6 @@ if (file.exists(sf)) {
     
   } else if (params$algorithm == "pam") {
     # pam (k-med)
-    names(ints.shuffle) = c("protA", "protB")
     tmp = pamclust(ints.shuffle, nclust)
     clusts = sapply(tmp, strsplit, ";")
     

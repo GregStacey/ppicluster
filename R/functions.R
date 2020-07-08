@@ -408,9 +408,9 @@ shufflecorum = function(ints.corum, ff){
   I.replace = sample(nrow(ints.corum), N.replace)
   
   # indices of unshuffled
-  ia0 = match(ints.corum$protA, unqprots)
-  ib0 = match(ints.corum$protB, unqprots)
-  
+  ia0 = match(ints.corum[,1], unqprots)
+  ib0 = match(ints.corum[,2], unqprots)
+
   # indices of shuffled
   ia = ia0
   ib = ib0
@@ -430,8 +430,13 @@ shufflecorum = function(ints.corum, ff){
   }
   
   #
-  ints.shuffle$protA = unqprots[ia]
-  ints.shuffle$protB = unqprots[ib]
+  ints.shuffle[,1] = unqprots[ia]
+  ints.shuffle[,2] = unqprots[ib]
+  if (ncol(ints.corum)==3) {
+    score.shuffle = ints.corum[,3]
+    score.shuffle[I.replace] = sample(scores, N.replace)
+    ints.shuffle[,3] = score.shuffle
+  }
   
   # quality control: make sure you shuffled N.replace interactions
   N.diff = sum(!ia0==ia | !ib0==ib)
@@ -475,8 +480,14 @@ addcorum = function(ints.corum, ff){
   }
   
   ints.add = data.frame(protA = protA, protB = protB, stringsAsFactors = F)
-  ints.corum = rbind(ints.corum, ints.add)
-  return(ints.corum)
+  if (ncol(ints.corum)==2) {
+    names(ints.add) = names(ints.corum)
+  } else if (ncol(ints.corum)==3) {
+    ints.add$score = sample(ints.corum[,3], nrow(ints.add))
+    names(ints.add) = names(ints.corum)
+  }
+  ints.shuffle = rbind(ints.shuffle, ints.add)
+  return(ints.shuffle)
 }
 
 removecorum = function(ints.corum, ff){
@@ -735,6 +746,8 @@ shufflecorum = function(ints.corum, ff){
 pam.edge.list.format = function(ints) {
   unqprots = unique(c(ints[,1], ints[,2]))
   nn = length(unqprots)
+  scores = rep(0, nrow(ints))
+  if (ncol(ints)==3) scores = ints[,3]
   
   # create adjacency matrix in the style of `dist` object
   # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
@@ -774,7 +787,7 @@ pam.edge.list.format = function(ints) {
   d = stats::dist(x)
   attr(d, 'Upper') = T
   d[1:length(d)] = 1
-  d[I.fill] = 0
+  d[I.fill] = scores
   
   return(d)
 }
