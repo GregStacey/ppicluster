@@ -320,21 +320,21 @@ hierarch.cluster.format = function(tmp, unqprots) {
 
 
 pamclust = function(ints, nclust){
-  unqprots = unique(c(ints$protA, ints$protB))
+  unqprots = unique(c(ints[,1], ints[,2]))
   nn = length(unqprots)
   
   # create adjacency matrix in the style of `dist` object
   # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
-  I.row = match(ints$protA, unqprots) # row
-  I.col = match(ints$protB, unqprots) # column
+  I.row = match(ints[,1], unqprots) # row
+  I.col = match(ints[,2], unqprots) # column
   
-  unqprots = unique(c(ints$protA, ints$protB))
+  unqprots = unique(c(ints[,2], ints[,2]))
   nn = length(unqprots)
   
   # create adjacency matrix in the style of `dist` object
   # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
-  I.row = match(ints$protA, unqprots) # row
-  I.col = match(ints$protB, unqprots) # column
+  I.row = match(ints[,2], unqprots) # row
+  I.col = match(ints[,2], unqprots) # column
   
   I.fill = numeric(length(I.row))
   for (ii in 1:length(I.row)) {
@@ -362,25 +362,9 @@ pamclust = function(ints, nclust){
   attr(d, 'Upper') = T
   d[1:length(d)] = 1
   d[I.fill] = 0
+  if (ncol(ints)==3) d[I.fill] = ints[,3]
   
   clusts = pam(d, nclust)
-  
-  # distmat = as.matrix(matrix(nrow=nn, ncol=nn))
-  # distmat[is.na(distmat)] = 1
-  # for (ii in 1:length(I.row)) {
-  #   distmat[I.row[ii], I.col[ii]] = runif(1)*.0001
-  #   distmat[I.col[ii], I.row[ii]] = runif(1)*.0001
-  # }
-  
-  # MDS
-  #fit = cmdscale(distmat,eig=TRUE, k=5)
-  #fit = isoMDS(distmat, k=2)
-  
-  # PAM
-  #clusts = pam(distmat, nclust)
-  
-  # fastkmed
-  #clusts = fastkmed(distmat, ncluster = nclust, iterate = 50)
   
   # compile `clusts` into lists of proteins
   unqclusts = unique(clusts$clustering)
@@ -474,7 +458,7 @@ addcorum = function(ints.corum, ff){
     protB[I] = protA0[I]
     
     # replace any A==B or AB%in%corum
-    I.bad = protA==protB | (paste(protA,protB) %in% paste(ints.corum$protA, ints.corum$protB))
+    I.bad = protA==protB | (paste(protA,protB) %in% paste(ints.corum[,2], ints.corum[,2]))
     protA[I.bad] = sample(unqprots, sum(I.bad), replace = T)
     protB[I.bad] = sample(unqprots, sum(I.bad), replace = T)
   }
@@ -630,8 +614,8 @@ binarize.corum = function(corum) {
     pairs.prots = t(combn(prots, 2))
     
     I = (cc+1) : (cc+nrow(pairs.prots))
-    ints.corum$protA[I] = pairs.prots[,1]
-    ints.corum$protB[I] = pairs.prots[,2]
+    ints.corum[,2][I] = pairs.prots[,1]
+    ints.corum[,2][I] = pairs.prots[,2]
     cc = cc+length(I)
   }
   ints.corum = ints.corum[1:cc,]

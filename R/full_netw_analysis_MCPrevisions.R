@@ -96,7 +96,7 @@ if (file.exists(sf)) {
   ints.shuffle = shufflecorum(data, params$noise.range)
   unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
   if (ncol(ints.shuffle)==2) {names(ints.shuffle) = c("protA", "protB")
-  } else names(ints.shuffle) = c("protA", "protB", "score")
+  } else names(ints.shuffle) = c("protA", "protB", "weights")
   
   
   # cluster
@@ -118,8 +118,7 @@ if (file.exists(sf)) {
     
   } else if (params$algorithm == "louvain") {
     # 4. Louvain
-    x = ints.shuffle
-    x$weights = 1
+    if (ncol(ints.shuffle)==2) ints.shuffle$weights = 1
     tmp = cluster_resolution(x, 1)
     
     clusts = list()
@@ -130,9 +129,10 @@ if (file.exists(sf)) {
     
   } else if (params$algorithm == "leiden") {
     # 5. Leiden
-    adjmat = graph_from_edgelist(as.matrix(ints.shuffle))
+    adjmat = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]))
+    if (ncol(ints.shuffle)==3) edge.attributes(adjmat)$weight = ints.shuffle[,3]
     tmp = leiden(adjmat, resolution_parameter = 0)
-    unqprots = rownames(adjmat)
+    unqprots = V(adjmat)
     
     clusts = list()
     unqclusts = unique(tmp)
@@ -141,7 +141,8 @@ if (file.exists(sf)) {
     }
   } else if (params$algorithm == "walk") {
     # walktrap
-    graph.object = graph_from_edgelist(as.matrix(ints.shuffle), directed = F)
+    graph.object = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]), directed = F)
+    if (ncol(ints.shuffle)==3) edge.attributes(adjmat)$weight = ints.shuffle[,3]
     clusts = walktrap.community(graph.object)
     
   } else if (params$algorithm == "pam") {
