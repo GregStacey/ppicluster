@@ -327,7 +327,7 @@ pamclust = function(ints, nclust){
   # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
   I.row = match(ints$protA, unqprots) # row
   I.col = match(ints$protB, unqprots) # column
-
+  
   unqprots = unique(c(ints$protA, ints$protB))
   nn = length(unqprots)
   
@@ -401,7 +401,7 @@ pamclust = function(ints, nclust){
 shufflecorum = function(ints.corum, ff){
   unqprots = sort(unique(c(ints.corum[,1], ints.corum[,2])))
   unqprots = unqprots[!unqprots==""]
-
+  
   #
   ints.shuffle = ints.corum
   N.replace = round(nrow(ints.corum) * ff)
@@ -565,7 +565,7 @@ calcMIz = function(X,Y, iterMax, error.bars=F) {
   }
   mi = mutinformation(X,Y)
   miz = (mi - mean(zz)) / sd(zz)
-
+  
   if (error.bars) {
     miz.error = numeric(100)
     for (ii in 1:100) {
@@ -651,7 +651,7 @@ netdiff = function(g1, g2) {
   df$node.loss = sum(! prots1 %in% prots2)
   
   n2 = prots2[!prots2 %in% prots1] # nodes only in net2
-
+  
   tmp = sapply(ints2, FUN = function(x) strsplit(x, "|", fixed=T))
   na = unlist(sapply(tmp, "[", 1))
   nb = unlist(sapply(tmp, "[", 2))
@@ -830,5 +830,64 @@ hierarch.cluster.format = function(tmp, unqprots) {
   clusts = clusts[!clusts==""]
   clusts = clusts[!is.na(clusts)]
   return(clusts)
+}
+
+get.full.analysis = function(lazyload = T) {
+  # get full grid
+  #   (mcl, co_mcl, co, pam, walktrap, hierarch, mcode, louvain, leiden) x (corum, drugbank, emailEU, biogrid, collins2007)
+  
+  if (lazyload==F) {
+    # (mcl, co_mcl, co, pam, walktrap) x (corum, drugbank, emailEU)
+    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v06.Rda"
+    load(sf)
+    
+    # (mcode, louvain, leiden, hierarch,)x(corum, drugbank, emailEU) + 
+    #     (mcl, co_mcl, co, pam, walktrap, hierarch, mcode, louvain, leiden)x(biogrid, collins2007)
+    fns = list.files("../data/clusters/", pattern = "*.txt", full.names = T)
+    for (ii in 1:length(fns)) {
+      tmp = as.data.frame(read_tsv(fns[ii]))
+      if (!length(names(tmp))==4) next
+      names(tmp) = c("cluster", "algorithm", "noise_mag", "network")
+      tmp$Ji1 = rep(NA, nrow(tmp))
+      tmp$iter = rep(NA, nrow(tmp))
+      tmp$cluster.size = unlist(lapply(sapply(tmp$cluster, strsplit, ";"), length))
+      tmp = tmp[names(Ji)]
+      Ji = rbind(Ji, tmp)
+    }
+    
+    # clean up
+    Ji$algorithm[Ji$algorithm=="CO"] = "co"
+    Ji$algorithm[Ji$algorithm=="MCL"] = "mcl"
+    Ji$network[Ji$network=="ChCh-Miner_durgbank-chem-chem.tsv"] = "DrugBank"
+    Ji$network[Ji$network=="BioPlex_293T_Network_10K_Dec_2019.tsv"] = "BioPlex"
+    Ji$network[Ji$network=="email-Eu-core.txt"] = "email-Eu"
+    Ji$network[Ji$network=="corum_pairwise.txt"] = "CORUM"
+    Ji$network[Ji$network=="BIOGRID-ALL-3.5.186.tab3.txt"] = "BIOGRID"
+    Ji$network[Ji$network=="PE_and_conf_scores_01-11-08.txt"] = "Collins2007"
+    
+    unqnet = unique(Ji$network)
+    unqalg = unique(Ji$algorithm)
+    unqnoise = sort(unique(Ji$noise))
+    for (ii in 1:length(unqnet)) {
+      for (jj in 1:length(unqalg)) {
+        I0 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==0)
+        for (kk in 1:length(unqnoise)) {
+          if (kk==1) {
+            Ji$Ji1[I0] = 1
+            next
+          }
+          
+          I1 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==unqnoise[kk])
+          cluster0 = Ji$cluster[I0]
+          cluster = Ji$cluster[I1]
+          Jii = numeric(length(I1))
+          for (mm in 1:length(cluster)) {
+            Ji[mm] = calcA(cluster[mm], cluster0)
+          }
+          Ji$Ji1[I1] = Ji
+        }
+      }
+    }
+  }
 }
 

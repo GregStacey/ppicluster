@@ -32,12 +32,12 @@ if (length(this.args) < 1) {
 # (new algorithms) - (all data)
 if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
   data.dir = "/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/"
-  fns = paste(data.dir,c("BIOGRID-ALL-3.5.186.tab3.txt",
-                         "PE_and_conf_scores_01-11-08.txt", # top 9074
-                         "BioPlex_293T_Network_10K_Dec_2019.tsv",
-                         "HuRI.tsv"), sep="")
   fns = c("../data/corum_pairwise.txt","../data/ChCh-Miner_durgbank-chem-chem.tsv","../data/email-Eu-core.txt", 
-          fns)
+          paste(data.dir,c("BIOGRID-ALL-3.5.186.tab3.txt",
+                           "PE_and_conf_scores_01-11-08.txt", # top 9074
+                           "BioPlex_293T_Network_10K_Dec_2019.tsv",
+                           "HuRI.tsv"), sep=""))
+
 } else {
   data.dir = "../data/interactomes/"
   fns = paste(data.dir,c("corum_pairwise.txt",
@@ -55,8 +55,8 @@ params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.
   mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
 # remove params that are already done
 params = params[!((grepl("corum", params$dataset) | grepl("email", params$dataset) | grepl("chem", params$dataset)) &
-                     (params$algorithm=="CO" | grepl("pam", params$algorithm) | 
-                        grepl("MCL", params$algorithm) | grepl("walk", params$algorithm))), ]
+                     (params$algorithm=="co" | grepl("pam", params$algorithm) | 
+                        grepl("mcl", params$algorithm) | grepl("walk", params$algorithm))), ]
 # choose which parameter set
 if (!hparams==-1) {
   params = params[hparams, ]
