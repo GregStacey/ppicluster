@@ -15,7 +15,8 @@ clusteroneR = function(network, pp=8, density_threshold=0,
   network = rbind(network, network2)
   fn_tmpM = paste(output_path,round(runif(1)*1e8),".network.txt", sep="")
   print(fn_tmpM)
-  write_tsv(network, fn_tmpM)
+  #write_tsv(network, fn_tmpM)
+  write.table(network, fn_tmpM, append = FALSE, sep = "\t")
   
   # 2. Call clusterone java
   fn_tmpout = paste(output_path,round(runif(1)*1e8),".clusterone.txt", sep="")

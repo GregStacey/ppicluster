@@ -12,8 +12,6 @@
 
 
 
-source("functions.R")
-
 # command line arguments
 this.args = commandArgs(trailingOnly = T)
 hparams = -1
@@ -25,7 +23,7 @@ if (length(this.args) < 1) {
   hparams = as.integer(as.numeric(this.args))
 }
 
-
+source("functions.R")
 
 # set up all parameters
 # (new data) - (all algorithms)
