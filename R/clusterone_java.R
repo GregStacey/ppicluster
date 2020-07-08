@@ -7,7 +7,10 @@ clusteroneR = function(network, pp=8, density_threshold=0,
   # ensure network is symmetric, i.e. contains A-B and B-A
   I = !duplicated(paste(network[,1], network[,2], sep="-"))
   network = network[I, ]
-  network2 = network[,c(2,1)]
+  if (ncol(network)==2) {
+    ia = c(2,1)
+  } else if (ncol(network)==3) ia = c(2,1,3)
+  network2 = network[,ia]
   names(network2) = names(network)
   network = rbind(network, network2)
   fn_tmpM = paste(output_path,round(runif(1)*1e8),".network.txt", sep="")
