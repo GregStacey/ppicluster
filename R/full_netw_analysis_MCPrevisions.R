@@ -20,7 +20,6 @@ if (length(this.args) == 0) {
   print("Testing all sets...")
   hparams = -1
 } else if (length(this.args) > 0 ){
-  print("Testing one hyperparameter set...")
   hparams = as.integer(as.numeric(this.args[1]))
   
   # is the second argument "large"?
@@ -73,6 +72,7 @@ if (large.flag==1) {
 # choose which parameter set
 if (!hparams==-1) {
   params = params[hparams, ]
+  print(params)
 }
 
 # check if output file exists
