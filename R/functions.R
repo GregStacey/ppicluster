@@ -858,8 +858,10 @@ get.full.analysis = function(lazyload = T) {
     # (mcode, louvain, leiden, hierarch,)x(corum, drugbank, emailEU) + 
     #     (mcl, co_mcl, co, pam, walktrap, hierarch, mcode, louvain, leiden)x(biogrid, collins2007)
     fns = list.files("../data/clusters/", pattern = "*.txt", full.names = T)
+    bad = rep(NA, 1000)
     for (ii in 1:length(fns)) {
       tmp = as.data.frame(read_tsv(fns[ii]))
+      if (nrow(tmp)==0) bad[ii] = fns[ii]
       if (!length(names(tmp))==4) next
       names(tmp) = c("cluster", "algorithm", "noise_mag", "network")
       tmp$Ji1 = rep(NA, nrow(tmp))

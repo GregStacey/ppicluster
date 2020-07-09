@@ -113,13 +113,14 @@ if (file.exists(sf)) {
   } else if (params$algorithm == "mcode") {
     # 3. MCODE
     x = graph.data.frame(ints.shuffle)
-    clusts = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
-    clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
+    #tmp = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
+    tmp = mcode(x, vwp = 0, haircut = TRUE, fluff = FALSE, fdt = 0)
+    clusts = tmp[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     
   } else if (params$algorithm == "louvain") {
     # 4. Louvain
     if (ncol(ints.shuffle)==2) ints.shuffle$weights = 1
-    tmp = cluster_resolution(x, 1)
+    tmp = cluster_resolution(ints.shuffle, 1)
     
     clusts = list()
     unqclusts = unique(tmp$community)
@@ -158,7 +159,7 @@ if (file.exists(sf)) {
   } else if (params$algorithm == "mcl") {
     # mcl
     G = graph.data.frame(ints.shuffle, directed=FALSE)
-    A = as_adjacency_matrix(G,type="both", names=TRUE,sparse=FALSE)
+    A = as_adjacency_matrix(G,type="both", names=TRUE, sparse=FALSE)
     tmp = MCL::mcl(A, addLoops = FALSE, max.iter = 100)
     unqprots = rownames(A)
     

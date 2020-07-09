@@ -4,7 +4,7 @@
 #SBATCH --mail-user=richard.greg.stacey@gmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --time=71:55:00
-#SBATCH --mem=16G
+#SBATCH --mem=64G
 #SBATCH --array=1-396
 #SBATCH --account=rrg-ljfoster-ab
 
