@@ -115,6 +115,7 @@ for (uu in 1:length(this.noise.range)) {
              basename(tools::file_path_sans_ext(params$dataset)),
              "-algorithm=", params$algorithm, 
              "-noise=", this.noise.range[uu], ".txt", sep="")
+  print(sf)
   
   # check if output file exists
   if (file.exists(sf)) {
@@ -144,7 +145,7 @@ for (uu in 1:length(this.noise.range)) {
     # 3. MCODE
     x = graph.data.frame(ints.shuffle)
     #tmp = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
-    tmp = mcode(x, vwp = 0, haircut = TRUE, fluff = FALSE, fdt = 0)
+    tmp = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.2)
     clusts = tmp[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     
   } else if (params$algorithm == "louvain") {
