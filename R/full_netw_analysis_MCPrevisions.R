@@ -41,7 +41,7 @@ if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
                            "PE_and_conf_scores_01-11-08.txt", # top 9074
                            "BioPlex_293T_Network_10K_Dec_2019.tsv",
                            "HuRI.tsv"), sep=""))
-
+  
 } else {
   data.dir = "../data/interactomes/"
   fns = paste(data.dir,c("corum_pairwise.txt",
@@ -55,21 +55,25 @@ if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
 
 algorithms = c("co","pam","mcl","walk", "hierarchical", "mcode", "louvain", "leiden")
 noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
-params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.range = noise.range)) %>%
-  mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
-# remove params that are already done
-params = params[!((grepl("corum", params$dataset) | grepl("email", params$dataset) | grepl("chem", params$dataset)) &
-                     (params$algorithm=="co" | grepl("pam", params$algorithm) | 
-                        grepl("mcl", params$algorithm) | grepl("walk", params$algorithm))), ]
-
-# if large.flag, only BIOGRID and BioPlex
 if (large.flag==1) {
+  # if large.flag, only BIOGRID and BioPlex
+  params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.range = noise.range)) %>%
+    mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
+  
   params = params[grepl("biogrid", tolower(params$dataset)) | 
-                                     grepl("bioplex", tolower(params$dataset)), ]
+                    grepl("bioplex", tolower(params$dataset)), ]
 } else if (large.flag==0) {
+  # if large.flag==0, no BIOGRID and BioPlex, do all noise ranges
+  params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms)) %>%
+    mutate_if(is.factor, as.character)
+  params$noise.range = "all"
   params = params[!grepl("biogrid", tolower(params$dataset)) & 
                     !grepl("bioplex", tolower(params$dataset)), ]
 }
+# remove params that are already done
+params = params[!((grepl("corum", params$dataset) | grepl("email", params$dataset) | grepl("chem", params$dataset)) &
+                    (params$algorithm=="co" | grepl("pam", params$algorithm) | 
+                       grepl("mcl", params$algorithm) | grepl("walk", params$algorithm))), ]
 
 # choose which parameter set
 if (!hparams==-1) {
@@ -77,40 +81,49 @@ if (!hparams==-1) {
   print(params)
 }
 
-# check if output file exists
-sf = paste("../data/clusters/", 
-           basename(tools::file_path_sans_ext(params$dataset)),
-           "-algorithm=", params$algorithm, 
-           "-noise=", params$noise.range, ".txt", sep="")
-if (file.exists(sf)) {
-  stop(paste("file already exists:", sf))
-} else {
+
+
+# read data
+nclust = 1500
+data = as.data.frame(read_tsv(params$dataset))
+if (grepl("BIOGRID", params$dataset)) {
+  data = data[data$`Organism Interactor A`==9606 & data$`Organism Interactor B`==9606, 
+              c("Official Symbol Interactor A", "Official Symbol Interactor B")]
+} else if (grepl("PE_and_conf_scores", params$dataset)) {
+  nclust = 1000
+  data = data[order(data$PE_Score, decreasing = T), ][1:9074, c(1, 2, 4)]
+} else if (grepl("BioPlex", params$dataset)) {
+  data = data[,c("UniprotA", "UniprotB")]
+} else if (grepl("email", params$dataset)) {
+  nclust = 500
+  data = data %>% separate("0 1", c("A", "B")) %>% mutate_all(list(as.numeric=as.numeric)) %>%
+    select(c(3, 4)) %>% rename_all(funs(gsub("_as.numeric", "", .))) %>%
+    filter(., !A==B)
+  for (ii in 1:nrow(data)) data[ii,] = sort(data[ii,])
+  data = data[!duplicated(data), ]
   
-  # read data
-  nclust = 1500
-  data = as.data.frame(read_tsv(params$dataset))
-  if (grepl("BIOGRID", params$dataset)) {
-    data = data[data$`Organism Interactor A`==9606 & data$`Organism Interactor B`==9606, 
-                c("Official Symbol Interactor A", "Official Symbol Interactor B")]
-  } else if (grepl("PE_and_conf_scores", params$dataset)) {
-    nclust = 1000
-    data = data[order(data$PE_Score, decreasing = T), ][1:9074, c(1, 2, 4)]
-  } else if (grepl("BioPlex", params$dataset)) {
-    data = data[,c("UniprotA", "UniprotB")]
-  } else if (grepl("email", params$dataset)) {
-    nclust = 500
-    data = data %>% separate("0 1", c("A", "B")) %>% mutate_all(list(as.numeric=as.numeric)) %>%
-      select(c(3, 4)) %>% rename_all(funs(gsub("_as.numeric", "", .))) %>%
-      filter(., !A==B)
-    for (ii in 1:nrow(data)) data[ii,] = sort(data[ii,])
-    data = data[!duplicated(data), ]
-    
-    data[data==0] = max(data) + 1
+  data[data==0] = max(data) + 1
+}
+
+this.noise.range = params$noise.range
+if (this.noise.range == "all") {
+  this.noise.range = noise.range
+}
+
+for (uu in 1:length(this.noise.range)) {
+  sf = paste("../data/clusters/", 
+             basename(tools::file_path_sans_ext(params$dataset)),
+             "-algorithm=", params$algorithm, 
+             "-noise=", this.noise.range[uu], ".txt", sep="")
+  
+  # check if output file exists
+  if (file.exists(sf)) {
+    print(paste("file already exists:", sf))
+    next
   }
   
-  
   # shuffle network
-  ints.shuffle = shufflecorum(data, params$noise.range)
+  ints.shuffle = shufflecorum(data, this.noise.range[uu])
   unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
   if (ncol(ints.shuffle)==2) {names(ints.shuffle) = c("protA", "protB")
   } else names(ints.shuffle) = c("protA", "protB", "weights")
@@ -187,7 +200,6 @@ if (file.exists(sf)) {
     }
   }
   
-  
   # remove clusts with N<3
   nn = unlist(lapply(clusts, length))
   clusts = clusts[nn>2]
@@ -196,48 +208,9 @@ if (file.exists(sf)) {
   # write to file
   df = data.frame(cluster = (sapply(clusts, FUN = function(x) paste(x, collapse=";"))),
                   algorithm = rep(params$algorithm, length(clusts)),
-                  noise = rep(params$noise.range, length(clusts)),
+                  noise = rep(this.noise.range[uu], length(clusts)),
                   dataset = rep(basename(params$dataset), length(clusts)), stringsAsFactors = F)
   write_tsv(df, path=sf)
 }
 
-
-
-for (ii in 3:length(noise.range)) {
-  print(ii)
-  params$noise.range = noise.range[ii]
-  print(params)
-  
-  # check if output file exists
-  sf = paste("../data/clusters/", 
-             basename(tools::file_path_sans_ext(params$dataset)),
-             "-algorithm=", params$algorithm, 
-             "-noise=", params$noise.range, ".txt", sep="")
-  print(sf)
-  
-  # shuffle network
-  ints.shuffle = shufflecorum(data, params$noise.range)
-  unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
-  if (ncol(ints.shuffle)==2) {names(ints.shuffle) = c("protA", "protB")
-  } else names(ints.shuffle) = c("protA", "protB", "weights")
-  
-  # 3. MCODE
-  x = graph.data.frame(ints.shuffle)
-  #tmp = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
-  tmp = mcode(x, vwp = 0, haircut = TRUE, fluff = FALSE, fdt = 0)
-  clusts = tmp[[1]] %>% lapply(., FUN = function(x) unqprots[x])
-  
-  
-  # remove clusts with N<3
-  nn = unlist(lapply(clusts, length))
-  clusts = clusts[nn>2]
-  
-  
-  # write to file
-  df = data.frame(cluster = (sapply(clusts, FUN = function(x) paste(x, collapse=";"))),
-                  algorithm = rep(params$algorithm, length(clusts)),
-                  noise = rep(params$noise.range, length(clusts)),
-                  dataset = rep(basename(params$dataset), length(clusts)), stringsAsFactors = F)
-  write_tsv(df, path=sf)
-}
 
