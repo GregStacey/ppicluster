@@ -160,7 +160,7 @@ if (file.exists(sf)) {
   } else if (params$algorithm == "walk") {
     # walktrap
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]), directed = F)
-    if (ncol(ints.shuffle)==3) edge.attributes(adjmat)$weight = ints.shuffle[,3]
+    if (ncol(ints.shuffle)==3) edge.attributes(graph.object)$weight = ints.shuffle[,3]
     clusts = walktrap.community(graph.object)
     
   } else if (params$algorithm == "pam") {
