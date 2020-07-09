@@ -24,7 +24,9 @@ if (length(this.args) == 0) {
   
   # is the second argument "large"?
   large.flag = 0
-  if (this.args[2] == "large") large.flag = 1
+  if (length(this.args)>1){
+    if (this.args[2] == "large") large.flag = 1
+  }
 }
 
 source("functions.R")
