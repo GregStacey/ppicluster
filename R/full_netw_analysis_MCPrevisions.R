@@ -14,13 +14,18 @@
 
 # command line arguments
 this.args = commandArgs(trailingOnly = T)
+print(this.args)
 hparams = -1
-if (length(this.args) < 1) {
+if (length(this.args) == 0) {
   print("Testing all sets...")
   hparams = -1
-} else if (length(this.args) == 1 ){
+} else if (length(this.args) > 0 ){
   print("Testing one hyperparameter set...")
-  hparams = as.integer(as.numeric(this.args))
+  hparams = as.integer(as.numeric(this.args[1]))
+  
+  # is the second argument "large"?
+  large.flag = 0
+  if (this.args[2] == "large") large.flag = 1
 }
 
 source("functions.R")
@@ -55,6 +60,16 @@ params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.
 params = params[!((grepl("corum", params$dataset) | grepl("email", params$dataset) | grepl("chem", params$dataset)) &
                      (params$algorithm=="co" | grepl("pam", params$algorithm) | 
                         grepl("mcl", params$algorithm) | grepl("walk", params$algorithm))), ]
+
+# if large.flag, only BIOGRID and BioPlex
+if (large.flag==1) {
+  params = params[grepl("biogrid", tolower(params$dataset)) | 
+                                     grepl("bioplex", tolower(params$dataset)), ]
+} else if (large.flag==0) {
+  params = params[!grepl("biogrid", tolower(params$dataset)) & 
+                    !grepl("bioplex", tolower(params$dataset)), ]
+}
+
 # choose which parameter set
 if (!hparams==-1) {
   params = params[hparams, ]
@@ -185,4 +200,42 @@ if (file.exists(sf)) {
 }
 
 
+
+for (ii in 3:length(noise.range)) {
+  print(ii)
+  params$noise.range = noise.range[ii]
+  print(params)
+  
+  # check if output file exists
+  sf = paste("../data/clusters/", 
+             basename(tools::file_path_sans_ext(params$dataset)),
+             "-algorithm=", params$algorithm, 
+             "-noise=", params$noise.range, ".txt", sep="")
+  print(sf)
+  
+  # shuffle network
+  ints.shuffle = shufflecorum(data, params$noise.range)
+  unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
+  if (ncol(ints.shuffle)==2) {names(ints.shuffle) = c("protA", "protB")
+  } else names(ints.shuffle) = c("protA", "protB", "weights")
+  
+  # 3. MCODE
+  x = graph.data.frame(ints.shuffle)
+  #tmp = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
+  tmp = mcode(x, vwp = 0, haircut = TRUE, fluff = FALSE, fdt = 0)
+  clusts = tmp[[1]] %>% lapply(., FUN = function(x) unqprots[x])
+  
+  
+  # remove clusts with N<3
+  nn = unlist(lapply(clusts, length))
+  clusts = clusts[nn>2]
+  
+  
+  # write to file
+  df = data.frame(cluster = (sapply(clusts, FUN = function(x) paste(x, collapse=";"))),
+                  algorithm = rep(params$algorithm, length(clusts)),
+                  noise = rep(params$noise.range, length(clusts)),
+                  dataset = rep(basename(params$dataset), length(clusts)), stringsAsFactors = F)
+  write_tsv(df, path=sf)
+}
 
