@@ -67,14 +67,12 @@ if (file.exists(sf)) {
   # cluster
   if (params$algorithm == "hierarchical") {
     # 1. hierarchical
-    unqprots = unique(c(ints.corum$protA, ints.corum$protB))
-    x = hierarch.edge.list.format(ints.corum)
-    y = stats::hclust(d = x, method="average")
-    tmp = stats::cutree(y, k = N.range[ii])
+    x = hierarch.edge.list.format(ints.shuffle)
+    tmp = stats::cutree(stats::hclust(d = x, method="average"), k = nclust)
     
     clusts = list()
-    for (jj in 1:nclust) {
-      clusts[[jj]] = unqprots[tmp == jj]
+    for (ii in 1:nclust) {
+      clusts[[ii]] = unqprots[tmp == ii]
     }
     
   } else if (params$algorithm == "mcode") {

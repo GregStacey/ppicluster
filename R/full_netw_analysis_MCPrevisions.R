@@ -56,19 +56,21 @@ if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
 algorithms = c("co","pam","mcl","walk", "hierarchical", "mcode", "louvain", "leiden")
 noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 if (large.flag==1) {
-  # if large.flag, only BIOGRID and BioPlex
+  # if large.flag, only HuRI, BIOGRID and BioPlex
   params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.range = noise.range)) %>%
     mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
   
   params = params[grepl("biogrid", tolower(params$dataset)) | 
-                    grepl("bioplex", tolower(params$dataset)), ]
+                    grepl("bioplex", tolower(params$dataset)) | 
+                    grepl("huri", tolower(params$dataset)), ]
 } else if (large.flag==0) {
   # if large.flag==0, no BIOGRID and BioPlex, do all noise ranges
   params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms)) %>%
     mutate_if(is.factor, as.character)
   params$noise.range = "all"
   params = params[!grepl("biogrid", tolower(params$dataset)) & 
-                    !grepl("bioplex", tolower(params$dataset)), ]
+                    !grepl("bioplex", tolower(params$dataset)) &
+                    !grepl("huri", tolower(params$dataset)) , ]
 }
 # remove params that are already done
 params = params[!((grepl("corum", params$dataset) | grepl("email", params$dataset) | grepl("chem", params$dataset)) &
@@ -145,7 +147,7 @@ for (uu in 1:length(this.noise.range)) {
     # 3. MCODE
     x = graph.data.frame(ints.shuffle)
     #tmp = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
-    tmp = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.2)
+    tmp = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.1)
     clusts = tmp[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     
   } else if (params$algorithm == "louvain") {

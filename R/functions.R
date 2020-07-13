@@ -857,7 +857,7 @@ get.full.analysis = function(lazyload = T) {
     
     # (mcode, louvain, leiden, hierarch,)x(corum, drugbank, emailEU) + 
     #     (mcl, co_mcl, co, pam, walktrap, hierarch, mcode, louvain, leiden)x(biogrid, collins2007)
-    fns = list.files("../data/data/clusters/", pattern = "*.txt", full.names = T)
+    fns = list.files("../data/data 2/clusters/", pattern = "*.txt", full.names = T)
     bad = rep(NA, 1000)
     for (ii in 1:length(fns)) {
       tmp = as.data.frame(read_tsv(fns[ii]))
@@ -894,6 +894,8 @@ get.full.analysis = function(lazyload = T) {
           }
           
           I1 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==unqnoise[kk])
+          if (sum(I1)==0) print(paste("no data for", unqnet[ii], unqalg[jj], unqnoise[kk]))
+          next
           cluster0 = Ji$cluster[I0]
           cluster = Ji$cluster[I1]
           Jii = numeric(length(I1))
@@ -906,4 +908,6 @@ get.full.analysis = function(lazyload = T) {
     }
   }
 }
+
+
 
