@@ -487,7 +487,7 @@ addcorum = function(ints.corum, ff){
     ints.add$score = sample(ints.corum[,3], nrow(ints.add))
     names(ints.add) = names(ints.corum)
   }
-  ints.shuffle = rbind(ints.shuffle, ints.add)
+  ints.shuffle = rbind(ints.corum, ints.add)
   return(ints.shuffle)
 }
 

@@ -41,7 +41,7 @@ for (ii in 1:length(unqmags)) {
     # 3. MCODE
     print("mcode")
     x = graph.data.frame(ints.shuffle)
-    clusts = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
+    clusts = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.1)
     clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     for (kk in 1:length(clusts)) {
       if (length(clusts[[kk]]) < 3) next

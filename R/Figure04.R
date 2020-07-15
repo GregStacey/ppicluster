@@ -70,8 +70,12 @@ data.c = rbind(data.c, data.c.add)
 
 # calculate Ji
 fn = "../data/intJ_vs_clustJ_v03.Rda"
+fn.walk = "../data/intJ_vs_clustJ_v03walk.Rda"
 if (T){
+  load(fn.walk)
+  tmp = df
   load(fn)
+  df = rbind(df, tmp)
   #df = df[!df$algorithm == "hierarchical",]
 } else {
   nn = 10^6
@@ -122,10 +126,13 @@ if (T){
 }
 df = df[, -11]
 
-# add mcode, louvain, and leiden
+# add louvain, and leiden
 tmp = as.data.frame(read_tsv("../data/data.c.add_cofracmcp_summary.txt"))
 #tmp = tmp[,6:15]
 #names(tmp) = names(df)
+df = rbind(df, tmp)
+# add mcode
+tmp = as.data.frame(read_tsv("../data/data.c.add_cofracmcp_summary_mcode.txt"))
 df = rbind(df, tmp)
 
 
@@ -139,7 +146,11 @@ df$algorithm[df$algorithm=="co"] = "CO"
 df$algorithm[df$algorithm=="co_mcl"] = "CO+MCL"
 df$algorithm[df$algorithm=="mcl"] = "MCL"
 df$algorithm[df$algorithm=="pam"] = "k-Med"
+df$algorithm[df$algorithm=="mcode"] = "MCODE"
 df$algorithm[df$algorithm=="walk"] = "walktrap"
+df$algorithm[df$algorithm=="hierarchical"] = "Hierarchical"
+df$algorithm[df$algorithm=="louvain"] = "Louvain"
+df$algorithm[df$algorithm=="leiden"] = "Leiden"
 
 #write_tsv(df, path="../data/interactomes_moredata.txt")
 
@@ -257,15 +268,15 @@ ggsave(fn,width=10, height=3)
 
 # B. Ji vs chromnoise
 ggplot(df, aes(x=noise_mag*100, y=clustJ, color=experiment)) + 
-  geom_point(alpha=0.01) +  facet_grid(~algorithm) +
-  ylab("Similarity to un-noised (Ji)") + xlab("Noise magnitude, %") + 
+  geom_point(alpha=0.01) +  facet_wrap(~algorithm, nrow = 2) +
+  ylab("Similarity to un-noised (Ji)") + xlab("Co-fractionation noise, %") + 
   geom_line(data=dm, aes(x=x*100, y=y,color=experiment), size=2, alpha=.6) +
   theme_bw() + xlim(0,50) + theme(legend.position = "none") + scale_colour_grey()
 #scale_color_brewer(palette="Set1")
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v04.pdf"
-ggsave(fn,width=10, height=3)
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v04.png"
-ggsave(fn,width=10, height=3)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v05.pdf"
+ggsave(fn,width=10, height=6)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v05.png"
+ggsave(fn,width=10, height=6)
 
 
 
