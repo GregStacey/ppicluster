@@ -49,12 +49,13 @@ params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, add_ma
 for (uu in 1:nrow(params)) {
   #check if output file exists
   sf = paste("../data/clusters/add_remove/",
-            "algorithm=", params$algorithm[uu],
-            "-add=", params$add_mag[uu],
-            "-remove=", params$remove_mag[uu],
-            ".txt", sep="")
+             "algorithm=", params$algorithm[uu],
+             "-add=", params$add_mag[uu],
+             "-remove=", params$remove_mag[uu],
+             ".txt", sep="")
   if (file.exists(sf)) {
-   stop(paste("file already exists:", sf))
+    paste("file already exists:", sf)
+    next
   }
   
   # read data
