@@ -906,8 +906,60 @@ get.full.analysis = function(lazyload = T) {
         }
       }
     }
+  } else {
+    fn = ""
+    load(fn)
   }
+  
+  return(Ji)
 }
 
+get.addremove.analysis = function(lazyload = T) {
+  
+  if (lazyload==F) {
+    fns = list.files("../data/clusters_add_remove//", pattern = "*.txt", full.names = T)
+    Ji3 = as.data.frame(read_tsv(fns[1]))
+    for (ii in 2:length(fns)) {
+      tmp = as.data.frame(read_tsv(fns[ii]))
+      if (nrow(tmp)==0) bad[ii] = fns[ii]
+      Ji3 = rbind(Ji3, tmp)
+    }
+
+    # calculate Ji
+    fn.save = "../data/mcp_addremove.txt"
+    Ji3$Ji = rep(NA, nrow(Ji3))
+    unqalg = unique(Ji3$algorithm)
+    unqadd = unique(Ji3$add_mag)
+    unqremove = unique(Ji3$remove_mag)
+    for (ii in 1:length(unqalg)) {
+      ia = Ji3$algorithm == unqalg[ii]
+      cluster0 = Ji3$cluster[ia & Ji3$add_mag==0 & Ji3$remove_mag==0]
+      for (jj in 1:length(unqadd)) {
+        ib = Ji3$add_mag==unqadd[jj]
+        for (kk in 1:length(unqremove)) {
+          ic = Ji3$remove_mag==unqremove[kk]
+          II = ia & ib & ic
+          cluster = Ji3$cluster[II]
+          
+          print(paste(unqalg[ii], " add-", unqadd[jj], " remove-", unqremove[kk], sep=""))
+          
+          Jii = numeric(sum(II))
+          for (mm in 1:length(cluster)) {
+            Jii[mm] = calcA(cluster[mm], cluster0)
+          }
+          Ji3$Ji[II] = Jii
+          
+          write_tsv(Ji3, path = fn.save)
+        }
+      }
+    }
+    
+  } else {
+    fn = "../data/mcp_addremove.txt"
+    Ji3 = as.data.frame(read_tsv(fn))
+  }
+  
+  return(Ji3)
+}
 
 
