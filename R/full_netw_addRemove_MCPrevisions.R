@@ -23,7 +23,8 @@ hparams = as.integer(as.numeric(commandArgs(trailingOnly = T)))
 # (new algorithms) - (all data)
 fns = "../data/interactomes/corum_pairwise.txt"
 #algorithms = c("hierarchical", "mcode", "louvain", "leiden")
-algorithms = c("hierarchical", "mcode", "louvain", "leiden")
+#algorithms = c("hierarchical", "mcode", "louvain", "leiden")
+algorithms = "hierarchical"
 add.range = remove.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, add_mag = add.range, remove_mag = remove.range)) %>%
   mutate_if(is.factor, as.character) %>% 
@@ -31,29 +32,40 @@ params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, add_ma
   mutate(remove_mag = as.numeric(remove_mag)) 
 
 # choose which parameter set
-if (!hparams==-1) {
-  params = params[hparams, ]
-}
+#if (!hparams==-1) {
+#  params = params[hparams, ]
+#}
 
 # check if output file exists
-sf = paste("../data/clusters/add_remove/", 
-           "algorithm=", params$algorithm, 
-           "-add=", params$add_mag,
-           "-remove=", params$remove_mag,
-           ".txt", sep="")
-if (file.exists(sf)) {
-  stop(paste("file already exists:", sf))
-} else {
+#sf = paste("../data/clusters/add_remove/", 
+#           "algorithm=", params$algorithm, 
+#           "-add=", params$add_mag,
+#           "-remove=", params$remove_mag,
+#           ".txt", sep="")
+#if (file.exists(sf)) {
+#  stop(paste("file already exists:", sf))
+#} else {
+
+for (uu in 1:nrow(params)) {
+  #check if output file exists
+  sf = paste("../data/clusters/add_remove/",
+            "algorithm=", params$algorithm[uu],
+            "-add=", params$add_mag[uu],
+            "-remove=", params$remove_mag[uu],
+            ".txt", sep="")
+  if (file.exists(sf)) {
+   stop(paste("file already exists:", sf))
+  }
   
   # read data
   nclust = 1500
-  ints.corum = as.data.frame(read_tsv(params$dataset))
+  ints.corum = as.data.frame(read_tsv(params$dataset[uu]))
   
   
   # shuffle network
   # get shuffled corum
-  tmp.add = addcorum(ints.corum, params$add_mag)
-  tmp.remove = removecorum(ints.corum, params$remove_mag)
+  tmp.add = addcorum(ints.corum, params$add_mag[uu])
+  tmp.remove = removecorum(ints.corum, params$remove_mag[uu])
   # find added + removed interactions
   i.add = !paste(tmp.add$protA, tmp.add$protB, sep="-") %in% paste(ints.corum$protA, ints.corum$protB, sep="-")
   i.remove = !paste(ints.corum$protA, ints.corum$protB, sep="-") %in% paste(tmp.remove$protA, tmp.remove$protB, sep="-")
@@ -62,10 +74,10 @@ if (file.exists(sf)) {
   if (nrow(ints.shuffle) < 2500) next  
   
   unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
-
+  
   
   # cluster
-  if (params$algorithm == "hierarchical") {
+  if (params$algorithm[uu] == "hierarchical") {
     # 1. hierarchical
     x = hierarch.edge.list.format(ints.shuffle)
     tmp = stats::cutree(stats::hclust(d = x, method="average"), k = nclust)
@@ -75,13 +87,13 @@ if (file.exists(sf)) {
       clusts[[ii]] = unqprots[tmp == ii]
     }
     
-  } else if (params$algorithm == "mcode") {
+  } else if (params$algorithm[uu] == "mcode") {
     # 3. MCODE
     x = graph.data.frame(ints.shuffle)
     clusts = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
     clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     
-  } else if (params$algorithm == "louvain") {
+  } else if (params$algorithm[uu] == "louvain") {
     # 4. Louvain
     x = ints.shuffle
     x$weights = 1
@@ -93,7 +105,7 @@ if (file.exists(sf)) {
       clusts[[ii]] = unqprots[tmp$community == unqclusts[ii]]
     }
     
-  } else if (params$algorithm == "leiden") {
+  } else if (params$algorithm[uu] == "leiden") {
     # 5. Leiden
     x = as.matrix(ints.shuffle)
     adjmat = as_adjacency_matrix(graph_from_edgelist(x))
@@ -114,11 +126,11 @@ if (file.exists(sf)) {
   
   # write to file
   df = data.frame(cluster = sapply(clusts, FUN = function(x) paste(x, collapse=";")),
-                  algorithm = rep(params$algorithm, length(clusts)),
-                  add_mag = rep(params$add_mag, length(clusts)),
-                  remove_mag = rep(params$remove_mag, length(clusts)), stringsAsFactors = F)
+                  algorithm = rep(params$algorithm[uu], length(clusts)),
+                  add_mag = rep(params$add_mag[uu], length(clusts)),
+                  remove_mag = rep(params$remove_mag[uu], length(clusts)), stringsAsFactors = F)
   write_tsv(df, path=sf)
+  #}
 }
-
 
 
