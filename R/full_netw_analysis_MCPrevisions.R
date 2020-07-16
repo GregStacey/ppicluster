@@ -30,7 +30,7 @@ if (length(this.args) == 0) {
 }
 
 if (dir.exists("~/projects/ppicluster/R/")) {
-  source(" ~/projects/ppicluster/R/functions.R")
+  source("~/projects/ppicluster/R/functions.R")
 } else {source("functions.R")}
 
 # set up all parameters
