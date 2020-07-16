@@ -926,7 +926,7 @@ get.addremove.analysis = function(lazyload = T) {
     }
 
     # calculate Ji
-    fn.save = "../data/mcp_addremove.txt"
+    fn.save = "../data/mcp_mcode_addremove.txt"
     Ji3$Ji = rep(NA, nrow(Ji3))
     unqalg = unique(Ji3$algorithm)
     unqadd = unique(Ji3$add_mag)
@@ -957,6 +957,11 @@ get.addremove.analysis = function(lazyload = T) {
   } else {
     fn = "../data/mcp_addremove.txt"
     Ji3 = as.data.frame(read_tsv(fn))
+    Ji3 = Ji3[!Ji3$algorithm == "mcode", ]
+    
+    fn = "../data/mcp_mcode_addremove.txt"
+    tmp =  as.data.frame(read_tsv(fn))
+    Ji3 = rbind(Ji3, tmp)
   }
   
   return(Ji3)

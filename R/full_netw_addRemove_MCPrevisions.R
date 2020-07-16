@@ -46,6 +46,10 @@ params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, add_ma
 #  stop(paste("file already exists:", sf))
 #} else {
 
+# read data
+nclust = 1500
+ints.corum = as.data.frame(read_tsv(params$dataset[uu]))
+
 for (uu in 1:nrow(params)) {
   #check if output file exists
   sf = paste("../data/clusters/add_remove/",
@@ -55,13 +59,8 @@ for (uu in 1:nrow(params)) {
              ".txt", sep="")
   if (file.exists(sf)) {
     paste("file already exists:", sf)
-    next
+    #next
   }
-  
-  # read data
-  nclust = 1500
-  ints.corum = as.data.frame(read_tsv(params$dataset[uu]))
-  
   
   # shuffle network
   # get shuffled corum
@@ -92,7 +91,7 @@ for (uu in 1:nrow(params)) {
     # 3. MCODE
     x = graph.data.frame(ints.shuffle)
     #clusts = mcode(x, vwp = 1, haircut = TRUE, fluff = FALSE, fdt = 0.1)
-    tmp = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.1)
+    clusts = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.1)
     clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     
   } else if (params$algorithm[uu] == "louvain") {

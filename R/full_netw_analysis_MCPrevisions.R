@@ -34,48 +34,52 @@ source("functions.R")
 # set up all parameters
 # (new data) - (all algorithms)
 # (new algorithms) - (all data)
-if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
-  data.dir = "/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/"
-  fns = c("../data/corum_pairwise.txt","../data/ChCh-Miner_durgbank-chem-chem.tsv","../data/email-Eu-core.txt", 
-          paste(data.dir,c("BIOGRID-ALL-3.5.186.tab3.txt",
-                           "PE_and_conf_scores_01-11-08.txt", # top 9074
-                           "BioPlex_293T_Network_10K_Dec_2019.tsv",
-                           "HuRI.tsv"), sep=""))
-  
-} else {
-  data.dir = "../data/interactomes/"
-  fns = paste(data.dir,c("corum_pairwise.txt",
-                         "ChCh-Miner_durgbank-chem-chem.tsv",
-                         "email-Eu-core.txt",
-                         "BIOGRID-ALL-3.5.186.tab3.txt",
-                         "PE_and_conf_scores_01-11-08.txt", # top 9074
-                         "BioPlex_293T_Network_10K_Dec_2019.tsv",
-                         "HuRI.tsv"), sep="")
-}
-
-algorithms = c("co","pam","mcl","walk", "hierarchical", "mcode", "louvain", "leiden")
+# if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
+#   data.dir = "/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/"
+#   fns = c("../data/corum_pairwise.txt","../data/ChCh-Miner_durgbank-chem-chem.tsv","../data/email-Eu-core.txt", 
+#           paste(data.dir,c("BIOGRID-ALL-3.5.186.tab3.txt",
+#                            "PE_and_conf_scores_01-11-08.txt", # top 9074
+#                            "BioPlex_293T_Network_10K_Dec_2019.tsv",
+#                            "HuRI.tsv"), sep=""))
+#   
+# } else {
+#   data.dir = "../data/interactomes/"
+#   fns = paste(data.dir,c("corum_pairwise.txt",
+#                          "ChCh-Miner_durgbank-chem-chem.tsv",
+#                          "email-Eu-core.txt",
+#                          "BIOGRID-ALL-3.5.186.tab3.txt",
+#                          "PE_and_conf_scores_01-11-08.txt", # top 9074
+#                          "BioPlex_293T_Network_10K_Dec_2019.tsv",
+#                          "HuRI.tsv"), sep="")
+# }
+# 
+# algorithms = c("co","pam","mcl","walk", "hierarchical", "mcode", "louvain", "leiden")
 noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
-if (large.flag==1) {
-  # if large.flag, only HuRI, BIOGRID and BioPlex
-  params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.range = noise.range)) %>%
-    mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
-  
-  params = params[grepl("biogrid", tolower(params$dataset)) | 
-                    grepl("bioplex", tolower(params$dataset)) | 
-                    grepl("huri", tolower(params$dataset)), ]
-} else if (large.flag==0) {
-  # if large.flag==0, no BIOGRID and BioPlex, do all noise ranges
-  params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms)) %>%
-    mutate_if(is.factor, as.character)
-  params$noise.range = "all"
-  params = params[!grepl("biogrid", tolower(params$dataset)) & 
-                    !grepl("bioplex", tolower(params$dataset)) &
-                    !grepl("huri", tolower(params$dataset)) , ]
-}
-# remove params that are already done
-params = params[!((grepl("corum", params$dataset) | grepl("email", params$dataset) | grepl("chem", params$dataset)) &
-                    (params$algorithm=="co" | grepl("pam", params$algorithm) | 
-                       grepl("mcl", params$algorithm) | grepl("walk", params$algorithm))), ]
+# if (large.flag==1) {
+#   # if large.flag, only HuRI, BIOGRID and BioPlex
+#   params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.range = noise.range)) %>%
+#     mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
+#   
+#   params = params[grepl("biogrid", tolower(params$dataset)) | 
+#                     grepl("bioplex", tolower(params$dataset)) , ]
+# } else if (large.flag==0) {
+#   # if large.flag==0, no BIOGRID and BioPlex, do all noise ranges
+#   params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms)) %>%
+#     mutate_if(is.factor, as.character)
+#   params$noise.range = "all"
+#   params = params[!grepl("biogrid", tolower(params$dataset)) & 
+#                     !grepl("bioplex", tolower(params$dataset)), ]
+# }
+# # remove params that are already done
+# params = params[!((grepl("corum", params$dataset) | grepl("email", params$dataset) | grepl("chem", params$dataset)) &
+#                     (params$algorithm=="co" | grepl("pam", params$algorithm) | 
+#                        grepl("mcl", params$algorithm) | grepl("walk", params$algorithm))), ]
+
+#### hack hack hack hack
+params = data.frame(dataset = rep("../data/interactomes/HuRI.tsv",9),
+                    algorithm = rep("louvain", 9),
+                    noise.rainge = noise.range, stringsAsFactors = F)
+#### hack hack hack hack
 
 # choose which parameter set
 if (!hparams==-1) {

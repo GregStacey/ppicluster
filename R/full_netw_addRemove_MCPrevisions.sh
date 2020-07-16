@@ -5,7 +5,7 @@
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --time=23:55:00
 #SBATCH --mem=8G
-#SBATCH --array=1-324
+#SBATCH --array=1-9
 #SBATCH --account=rrg-ljfoster-ab
 
 module load gcc/7.3.0

@@ -371,3 +371,20 @@ ggplot(Ji[I,], aes(x=log10(cluster.size), y=Ji1)) +
   geom_point(alpha=.3) + geom_smooth(method="lm")
 
 
+
+
+
+
+
+fns = basename(file_path_sans_ext(list.files("../data/data 2/clusters/", pattern = "*.txt", full.names = T)))
+db = sapply(fns, FUN = function(x) unlist(strsplit(x, "-"))[1])
+alg = sapply(fns, FUN = function(x) {
+  a = unlist(strsplit(x, "="))[2]
+  a = unlist(strsplit(a, "-"))[1]
+  return(a)
+})
+noise = sapply(fns, FUN = function(x) unlist(strsplit(x, "noise="))[2])
+df = data.frame(db = db, alg = alg, noise = noise, stringsAsFactors = F)
+
+with(df, table(db, noise, alg))
+
