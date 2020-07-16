@@ -6,6 +6,6 @@
 #PBS -m abe
 #PBS -M richard.greg.stacey@gmail.com
 #PBS -J 0-12:3
-#PBS -A st-ljfoster-1-gpu
+#PBS -A st-ljfoster-1
 
 Rscript test.R
