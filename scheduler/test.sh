@@ -7,7 +7,7 @@
 #PBS -k eod
 #PBS -m abe
 #PBS -M richard.greg.stacey@gmail.com
-#PBS -J 0-12:3
+#PBS -J 0-201:3
 #PBS -A st-ljfoster-1
 
 Rscript test.R
