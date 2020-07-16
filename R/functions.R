@@ -32,8 +32,13 @@ require(leiden)
 require(ProNet)
 require(dbscan)
 require(clust.perturb)
-source("clusterone_java.R")
-source("mymcl.R")
+
+this.path = ""
+if (dir.exists("~/projects/ppicluster/R/")) {
+  this.path = "~/projects/ppicluster/R/"
+} 
+source(paste(this.path,"clusterone_java.R"))
+source(paste(this.path,"mymcl.R"))
 
 
 blank_theme = theme(axis.title.x=element_blank(),

@@ -29,9 +29,11 @@ if (length(this.args) == 0) {
   }
 }
 
+this.path = ""
 if (dir.exists("~/projects/ppicluster/R/")) {
-  source("~/projects/ppicluster/R/functions.R")
-} else {source("functions.R")}
+  this.path = "~/projects/ppicluster/R/"
+} 
+source(paste(this.path, "functions.R", sep=""))
 
 # set up all parameters
 # (new data) - (all algorithms)
