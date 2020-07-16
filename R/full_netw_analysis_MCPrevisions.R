@@ -78,7 +78,7 @@ noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 #### hack hack hack hack
 params = data.frame(dataset = rep("../data/interactomes/HuRI.tsv",9),
                     algorithm = rep("louvain", 9),
-                    noise.rainge = noise.range, stringsAsFactors = F)
+                    noise.range = noise.range, stringsAsFactors = F)
 #### hack hack hack hack
 
 # choose which parameter set
