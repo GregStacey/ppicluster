@@ -2,9 +2,9 @@
 # install packages if necessary
 list.of.packages = c("tidyverse", "ggplot2", "magrittr", "readr", "cluster", "tidyr", "NMI",
                      "fossil", "infotheo", "igraph", "dils", "hbm", "tools", "flavin", 
-                     "resolution", "leiden", "ProNet", "dbscan", "clustperturb")
+                     "resolution", "leiden", "ProNet", "dbscan", "clust.perturb")
 new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
+#if(length(new.packages)) install.packages(new.packages)
 
 require(tidyverse)
 require(ggplot2)

@@ -1,4 +1,12 @@
 #!/bin/bash
+#PBS -N full_netw_analysis_MCPrevisions_large
+#PBS -l walltime=71:55:00
+#PBS -j oe
+#PBS -k eod
+#PBS -m abe
+#PBS -M richard.greg.stacey@gmail.com
+#PBS -l mem=64gb   
+
 #SBATCH -o full_netw_analysis_MCPrevisions_large.out
 #SBATCH -e full_netw_analysis_MCPrevisions_large.err
 #SBATCH --mail-user=richard.greg.stacey@gmail.com
