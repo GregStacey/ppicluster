@@ -33,12 +33,15 @@ require(ProNet)
 require(dbscan)
 require(clust.perturb)
 
-this.path = ""
-if (dir.exists("~/projects/ppicluster/R/")) {
-  this.path = "~/projects/ppicluster/R/"
-} 
-source(paste(this.path,"clusterone_java.R", sep=""))
-source(paste(this.path,"mymcl.R", sep=""))
+# which system are we on?
+home.dir = c("~/projects/ppicluster/",                                              # sockeye
+             "/Users/gregstacey/Academics/Foster/ClusterExplore/",                # laptop
+             "/home/rstacey/projects/rrg-ljfoster-ab/rstacey/ppicluster/") # cedar
+home.dir = home.dir[dir.exists(home.dir)]
+R.dir = paste(home.dir, "R/", sep="")
+data.dir = paste(home.dir, "data/", sep="")
+source(paste(R.dir,"clusterone_java.R", sep=""))
+source(paste(R.dir,"mymcl.R", sep=""))
 
 
 blank_theme = theme(axis.title.x=element_blank(),
@@ -980,3 +983,28 @@ get.addremove.analysis = function(lazyload = T) {
 }
 
 
+missing.jobs = function(datadir, algs, dbs, noise.range) {
+  # get all jobs
+  jobs = do.call(expand.grid, list(dataset = dbs, algorithm = algorithms, noise.range = noise.range)) %>%
+    mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
+  jobs$exists = rep(NA, nrow(jobs))
+  
+  # check if those jobs exist
+  for (ii in 1:nrow(jobs)) {
+    sf = paste(data.dir, "/clusters/", 
+               basename(tools::file_path_sans_ext(jobs$dataset[ii])),
+               "-algorithm=", jobs$algorithm[ii], 
+               "-noise=", jobs$noise.range[ii], ".txt", sep="")
+    jobs$exists[ii] = file.exists(sf)
+  }
+  
+  # make jobs that are definitely  done
+  ia =  ((grepl("corum", jobs$dataset) | grepl("email", jobs$dataset) | grepl("chem", jobs$dataset)) &
+        (jobs$algorithm=="co" | grepl("pam", jobs$algorithm) |
+           grepl("mcl", jobs$algorithm) | grepl("walk", jobs$algorithm)))
+  ib = (grepl("BioPlex", jobs$dataset) & jobs$algorithm=="co")
+  jobs$exists[ia] = TRUE
+  jobs$exists[ib] = TRUE
+  
+  return(jobs)
+}

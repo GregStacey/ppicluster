@@ -7,9 +7,7 @@
 #PBS -M richard.greg.stacey@gmail.com
 #PBS -l mem=64gb   
 #PBS -A st-ljfoster-1
-
-
-# # # # #PBS -J 1-36
+#PBS -J 1-36
 
 
 module load gcc/9.1.0
@@ -17,8 +15,9 @@ module load python/3.7.3
 module load r/3.6.2-py3.7.3
 source ~/environments/ppicluster_venv/bin/activate
 
-#echo 'the array number is'
-#echo $PBS_ARRAY_INDEX
+echo 'the array number is'
+echo $PBS_ARRAY_INDEX
 
-id=1
-Rscript ~/projects/ppicluster/R/full_netw_analysis_MCPrevisions.R $id large
+Rscript ~/projects/ppicluster/R/full_netw_analysis_MCPrevisions.R \
+  ~/projects/ppicluster/data/jobs_huri_louvain.txt \
+  $PBS_ARRAY_INDEX

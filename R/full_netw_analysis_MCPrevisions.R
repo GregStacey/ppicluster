@@ -15,95 +15,27 @@
 # command line arguments
 this.args = commandArgs(trailingOnly = T)
 print(this.args)
-hparams = -1
-if (length(this.args) == 0) {
-  print("Testing all sets...")
-  hparams = -1
-} else if (length(this.args) > 0 ){
-  hparams = as.integer(as.numeric(this.args[1]))
-  
-  # is the second argument "large"?
-  large.flag = 0
-  if (length(this.args)>1){
-    if (this.args[2] == "large") large.flag = 1
-  }
-}
+param.file = as.character(this.args[1])
+param.file.index = as.numeric(this.args[2])
 
-print(paste("hparams =", hparams))
-str(hparams)
+# which system are we on?
+home.dir = c("~/projects/ppicluster/",                                     # sockeye
+             "/Users/gregstacey/Academics/Foster/ClusterExplore/",         # laptop
+             "/home/rstacey/projects/rrg-ljfoster-ab/rstacey/ppicluster/") # cedar
+home.dir = home.dir[dir.exists(home.dir)]
+R.dir = paste(home.dir, "R/", sep="")
+data.dir = paste(home.dir, "data/", sep="")
+source(paste(R.dir, "functions.R", sep=""))
 
-this.path = ""
-if (dir.exists("~/projects/ppicluster/R/")) {
-  this.path = "~/projects/ppicluster/R/"
-} 
-source(paste(this.path, "functions.R", sep=""))
 
-# set up all parameters
-# (new data) - (all algorithms)
-# (new algorithms) - (all data)
-algorithms = c("co","pam","mcl","walk", "hierarchical", "mcode", "louvain", "leiden")
-noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
-# if (dir.exists("/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/")) {
-#   data.dir = "/Users/gregstacey/Academics/Foster/Data/dbs/interactomes/"
-#   fns = c("../data/corum_pairwise.txt","../data/ChCh-Miner_durgbank-chem-chem.tsv","../data/email-Eu-core.txt",
-#           paste(data.dir,c("BIOGRID-ALL-3.5.186.tab3.txt",
-#                            "PE_and_conf_scores_01-11-08.txt", # top 9074
-#                            "BioPlex_293T_Network_10K_Dec_2019.tsv",
-#                            "HuRI.tsv"), sep=""))
-# 
-#} else if (dir.exists("/home/staceyri/projects/ppicluster")) { # sockeye
-data.dir = "/home/staceyri/projects/ppicluster/data/"
-fns = paste(data.dir,c("interactomes/BIOGRID-ALL-3.5.186.tab3.txt",
-                       "interactomes/BioPlex_293T_Network_10K_Dec_2019.tsv"), sep="")
-algorithms = c("co","louvain")
-# } else { # cedar
-#   data.dir = "../data/interactomes/"
-#   fns = paste(data.dir,c("corum_pairwise.txt",
-#                          "ChCh-Miner_durgbank-chem-chem.tsv",
-#                          "email-Eu-core.txt",
-#                          "BIOGRID-ALL-3.5.186.tab3.txt",
-#                          "PE_and_conf_scores_01-11-08.txt", # top 9074
-#                          "BioPlex_293T_Network_10K_Dec_2019.tsv",
-#                          "HuRI.tsv"), sep="")
-#   #### hack hack hack hack
-#   params = data.frame(dataset = rep("../data/interactomes/HuRI.tsv",9),
-#                       algorithm = rep("louvain", 9),
-#                       noise.range = noise.range, stringsAsFactors = F)
-#   #### hack hack hack hack
-# }
+# read params
+params = as.data.frame(read_tsv(params.file))
+# add data.dir to dataset
+params$dataset = paste(data.dir, "interactomes/", params$dataset, sep="")
 
-#if (large.flag==1) {
-# if large.flag, only HuRI, BIOGRID and BioPlex
-params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms, noise.range = noise.range)) %>%
-  mutate_if(is.factor, as.character) %>% mutate(noise.range = as.numeric(noise.range))
+# index params
+params = params[params.file.index, ]
 
-params = params[grepl("biogrid", tolower(params$dataset)) |
-                  grepl("bioplex", tolower(params$dataset)) , ]
-#} else if (large.flag==0) {
-#  # if large.flag==0, no BIOGRID and BioPlex, do all noise ranges
-#  params = do.call(expand.grid, list(dataset = fns, algorithm = algorithms)) %>%
-#    mutate_if(is.factor, as.character)
-#  params$noise.range = "all"
-#  params = params[!grepl("biogrid", tolower(params$dataset)) &
-#                    !grepl("bioplex", tolower(params$dataset)), ]
-#}
-## remove params that are already done
-#params = params[!((grepl("corum", params$dataset) | grepl("email", params$dataset) | grepl("chem", params$dataset)) &
-#                    (params$algorithm=="co" | grepl("pam", params$algorithm) |
-#                       grepl("mcl", params$algorithm) | grepl("walk", params$algorithm))), ]
-# remove BioPlex+co
-params = params[!(grepl("BioPlex", params$dataset) & params$algorithm=="co"), ]
-
-print("params before indexing:")
-print(params)
-
-# choose which parameter set
-if (!hparams==-1) {
-  print(paste("hparams = ", hparams))
-  print(paste("this line of params =", params[hparams,]))
-  params = params[hparams, ]
-  print(params)
-}
 
 
 
@@ -144,7 +76,7 @@ for (uu in 1:length(this.noise.range)) {
   # check if output file exists
   if (file.exists(sf)) {
     print(paste("file already exists:", sf))
-    next
+    #next
   }
   
   # shuffle network
