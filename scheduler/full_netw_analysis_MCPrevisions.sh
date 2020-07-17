@@ -5,9 +5,9 @@
 #PBS -o /scratch/st-ljfoster-1/ppicluster/scheduler/5full_netw_analysis_MCPrevisions_large.out
 #PBS -m abe
 #PBS -M richard.greg.stacey@gmail.com
-#PBS -l mem=64gb   
+#PBS -l mem=8gb   
 #PBS -A st-ljfoster-1
-#PBS -J 1-36
+#PBS -J 1-6
 
 
 module load gcc/9.1.0
