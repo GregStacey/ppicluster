@@ -30,6 +30,7 @@ if (length(this.args) == 0) {
 }
 
 print(paste("hparams =", hparams))
+str(hparams)
 
 this.path = ""
 if (dir.exists("~/projects/ppicluster/R/")) {
