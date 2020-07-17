@@ -15,6 +15,6 @@ module load r/3.6.2-py3.7.3
 source ~/environments/ppicluster_venv/bin/activate
 
 echo 'the array number is'
-echo $PBS_ARRAYID
+echo $PBS_ARRAY_INDEX
 
-Rscript ~/projects/ppicluster/R/full_netw_analysis_MCPrevisions.R $PBS_ARRAYID large
+Rscript ~/projects/ppicluster/R/full_netw_analysis_MCPrevisions.R $PBS_ARRAY_INDEX large
