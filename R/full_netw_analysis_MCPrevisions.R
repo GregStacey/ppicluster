@@ -94,8 +94,13 @@ params = params[grepl("biogrid", tolower(params$dataset)) |
 # remove BioPlex+co
 params = params[!(grepl("BioPlex", params$dataset) & params$algorithm=="co"), ]
 
+print("params before indexing:")
+print(params)
+
 # choose which parameter set
 if (!hparams==-1) {
+  print(paste("hparams = ", hparams))
+  print(paste("this line of params =", params[hparams,]))
   params = params[hparams, ]
   print(params)
 }
