@@ -29,12 +29,12 @@ source(paste(R.dir, "functions.R", sep=""))
 
 
 # read params
-params = as.data.frame(read_tsv(params.file))
+params = as.data.frame(read_tsv(param.file))
 # add data.dir to dataset
 params$dataset = paste(data.dir, "interactomes/", params$dataset, sep="")
 
 # index params
-params = params[params.file.index, ]
+params = params[param.file.index, ]
 
 
 
