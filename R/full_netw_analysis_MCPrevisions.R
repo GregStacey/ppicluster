@@ -52,9 +52,9 @@ noise.range = c(0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.25, 0.5, 1.00)
 #                            "HuRI.tsv"), sep=""))
 # 
 #} else if (dir.exists("/home/staceyri/projects/ppicluster")) { # sockeye
-data.dir = "../data/interactomes/"
-fns = paste(data.dir,c("BIOGRID-ALL-3.5.186.tab3.txt",
-                       "BioPlex_293T_Network_10K_Dec_2019.tsv"), sep="")
+data.dir = "/home/staceyri/projects/ppicluster/data/"
+fns = paste(data.dir,c("interactomes/BIOGRID-ALL-3.5.186.tab3.txt",
+                       "interactomes/BioPlex_293T_Network_10K_Dec_2019.tsv"), sep="")
 algorithms = c("co","louvain")
 # } else { # cedar
 #   data.dir = "../data/interactomes/"
@@ -135,7 +135,7 @@ if (this.noise.range == "all") {
 }
 
 for (uu in 1:length(this.noise.range)) {
-  sf = paste("../data/clusters/", 
+  sf = paste(data.dir, "clusters/", 
              basename(tools::file_path_sans_ext(params$dataset)),
              "-algorithm=", params$algorithm, 
              "-noise=", this.noise.range[uu], ".txt", sep="")
