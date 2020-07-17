@@ -20,4 +20,5 @@ source ~/environments/ppicluster_venv/bin/activate
 #echo 'the array number is'
 #echo $PBS_ARRAY_INDEX
 
-Rscript ~/projects/ppicluster/R/full_netw_analysis_MCPrevisions.R 5 large
+id=1
+Rscript ~/projects/ppicluster/R/full_netw_analysis_MCPrevisions.R $id large
