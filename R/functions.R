@@ -32,6 +32,7 @@ require(leiden)
 require(ProNet)
 require(dbscan)
 require(clust.perturb)
+library(birankr)
 
 # which system are we on?
 home.dir = c("~/projects/ppicluster/",                                              # sockeye
