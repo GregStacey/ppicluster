@@ -1014,6 +1014,8 @@ missing.jobs = function(datadir, algs, dbs, noise.range) {
 
 louvain = function(edgelist, resolution) {
   if (ncol(edgelist)==2) edgelist$weight = 1
+  edgelist[,1] = as.character(edgelist[,1])
+  edgelist[,2] = as.character(edgelist[,2])
   
   names(edgelist) = c("a","b", "weight")
   unqprots = unique(c(edgelist[,1], edgelist[,2]))
