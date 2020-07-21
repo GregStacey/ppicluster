@@ -111,9 +111,9 @@ for (uu in 1:length(this.noise.range)) {
     tmp = louvain(ints.shuffle, 15)
     
     clusts = list()
-    unqclusts = unique(tmp$community)
+    unqclusts = unique(tmp$cluster)
     for (ii in 1:length(unqclusts)) {
-      clusts[[ii]] = unqprots[tmp$community == unqclusts[ii]]
+      clusts[[ii]] = unqprots[tmp$cluster == unqclusts[ii]]
     }
     
   } else if (params$algorithm == "leiden") {

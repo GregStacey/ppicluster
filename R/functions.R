@@ -1029,7 +1029,8 @@ louvain = function(edgelist, resolution) {
   tmp = RunPCA(tmp)
   tmp = FindNeighbors(tmp)
   tmp = FindClusters(tmp, resolution = resolution)
-  clusts = data.frame(cluster = Idents(tmp), prots = names(Idents(tmp)), stringsAsFactors = F)
+  clusts = data.frame(cluster = Idents(tmp), prots = names(Idents(tmp)), 
+                      stringsAsFactors = F)
   return(clusts)
 }
 
