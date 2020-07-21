@@ -12,4 +12,4 @@ module load gcc/7.3.0
 module load r/3.6.0
 source ~/ENV3/bin/activate
 
-Rscript full_netw_analysis_MCPrevisions.R Rscript ../data/jobs_louvain_redo.txt $SLURM_ARRAY_TASK_ID
+Rscript full_netw_analysis_MCPrevisions.R ../data/jobs_louvain_redo.txt $SLURM_ARRAY_TASK_ID
