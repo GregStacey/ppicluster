@@ -33,6 +33,7 @@ require(ProNet)
 require(dbscan)
 require(clust.perturb)
 library(birankr)
+library(Seurat)
 
 # which system are we on?
 home.dir = c("~/projects/ppicluster/",                                              # sockeye
