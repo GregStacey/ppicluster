@@ -107,7 +107,8 @@ for (uu in 1:length(this.noise.range)) {
   } else if (params$algorithm == "louvain") {
     # 4. Louvain
     if (ncol(ints.shuffle)==2) ints.shuffle$weights = 1
-    tmp = cluster_resolution(ints.shuffle, 1)
+    #tmp = cluster_resolution(ints.shuffle, 1)
+    tmp = louvain(ints.shuffle, 15)
     
     clusts = list()
     unqclusts = unique(tmp$community)

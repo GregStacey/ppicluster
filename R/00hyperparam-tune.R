@@ -27,7 +27,7 @@ corum = as.data.frame(read_tsv(fn))
 corum = corum[corum$Organism=="Human",]
 
 # turn corum into a list of protein pairs
-ints.corum = as.data.frame(read_tsv("../data/corum_pairwise.txt"))
+ints.corum = as.data.frame(read_tsv("../data/interactomes/corum_pairwise.txt"))
 
 unqprots = unique(c(ints.corum[,1], ints.corum[,2]))
 
@@ -64,7 +64,7 @@ for (ii in 1:length(tmp)) {
   df.params[cc,] = c("mcode", tmp[ii])
 }
 # louvain
-res.range = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+res.range = c(0, .25, 0.5, .75, 1, 1.5, 2, 4, 8, 10, 15, 20)
 for (ii in 1:length(res.range)) {
   cc = cc+1
   df.params[cc,] = c("louvain", res.range[ii])
@@ -77,90 +77,94 @@ for (ii in 1:length(res.range)) {
 }
 df.params = df.params[1:cc, ]
 
+# hack hack hack hack hack hack
+# reduce to just louvain
+df.params = df.params[df.params$algorithm=="louvain", ]
+#
 
-# choose which parameter set
-if (!hparams==-1) {
-  df.params = df.params[hparams, ]
-  params = as.numeric(unlist(strsplit(df.params$params, " - ")))
+df.params0 = df.params
+for (hparams in 1:nrow(df.params)) {
+  # choose which parameter set
+  if (!hparams==-1) {
+    df.params = df.params0[hparams, ]
+    params = as.numeric(unlist(strsplit(df.params$params, " - ")))
+  }
+
+  # cluster
+  if (df.params$algorithm == "hierarchical") {
+    # 1. hierarchical
+    x = hierarch.edge.list.format(ints.corum)
+    tmp = stats::cutree(stats::hclust(d = x, method="average"), k = params[1])
+    
+    clusts = list()
+    for (ii in 1:params[1]) {
+      clusts[[ii]] = unqprots[tmp == ii]
+    }
+    
+  } else if (df.params$algorithm == "dbscan") {
+    # 2. DBSCAN
+    # https://towardsdatascience.com/how-dbscan-works-and-why-should-i-use-it-443b4a191c80
+    eps.range = c(.01, .1, .2, .5, 1, 2)
+    minPoints = c(2, 3, 5, 10)
+    x = get.adjacency(graph.data.frame(ints.corum))
+    tmp = dbscan(x, eps = params[1], params[2])
+    
+    clusts = list()
+    unqclusts = unique(tmp$cluster)
+    for (ii in 1:length(unqclusts)) {
+      clusts[[ii]] = unqprots[tmp$cluster == unqclusts[ii]]
+    }
+    
+  } else if (df.params$algorithm == "mcode") {
+    # 3. MCODE
+    x = graph.data.frame(ints.corum)
+    clusts = mcode(x, vwp = params[4], haircut = as.logical(params[1]), fluff = as.logical(params[2]), fdt = params[3])
+    clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
+    
+  } else if (df.params$algorithm == "louvain") {
+    # 4. Louvain
+    tmp = louvain(ints.corum, params[1])
+    
+    clusts = list()
+    unqclusts = unique(tmp$cluster)
+    for (ii in 1:length(unqclusts)) {
+      clusts[[ii]] = unqprots[tmp$clust == unqclusts[ii]]
+    }
+    
+  } else if (df.params$algorithm == "leiden") {
+    # 5. Leiden
+    adjmat = graph_from_edgelist(as.matrix(ints.corum))
+    tmp = leiden(adjmat, resolution_parameter = params[1])
+    unqprots = rownames(adjmat)
+    
+    clusts = list()
+    unqclusts = unique(tmp)
+    for (ii in 1:length(unqclusts)) {
+      clusts[[ii]] = unqprots[tmp == unqclusts[ii]]
+    }
+  }
+  
+  # remove clusts with N<3
+  nn = unlist(lapply(clusts, length))
+  clusts = clusts[nn>2]
+  
+  
+  # compare to ground truth
+  df = data.frame(cluster = unlist(lapply(clusts, paste, collapse = ";")), stringsAsFactors = F)
+  df$Ji = unlist(sapply(df$cluster, FUN = function(x) calcA(x, corum$`subunits(UniProt IDs)`)))
+  df$algorithm = df.params$algorithm
+  df$params = df.params$params
+  
+  
+  # write
+  sf = paste("../data/00hyperparam_tune/louvain_", hparams, "_paramtune.txt", sep="")
+  write_tsv(df, path = sf)  
 }
-
-
-# cluster
-if (df.params$algorithm == "hierarchical") {
-  # 1. hierarchical
-  x = hierarch.edge.list.format(ints.corum)
-  tmp = stats::cutree(stats::hclust(d = x, method="average"), k = params[1])
-  
-  clusts = list()
-  for (ii in 1:params[1]) {
-    clusts[[ii]] = unqprots[tmp == ii]
-  }
-  
-} else if (df.params$algorithm == "dbscan") {
-  # 2. DBSCAN
-  # https://towardsdatascience.com/how-dbscan-works-and-why-should-i-use-it-443b4a191c80
-  eps.range = c(.01, .1, .2, .5, 1, 2)
-  minPoints = c(2, 3, 5, 10)
-  x = get.adjacency(graph.data.frame(ints.corum))
-  tmp = dbscan(x, eps = params[1], params[2])
-  
-  clusts = list()
-  unqclusts = unique(tmp$cluster)
-  for (ii in 1:length(unqclusts)) {
-    clusts[[ii]] = unqprots[tmp$cluster == unqclusts[ii]]
-  }
-
-} else if (df.params$algorithm == "mcode") {
-  # 3. MCODE
-  x = graph.data.frame(ints.corum)
-  clusts = mcode(x, vwp = params[4], haircut = as.logical(params[1]), fluff = as.logical(params[2]), fdt = params[3])
-  clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
-  
-} else if (df.params$algorithm == "louvain") {
-  # 4. Louvain
-  x = ints.corum
-  x$weights = 1
-  tmp = cluster_resolution(x, params[1])
-  
-  clusts = list()
-  unqclusts = unique(tmp$community)
-  for (ii in 1:length(unqclusts)) {
-    clusts[[ii]] = unqprots[tmp$community == unqclusts[ii]]
-  }
-  
-} else if (df.params$algorithm == "leiden") {
-  # 5. Leiden
-  adjmat = graph_from_edgelist(as.matrix(ints.corum))
-  tmp = leiden(adjmat, resolution_parameter = params[1])
-  unqprots = rownames(adjmat)
-  
-  clusts = list()
-  unqclusts = unique(tmp)
-  for (ii in 1:length(unqclusts)) {
-    clusts[[ii]] = unqprots[tmp == unqclusts[ii]]
-  }
-}
-
-# remove clusts with N<3
-nn = unlist(lapply(clusts, length))
-clusts = clusts[nn>2]
-
-
-# compare to ground truth
-df = data.frame(cluster = unlist(lapply(clusts, paste, collapse = ";")), stringsAsFactors = F)
-df$Ji = unlist(sapply(df$cluster, FUN = function(x) calcA(x, corum$`subunits(UniProt IDs)`)))
-df$algorithm = df.params$algorithm
-df$params = df.params$params
-
-
-# write
-sf = paste("../data/00hyperparam_tune/", hparams, "_paramtune.txt", sep="")
-write_tsv(df, path = sf)
 
 
 
 # read all files and get optimal sets for each algorithm
-fns = list.files("../data/00hyperparam_tune/", pattern = "*paramtune.txt", full.names = T)
+fns = list.files("../data/00hyperparam_tune/", pattern = "louvain*", full.names = T)
 df = as.data.frame(read_tsv(fns[1]))
 for (ii in 2:length(fns)) {
   print(ii)

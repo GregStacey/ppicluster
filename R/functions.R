@@ -1008,3 +1008,26 @@ missing.jobs = function(datadir, algs, dbs, noise.range) {
   
   return(jobs)
 }
+
+
+louvain = function(edgelist, resolution) {
+  if (ncol(edgelist)==2) edgelist$weight = 1
+  
+  names(edgelist) = c("a","b", "weight")
+  unqprots = unique(c(edgelist[,1], edgelist[,2]))
+  edgelist = rbind(edgelist, data.frame(a=unqprots, b=unqprots, weight=rep(1, length(unqprots))))
+  tmp = sparsematrix_from_edgelist(edgelist)
+  tmp@Dimnames = list(unqprots, unqprots)
+  #
+  tmp = CreateSeuratObject(tmp)
+  tmp = ScaleData(tmp, features = unqprots)
+  tmp = FindVariableFeatures(tmp)
+  tmp = RunPCA(tmp)
+  tmp = FindNeighbors(tmp)
+  tmp = FindClusters(tmp, resolution = resolution)
+  clusts = data.frame(cluster = Idents(tmp), prots = names(Idents(tmp)), stringsAsFactors = F)
+  return(clusts)
+}
+
+
+
