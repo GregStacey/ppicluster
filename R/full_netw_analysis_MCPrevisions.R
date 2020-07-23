@@ -124,13 +124,10 @@ for (uu in 1:length(this.noise.range)) {
     unqprots = names(V(adjmat))
     
     unqclusts = sort(unique(this.clust))
-    clusts1 = rep(NA, length(unqclusts))
+    clusts = list()
     for (ii in 1:length(unqclusts)) {
-      clusts1[ii] = paste(unqprots[this.clust == unqclusts[ii]], collapse = ";")
+      clusts[[ii]] = unqprots[this.clust == unqclusts[ii]]
     }
-    # remove clusts with N<3
-    nn = unlist(sapply(clusts1, FUN = function(x) length(unlist(strsplit(x, ";")))))
-    clusts1 = clusts1[nn>2]
   } else if (params$algorithm == "walk") {
     # walktrap
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]), directed = F)

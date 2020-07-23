@@ -23,4 +23,4 @@ jobs = missing.jobs(paste(data.dir, "/clusters", sep=""), algs = algorithms,
 
 # write missing jobs
 # ia = ...
-write_tsv(jobs[ia,], path = "../data/jobs_biogrid_co.txt")
+write_tsv(jobs[ia,], path = "../data/jobs_leiden_redo.txt")
