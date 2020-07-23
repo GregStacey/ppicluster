@@ -21,6 +21,6 @@ jobs = missing.jobs(paste(data.dir, "/clusters", sep=""), algs = algorithms,
                     dbs = dbs, noise.range = noise.range)
 
 
-# write HuRI + louvain missing jobs
-ia = grepl("huri", tolower(jobs$dataset)) & jobs$algorithm=="louvain" & jobs$exists==FALSE
-write_tsv(jobs[ia,], path = "../data/jobs_huri_louvain.txt")
+# write missing jobs
+# ia = ...
+write_tsv(jobs[ia,], path = "../data/jobs_biogrid_co.txt")

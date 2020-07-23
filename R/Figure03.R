@@ -95,84 +95,11 @@ for (uu in c(8)) {
 }
 
 
-
-sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/fig2B_v06.Rda"
-if (T){
-  load(sf)
-} else {
-
-  # corum
-  fn = "../data/clusters_full_netw_walktrap2.txt"
-  Ji2 = as.data.frame(read_tsv(fn))
-  Ji2 = Ji2[Ji2$iter==1,]
-  Ji2$network = "corum"
-  Ji2 = Ji2[,c("iter", "network", "noise_mag", "algorithm", "cluster", "Ji1")]
-  
-  # email+chem
-  fn = "../data/clusters_facebook_netw_pamwalk.txt"
-  Ji = as.data.frame(read_tsv(fn))
-  Ji = Ji[,c("iter", "network", "noise_mag", "algorithm", "cluster", "Ji1")]
-  
-  # merge
-  Ji = rbind(Ji, Ji2)
-  
-  Ji$network[Ji$network=="chem"] = "DrugBank"
-  Ji$network[Ji$network=="corum"] = "CORUM"
-  Ji$network[Ji$network=="email"] = "email-Eu"
-  
-  # make cluster.size, remove all clusters with size<3
-  Ji$cluster.size = sapply((sapply(Ji$cluster, strsplit, ";")), length)
-  Ji = Ji[Ji$cluster.size>2,]
-  
-  I = !Ji$algorithm == "hierarchical" & Ji$iter==1
-  Ji = Ji[I,]
-  unqnets = unique(Ji$network)
-  unqalg = unique(Ji$algorithm)
-  unqnoise = unique(Ji$noise_mag)
-  sim = data.frame(network = character(10^4),
-                   measure = character(10^4),
-                   algorithm = character(10^4),
-                   noise_mag = character(10^4),
-                   Ji1 = numeric(10^4), stringsAsFactors = F)
-  cc = 0
-  cc2 = 0
-  for (uu in 1:length(unqnets)) {
-    for (ii in 1:length(unqnoise)) {
-      for (jj in 1:length(unqalg)) {
-      
-        I1 = Ji$noise_mag == unqnoise[ii] & Ji$algorithm%in%unqalg[jj] & Ji$network==unqnets[uu]
-        if (sum(I1)==0) next
-        
-        # Ji1
-        cc = cc+1
-        sim$measure[cc] = "ai"
-        sim$network[cc] = unqnets[uu]
-        sim$algorithm[cc] = unqalg[jj]
-        sim$noise_mag[cc] = unqnoise[ii]
-        sim$Ji1[cc] = mean(Ji$Ji1[I1])
-      }
-    }
-  }
-  sim = sim[1:cc,]
-  sim$noise_mag = as.numeric(sim$noise_mag)
-  sim$Ji[sim$Ji==0] = NA
-  Ji$noise_mag = as.numeric(Ji$noise_mag)
-
-  save(list=c("sim","Ji"), file = sf)
-}
-
-Ji$measure = Ji$algorithm
-Ji$algorithm[Ji$algorithm=="co_mcl"] = "CO+MCL"
-Ji$algorithm[Ji$algorithm=="co"] = "CO"
-Ji$algorithm[Ji$algorithm=="mcl"] = "MCL"
-Ji$algorithm[Ji$algorithm=="pam"] = "k-Med"
-Ji$algorithm[Ji$algorithm=="walk"] = "walktrap"
-sim$algorithm[sim$algorithm=="co_mcl"] = "CO+MCL"
-sim$algorithm[sim$algorithm=="co"] = "CO"
-sim$algorithm[sim$algorithm=="mcl"] = "MCL"
-sim$algorithm[sim$algorithm=="pam"] = "k-Med"
-sim$algorithm[sim$algorithm=="walk"] = "walktrap"
-sim$Ji1 = sim$Ji
+# get full network analysis MPC revisions data
+tmp = get.full.analysis()
+Ji = tmp[[1]]
+sim = tmp[[2]]
+Ji$noise_mag = as.numeric(Ji$noise_mag)
 
 
 # simple counting: 1% shuffle affects how many clusters?
@@ -191,7 +118,7 @@ df = df[1:length(unqalgs), ]
 # 2B ##### ------------------------------------------- #####
 # line plots of J_i vs noise
 
-I = sim$measure=="ai" & sim$measure=="ai" & sim$network=="CORUM"
+I = sim$network=="CORUM"
 ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
   facet_grid(~algorithm) + theme_bw() + theme(legend.position="none") + 
   geom_point(data = Ji[Ji$network=="CORUM",], alpha=0.025, color="black") +

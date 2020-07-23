@@ -120,14 +120,17 @@ for (uu in 1:length(this.noise.range)) {
     # 5. Leiden
     adjmat = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]))
     if (ncol(ints.shuffle)==3) edge.attributes(adjmat)$weight = ints.shuffle[,3]
-    tmp = leiden(adjmat, resolution_parameter = 0)
-    unqprots = V(adjmat)
+    this.clust = leiden(adjmat, resolution_parameter = 2)
+    unqprots = names(V(adjmat))
     
-    clusts = list()
-    unqclusts = unique(tmp)
+    unqclusts = sort(unique(this.clust))
+    clusts1 = rep(NA, length(unqclusts))
     for (ii in 1:length(unqclusts)) {
-      clusts[[ii]] = unqprots[tmp == unqclusts[ii]]
+      clusts1[ii] = paste(unqprots[this.clust == unqclusts[ii]], collapse = ";")
     }
+    # remove clusts with N<3
+    nn = unlist(sapply(clusts1, FUN = function(x) length(unlist(strsplit(x, ";")))))
+    clusts1 = clusts1[nn>2]
   } else if (params$algorithm == "walk") {
     # walktrap
     graph.object = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]), directed = F)

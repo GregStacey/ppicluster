@@ -874,7 +874,7 @@ get.full.analysis = function(lazyload = T) {
     
     # (mcode, louvain, leiden, hierarch,)x(corum, drugbank, emailEU) + 
     #     (mcl, co_mcl, co, pam, walktrap, hierarch, mcode, louvain, leiden)x(biogrid, collins2007)
-    fns = list.files("../data/data 2/clusters/", pattern = "*.txt", full.names = T)
+    fns = list.files("../data/data 3/clusters/", pattern = "*.txt", full.names = T)
     bad = rep(NA, 1000)
     for (ii in 1:length(fns)) {
       tmp = as.data.frame(read_tsv(fns[ii]))
@@ -897,38 +897,115 @@ get.full.analysis = function(lazyload = T) {
     Ji$network[Ji$network=="corum_pairwise.txt"] = "CORUM"
     Ji$network[Ji$network=="BIOGRID-ALL-3.5.186.tab3.txt"] = "BIOGRID"
     Ji$network[Ji$network=="PE_and_conf_scores_01-11-08.txt"] = "Collins2007"
+    Ji = Ji[Ji$noise_mag %in% noise.range, ]
     
+    # record iteration, since some combinations were done multiple times
     unqnet = unique(Ji$network)
     unqalg = unique(Ji$algorithm)
-    unqnoise = sort(unique(Ji$noise))
+    unqnoise = unique(Ji$noise_mag)
     for (ii in 1:length(unqnet)) {
       for (jj in 1:length(unqalg)) {
-        I0 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==0)
         for (kk in 1:length(unqnoise)) {
-          if (kk==1) {
+          I = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==unqnoise[kk])
+          i.break = c(0, which(diff(I) > 1), length(I))
+          if (length(i.break)==2) {
+            Ji$iter[I] = 1
+          } else if(length(i.break) > 2) {
+            print(paste(length(i.break)-1, "iterations for", unqnet[ii], unqalg[jj], unqnoise[kk]))
+            for (uu in 2:(length(i.break))) {
+              Ji$iter[I[(i.break[uu-1]+1) : (i.break[uu])]] = uu-1
+            }
+          }
+        }
+      }
+    }
+    
+    # calculate Ji
+    for (ii in 1:length(unqnet)) {
+      for (jj in 1:length(unqalg)) {
+        I0 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==0 & Ji$iter==1)
+        for (kk in 1:length(unqnoise)) {
+          if (unqnoise[kk]==0) {
             Ji$Ji1[I0] = 1
             next
           }
           
-          I1 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==unqnoise[kk])
-          if (sum(I1)==0) print(paste("no data for", unqnet[ii], unqalg[jj], unqnoise[kk]))
-          next
+          I1 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==unqnoise[kk] & Ji$iter==1)
+          print(paste(unqnet[ii], unqalg[jj], unqnoise[kk]))
+          if (length(I1)==0) {
+            print(paste("    no data for", unqnet[ii], unqalg[jj], unqnoise[kk]))
+            next
+          } else if (sum(is.na(Ji$Ji1[I1])) < (.5 * length(I1))) {
+            print(paste("    Ji already calculated for", unqnet[ii], unqalg[jj], unqnoise[kk]))
+            next
+          }
           cluster0 = Ji$cluster[I0]
           cluster = Ji$cluster[I1]
-          Jii = numeric(length(I1))
+          this.ji = numeric(length(I1))
           for (mm in 1:length(cluster)) {
-            Ji[mm] = calcA(cluster[mm], cluster0)
+            this.ji[mm] = calcA(cluster[mm], cluster0)
           }
-          Ji$Ji1[I1] = Ji
+          Ji$Ji1[I1] = this.ji
         }
       }
     }
+    
+    # clean up names
+    Ji$network[Ji$network == "HuRI.tsv"] = "HuRI"
+    Ji$algorithm[Ji$algorithm == "co"] = "CO"
+    Ji$algorithm[Ji$algorithm == "mcl"] = "MCL"
+    Ji$algorithm[Ji$algorithm == "co_mcl"] = "CO+MCL"
+    Ji$algorithm[Ji$algorithm == "pam"] = "k-Med"
+    Ji$algorithm[Ji$algorithm == "walk"] = "walktrap"
+    Ji$algorithm[Ji$algorithm == "leiden"] = "Leiden"
+    Ji$algorithm[Ji$algorithm == "louvain"] = "Louvain"
+    Ji$algorithm[Ji$algorithm == "mcode"] = "MCODE"
+    
+    # calculate sim
+    sim = data.frame(network = character(10^4),
+                     algorithm = character(10^4),
+                     numeric = character(10^4),
+                     Ji1 = numeric(10^4), stringsAsFactors = F)
+    cc = 0
+    for (uu in 1:length(unqnet)) {
+      for (ii in 1:length(unqnoise)) {
+        for (jj in 1:length(unqalg)) {
+          
+          I1 = Ji$noise_mag == unqnoise[ii] & Ji$algorithm%in%unqalg[jj] & 
+            Ji$network==unqnet[uu] & Ji$iter==1
+          if (sum(I1)==0) next
+          
+          # Ji1
+          cc = cc+1
+          sim$network[cc] = unqnet[uu]
+          sim$algorithm[cc] = unqalg[jj]
+          sim$noise_mag[cc] = unqnoise[ii]
+          sim$Ji1[cc] = mean(Ji$Ji1[I1])
+        }
+      }
+    }
+    sim = sim[1:cc,]
+
+    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions.Rda"
+    save(Ji, sim, file = sf)
+    
   } else {
-    fn = ""
+    fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions.Rda"
     load(fn)
   }
   
-  return(Ji)
+  # clean up names
+  Ji$network[Ji$network == "HuRI.tsv"] = "HuRI"
+  Ji$algorithm[Ji$algorithm == "co"] = "CO"
+  Ji$algorithm[Ji$algorithm == "mcl"] = "MCL"
+  Ji$algorithm[Ji$algorithm == "co_mcl"] = "CO+MCL"
+  Ji$algorithm[Ji$algorithm == "pam"] = "k-Med"
+  Ji$algorithm[Ji$algorithm == "walk"] = "walktrap"
+  Ji$algorithm[Ji$algorithm == "leiden"] = "Leiden"
+  Ji$algorithm[Ji$algorithm == "louvain"] = "Louvain"
+  Ji$algorithm[Ji$algorithm == "mcode"] = "MCODE"
+  
+  return(list(Ji, sim))
 }
 
 get.addremove.analysis = function(lazyload = T) {
