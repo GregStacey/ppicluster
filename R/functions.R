@@ -991,9 +991,9 @@ get.full.analysis = function(lazyload = T) {
     save(Ji, sim, file = sf)
     
   } else {
-    fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions3.Rda"
+    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions3.Rda"
     if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions3.Rda"
-    load(fn)
+    load(sf)
   }
   
   # clean up names
