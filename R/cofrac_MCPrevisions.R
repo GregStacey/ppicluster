@@ -20,7 +20,6 @@ unqdatasets = unique(data.c$data_type)
 unqmags = sort(unique(data.c$noise_mag))
 unqmags = unqmags[unqmags<=1]
 
-# walktrap cluster
 # add 1 iterations of mcode, louvain, and leiden
 data.c.add = data.frame(data_type = character(10^5), noise_type = character(10^5),
                         noise_mag = numeric(10^5), algorithm = character(10^5),
@@ -38,54 +37,54 @@ for (ii in 1:length(unqmags)) {
     unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
     
     
-    # 3. MCODE
-    print("mcode")
-    x = graph.data.frame(ints.shuffle)
-    clusts = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.1)
-    clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
-    for (kk in 1:length(clusts)) {
-      if (length(clusts[[kk]]) < 3) next
-      cc = cc+1
-      data.c.add$data_type[cc] = unqdatasets[jj]
-      data.c.add$noise_type[cc] = "chrom"
-      data.c.add$noise_mag[cc] = unqmags[ii]
-      data.c.add$algorithm[cc] = "mcode"
-      data.c.add$cluster[cc] = paste(clusts[[kk]], collapse=";")
-    }
-    
-    
-    # 4. Louvain
-    print("louvain")
-    x = ints.shuffle
-    x$weights = 1
-    tmp = cluster_resolution(x, 1)
-    clusts = list()
-    unqclusts = unique(tmp$community)
-    for (uu in 1:length(unqclusts)) {
-      clusts[[uu]] = unqprots[tmp$community == unqclusts[uu]]
-    }
-    for (kk in 1:length(clusts)) {
-      if (length(clusts[[kk]]) < 3) next
-      cc = cc+1
-      data.c.add$data_type[cc] = unqdatasets[jj]
-      data.c.add$noise_type[cc] = "chrom"
-      data.c.add$noise_mag[cc] = unqmags[ii]
-      data.c.add$algorithm[cc] = "louvain"
-      data.c.add$cluster[cc] = paste(clusts[[kk]], collapse=";")
-    }
+    # # 3. MCODE
+    # print("mcode")
+    # x = graph.data.frame(ints.shuffle)
+    # clusts = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.1)
+    # clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
+    # for (kk in 1:length(clusts)) {
+    #   if (length(clusts[[kk]]) < 3) next
+    #   cc = cc+1
+    #   data.c.add$data_type[cc] = unqdatasets[jj]
+    #   data.c.add$noise_type[cc] = "chrom"
+    #   data.c.add$noise_mag[cc] = unqmags[ii]
+    #   data.c.add$algorithm[cc] = "mcode"
+    #   data.c.add$cluster[cc] = paste(clusts[[kk]], collapse=";")
+    # }
+    # 
+    # 
+    # # 4. Louvain
+    # print("louvain")
+    # x = ints.shuffle
+    # x$weights = 1
+    # tmp = cluster_resolution(x, 1)
+    # clusts = list()
+    # unqclusts = unique(tmp$community)
+    # for (uu in 1:length(unqclusts)) {
+    #   clusts[[uu]] = unqprots[tmp$community == unqclusts[uu]]
+    # }
+    # for (kk in 1:length(clusts)) {
+    #   if (length(clusts[[kk]]) < 3) next
+    #   cc = cc+1
+    #   data.c.add$data_type[cc] = unqdatasets[jj]
+    #   data.c.add$noise_type[cc] = "chrom"
+    #   data.c.add$noise_mag[cc] = unqmags[ii]
+    #   data.c.add$algorithm[cc] = "louvain"
+    #   data.c.add$cluster[cc] = paste(clusts[[kk]], collapse=";")
+    # }
     
     
     # 5. Leiden
     print("leiden")
     # 5. Leiden
-    x = as.matrix(ints.shuffle)
-    adjmat = as_adjacency_matrix(graph_from_edgelist(x))
-    tmp = leiden(adjmat, resolution_parameter = 0)
-    unqprots = rownames(adjmat)
+    adjmat = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]))
+    if (ncol(ints.shuffle)==3) edge.attributes(adjmat)$weight = ints.shuffle[,3]
+    this.clust = leiden(adjmat, resolution_parameter = 2)
+    unqprots = names(V(adjmat))
+    unqclusts = sort(unique(this.clust))
     clusts = list()
-    unqclusts = unique(tmp)
     for (kk in 1:length(unqclusts)) {
-      clusts[[kk]] = unqprots[tmp == unqclusts[kk]]
+      clusts[[kk]] = unqprots[this.clust == unqclusts[kk]]
     }
     for (kk in 1:length(clusts)) {
       if (length(clusts[[kk]]) < 3) next
@@ -98,13 +97,13 @@ for (ii in 1:length(unqmags)) {
     }
     
     # write in case of crash
-    write_tsv(data.c.add[1:cc, ], path = "../data/data.c.add_cofracmcp.txt")
+    write_tsv(data.c.add[1:cc, ], path = "../data/data.c.add_cofracmcp_leiden.txt")
   }
 }
 
 # write
 data.c.add = data.c.add[1:cc,]
-write_tsv(data.c.add[1:cc, ], path = "../data/data.c.add_cofracmcp.txt")
+write_tsv(data.c.add[1:cc, ], path = "../data/data.c.add_cofracmcp_leiden.txt")
 
 
 
@@ -157,4 +156,4 @@ for (ii in 1:length(unqdatasets)) {
 df = df[1:cc,]
 
 # write summary
-write_tsv(df, path = "../data/data.c.add_cofracmcp_summary.txt")
+write_tsv(df, path = "../data/data.c.add_cofracmcp_summary_leiden.txt")

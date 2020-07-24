@@ -126,13 +126,15 @@ if (T){
 }
 df = df[, -11]
 
-# add louvain, and leiden
+# add louvain, remove leiden
 tmp = as.data.frame(read_tsv("../data/data.c.add_cofracmcp_summary.txt"))
-#tmp = tmp[,6:15]
-#names(tmp) = names(df)
+tmp = tmp[!tmp$algorithm=="leiden",]
 df = rbind(df, tmp)
 # add mcode
 tmp = as.data.frame(read_tsv("../data/data.c.add_cofracmcp_summary_mcode.txt"))
+df = rbind(df, tmp)
+# add leiden
+tmp = as.data.frame(read_tsv("../data/data.c.add_cofracmcp_summary_leiden.txt"))
 df = rbind(df, tmp)
 
 
@@ -274,9 +276,9 @@ ggplot(df, aes(x=noise_mag*100, y=clustJ, color=experiment)) +
   theme_bw() + xlim(0,50) + theme(legend.position = "none") + scale_colour_grey()
 #scale_color_brewer(palette="Set1")
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v05.pdf"
-ggsave(fn,width=10, height=6)
+ggsave(fn,width=10, height=5)
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_3B_v05.png"
-ggsave(fn,width=10, height=6)
+ggsave(fn,width=10, height=5)
 
 
 

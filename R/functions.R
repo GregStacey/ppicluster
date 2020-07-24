@@ -428,7 +428,7 @@ shufflecorum = function(ints.corum, ff){
   # indices of unshuffled
   ia0 = match(ints.corum[,1], unqprots)
   ib0 = match(ints.corum[,2], unqprots)
-
+  
   # indices of shuffled
   ia = ia0
   ib = ib0
@@ -874,7 +874,7 @@ get.full.analysis = function(lazyload = T) {
     
     # (mcode, louvain, leiden, hierarch,)x(corum, drugbank, emailEU) + 
     #     (mcl, co_mcl, co, pam, walktrap, hierarch, mcode, louvain, leiden)x(biogrid, collins2007)
-    fns = list.files("../data/data 3/clusters/", pattern = "*.txt", full.names = T)
+    fns = list.files("../data/data 4/clusters/", pattern = "*.txt", full.names = T)
     bad = rep(NA, 1000)
     for (ii in 1:length(fns)) {
       tmp = as.data.frame(read_tsv(fns[ii]))
@@ -937,7 +937,7 @@ get.full.analysis = function(lazyload = T) {
             next
           } else if (sum(is.na(Ji$Ji1[I1])) < (.5 * length(I1))) {
             print(paste("    Ji already calculated for", unqnet[ii], unqalg[jj], unqnoise[kk]))
-            next
+            #next
           }
           cluster0 = Ji$cluster[I0]
           cluster = Ji$cluster[I1]
@@ -964,7 +964,7 @@ get.full.analysis = function(lazyload = T) {
     # calculate sim
     sim = data.frame(network = character(10^4),
                      algorithm = character(10^4),
-                     numeric = character(10^4),
+                     noise_mag = numeric(10^4),
                      Ji1 = numeric(10^4), stringsAsFactors = F)
     cc = 0
     for (uu in 1:length(unqnet)) {
@@ -985,12 +985,12 @@ get.full.analysis = function(lazyload = T) {
       }
     }
     sim = sim[1:cc,]
-
-    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions.Rda"
+    
+    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions3.Rda"
     save(Ji, sim, file = sf)
     
   } else {
-    fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions.Rda"
+    fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions3.Rda"
     load(fn)
   }
   
@@ -1018,7 +1018,7 @@ get.addremove.analysis = function(lazyload = T) {
       if (nrow(tmp)==0) bad[ii] = fns[ii]
       Ji3 = rbind(Ji3, tmp)
     }
-
+    
     # calculate Ji
     fn.save = "../data/mcp_mcode_addremove.txt"
     Ji3$Ji = rep(NA, nrow(Ji3))
@@ -1079,8 +1079,8 @@ missing.jobs = function(datadir, algs, dbs, noise.range) {
   
   # make jobs that are definitely  done
   ia =  ((grepl("corum", jobs$dataset) | grepl("email", jobs$dataset) | grepl("chem", jobs$dataset)) &
-        (jobs$algorithm=="co" | grepl("pam", jobs$algorithm) |
-           grepl("mcl", jobs$algorithm) | grepl("walk", jobs$algorithm)))
+           (jobs$algorithm=="co" | grepl("pam", jobs$algorithm) |
+              grepl("mcl", jobs$algorithm) | grepl("walk", jobs$algorithm)))
   ib = (grepl("BioPlex", jobs$dataset) & jobs$algorithm=="co")
   jobs$exists[ia] = TRUE
   jobs$exists[ib] = TRUE
@@ -1111,5 +1111,57 @@ louvain = function(edgelist, resolution) {
   return(clusts)
 }
 
+
+count.shuffled.edges = function(Ji) {
+  # count how many edges are different between clust(noise=0) and clust(noise>0)
+  
+  df.count = data.frame(network = rep(NA, 1e4),
+                        algorithm = rep(NA, 1e4),
+                        noise_mag = rep(NA, 1e4), 
+                        nedge0 = rep(NA, 1e4),
+                        nedge1 = rep(NA, 1e4),
+                        ndelta = rep(NA, 1e4), stringsAsFactors = F)
+  
+  cc = 0
+  unqnet = unique(Ji$network)
+  unqalg = unique(Ji$algorithm)
+  unqnoise = sort(unique(Ji$noise_mag))
+  niter = length(unqnet) * length(unqalg) * length(unqnoise)
+  for (ii in 1:length(unqnet)) {
+    for (jj in 1:length(unqalg)) {
+      I0 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==0 & Ji$iter==1)
+      clust0 = Ji$cluster[I0]
+      edge0 = unlist(sapply(clust0, FUN = function(x) {
+        prots = sort(unlist(strsplit(x, ";")))
+        pairs = as.data.frame(t(combn(prots, 2)), stringsAsFactors = F) %>% unite(pairs, c("V1", "V2"))
+      }))
+      for (kk in 1:length(unqnoise)) {
+        cc = cc+1
+        print(paste(unqnet[ii], unqalg[jj], unqnoise[kk], " | ", cc/niter))
+        df.count$network[cc] = unqnet[ii]
+        df.count$algorithm[cc] = unqalg[jj]
+        df.count$noise_mag[cc] == unqnoise[kk]
+        
+        if (unqnoise[kk]==0) {
+          df.count$nedge0[cc] = length(edge0)
+          df.count$nedge1[cc] = length(edge0)
+          df.count$ndelta[cc] = 0
+          next
+        }
+        I1 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==unqnoise[kk] & Ji$iter==1)
+        clust1 = Ji$cluster[I1]
+        edge1 = unlist(sapply(clust1, FUN = function(x) {
+          prots = sort(unlist(strsplit(x, ";")))
+          pairs = as.data.frame(t(combn(prots, 2)), stringsAsFactors = F) %>% unite(pairs, c("V1", "V2"))
+        }))
+        
+        df.count$nedge0[cc] = length(edge0)
+        df.count$nedge1[cc] = length(edge1)
+        df.count$ndelta[cc] = sum(!edge0%in%edge1) + sum(!edge1%in%edge0)
+      }
+    }
+  }
+  
+}
 
 
