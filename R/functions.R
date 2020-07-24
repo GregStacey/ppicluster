@@ -1117,6 +1117,11 @@ louvain = function(edgelist, resolution) {
 count.shuffled.edges = function(Ji) {
   # count how many edges are different between clust(noise=0) and clust(noise>0)
   
+  # save file
+  sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/counting.statistics.Rda"
+  if (!dir.exists(dirname(sf))) sf = "../data/counting.statistics.Rda"
+  
+  # data object
   df.count = data.frame(network = rep(NA, 1e4),
                         algorithm = rep(NA, 1e4),
                         noise_mag = rep(NA, 1e4), 
@@ -1160,10 +1165,16 @@ count.shuffled.edges = function(Ji) {
         df.count$nedge0[cc] = length(edge0)
         df.count$nedge1[cc] = length(edge1)
         df.count$ndelta[cc] = sum(!edge0%in%edge1) + sum(!edge1%in%edge0)
+        
+        # write in case of crash
+        write_tsv(df.count, path = sf)
+        
       }
     }
   }
   
+  # write finall
+  write_tsv(df.count, path = sf)
 }
 
 
