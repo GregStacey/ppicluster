@@ -987,10 +987,12 @@ get.full.analysis = function(lazyload = T) {
     sim = sim[1:cc,]
     
     sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions3.Rda"
+    if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions3.Rda"
     save(Ji, sim, file = sf)
     
   } else {
     fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions3.Rda"
+    if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions3.Rda"
     load(fn)
   }
   
