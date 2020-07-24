@@ -1138,6 +1138,8 @@ count.shuffled.edges = function(Ji) {
     for (jj in 1:length(unqalg)) {
       I0 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==0 & Ji$iter==1)
       clust0 = Ji$cluster[I0]
+      #nn = as.numeric(unlist(sapply(clust1, FUN = function(x) length(unlist(strsplit(x, ";"))))))
+      #clust0 = clust0[!nn>1000]
       edge0 = unlist(sapply(clust0, FUN = function(x) {
         prots = sort(unlist(strsplit(x, ";")))
         pairs = as.data.frame(t(combn(prots, 2)), stringsAsFactors = F) %>% unite(pairs, c("V1", "V2"))
@@ -1157,14 +1159,19 @@ count.shuffled.edges = function(Ji) {
         }
         I1 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==unqnoise[kk] & Ji$iter==1)
         clust1 = Ji$cluster[I1]
-        edge1 = unlist(sapply(clust1, FUN = function(x) {
+        nn = as.numeric(unlist(sapply(clust1, FUN = function(x) length(unlist(strsplit(x, ";"))))))
+        clust1 = clust1[!nn>1000]
+        edge1 = unlist(sapply(clust1[1:uu], FUN = function(x) {
           prots = sort(unlist(strsplit(x, ";")))
           pairs = as.data.frame(t(combn(prots, 2)), stringsAsFactors = F) %>% unite(pairs, c("V1", "V2"))
         }))
         
+        nn = nn[nn>1000]
+        n.adjust = 0
+        if (length(nn)>0) n.adjust = length(nn) * nn * (nn-1) / 2 * 0.5
         df.count$nedge0[cc] = length(edge0)
         df.count$nedge1[cc] = length(edge1)
-        df.count$ndelta[cc] = sum(!edge0%in%edge1) + sum(!edge1%in%edge0)
+        df.count$ndelta[cc] = sum(!edge0%in%edge1) + sum(!edge1%in%edge0) + n.adjust
         
         # write in case of crash
         write_tsv(df.count, path = sf)

@@ -135,9 +135,11 @@ tmp2$Ji1[tmp2$noise_mag>0.5 & tmp2$network %in% c("BIOGRID", "BioPlex")] = NA
 ggplot(tmp2, aes(x=noise_mag, y=Ji1)) + geom_line() + 
   facet_wrap(~network, nrow=1) + theme_bw() + theme(legend.position="none") + 
   geom_point(data = tmp, alpha=0.025, color="black") +
-  ylab("Similarity to original clusters (Ji)") + xlab("Network noise level")
+  ylab("Similarity to original clusters (Ji)") + xlab("Network noise level") +
+  scale_x_continuous(breaks=c(0, 0.25, 0.5, 0.75)) +
+  theme(axis.text.x = element_text(angle=25))
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2C_v10.png"
-ggsave(fn,width=10, height=3)
+ggsave(fn,width=10, height=2.5)
 
 
 
