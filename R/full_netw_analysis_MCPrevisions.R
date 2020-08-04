@@ -146,7 +146,7 @@ for (uu in 1:length(this.noise.range)) {
   } else if (params$algorithm == "co") {
     # cluster one
     tmp = unlist(clusteroneR(ints.shuffle, pp=500, density_threshold = 0.1, 
-                             java_path = "../java/cluster_one-1.0.jar",
+                             java_path = paste(home.dir, "/java/cluster_one-1.0.jar", sep=""),
                              output_path = co.tmpdir))
     clusts = sapply(tmp, strsplit, ";")
     
