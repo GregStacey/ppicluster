@@ -120,7 +120,7 @@ I = sim$network=="CORUM"
 ggplot(sim[I,], aes(x=noise_mag, y=Ji1)) + geom_line() + 
   facet_wrap(~algorithm, nrow=2) + theme_bw() + theme(legend.position="none") + 
   geom_point(data = Ji[Ji$network=="CORUM",], alpha=0.025, color="black") +
-  ylab("Similarity to un-noised clusters (Ji)") + xlab("Network noise level")
+  ylab("Similarity to original clusters (Ji)") + xlab("Network noise level")
 fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/fig_2B_v10.png"
 ggsave(fn,width=10, height=5)
 

@@ -1138,8 +1138,8 @@ count.shuffled.edges = function(Ji) {
     for (jj in 1:length(unqalg)) {
       I0 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==0 & Ji$iter==1)
       clust0 = Ji$cluster[I0]
-      #nn = as.numeric(unlist(sapply(clust1, FUN = function(x) length(unlist(strsplit(x, ";"))))))
-      #clust0 = clust0[!nn>1000]
+      nn0 = as.numeric(unlist(sapply(clust0, FUN = function(x) length(unlist(strsplit(x, ";"))))))
+      clust0 = clust0[!nn0>1000 & nn0>2]
       edge0 = unlist(sapply(clust0, FUN = function(x) {
         prots = sort(unlist(strsplit(x, ";")))
         pairs = as.data.frame(t(combn(prots, 2)), stringsAsFactors = F) %>% unite(pairs, c("V1", "V2"))
@@ -1147,30 +1147,35 @@ count.shuffled.edges = function(Ji) {
       for (kk in 1:length(unqnoise)) {
         cc = cc+1
         print(paste(unqnet[ii], unqalg[jj], unqnoise[kk], " | ", cc/niter))
+        if (cc<300) next
         df.count$network[cc] = unqnet[ii]
         df.count$algorithm[cc] = unqalg[jj]
-        df.count$noise_mag[cc] == unqnoise[kk]
+        df.count$noise_mag[cc] = unqnoise[kk]
         
         if (unqnoise[kk]==0) {
-          df.count$nedge0[cc] = length(edge0)
-          df.count$nedge1[cc] = length(edge0)
+          df.count$nedge0[cc] = sum(nn0 * (nn0-1) / 2)
+          df.count$nedge1[cc] = sum(nn0 * (nn0-1) / 2)
           df.count$ndelta[cc] = 0
           next
         }
         I1 = which(Ji$network==unqnet[ii] & Ji$algorithm==unqalg[jj] & Ji$noise_mag==unqnoise[kk] & Ji$iter==1)
         clust1 = Ji$cluster[I1]
-        nn = as.numeric(unlist(sapply(clust1, FUN = function(x) length(unlist(strsplit(x, ";"))))))
-        clust1 = clust1[!nn>1000]
-        edge1 = unlist(sapply(clust1[1:uu], FUN = function(x) {
+        nn1 = as.numeric(unlist(sapply(clust1, FUN = function(x) length(unlist(strsplit(x, ";"))))))
+        
+        # break if needed
+        if ((sum(nn1 * (nn1-1) / 2) + sum(nn0 * (nn0-1) / 2)) > 2e6) next
+        
+        clust1 = clust1[!nn1>1000 & nn1>2]
+        edge1 = unlist(sapply(clust1, FUN = function(x) {
           prots = sort(unlist(strsplit(x, ";")))
           pairs = as.data.frame(t(combn(prots, 2)), stringsAsFactors = F) %>% unite(pairs, c("V1", "V2"))
         }))
-        
-        nn = nn[nn>1000]
+
+        df.count$nedge0[cc] = sum(nn0 * (nn0-1) / 2)
+        df.count$nedge1[cc] = sum(nn1 * (nn1-1) / 2)
+        nn1 = nn1[nn1>1000]
         n.adjust = 0
-        if (length(nn)>0) n.adjust = length(nn) * nn * (nn-1) / 2 * 0.5
-        df.count$nedge0[cc] = length(edge0)
-        df.count$nedge1[cc] = length(edge1)
+        if (length(nn1)>0) n.adjust = length(nn1) * nn1 * (nn1-1) / 2 * 0.5
         df.count$ndelta[cc] = sum(!edge0%in%edge1) + sum(!edge1%in%edge0) + n.adjust
         
         # write in case of crash

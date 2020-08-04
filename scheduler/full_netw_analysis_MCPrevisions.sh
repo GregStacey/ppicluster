@@ -1,11 +1,11 @@
 #!/bin/bash
-#PBS -N full_netw_analysis_MCPrevisions_large
+#PBS -N full_netw_analysis_MCPrevisions
 #PBS -l walltime=71:55:00
-#PBS -e /scratch/st-ljfoster-1/ppicluster/scheduler/5full_netw_analysis_MCPrevisions_large.err
-#PBS -o /scratch/st-ljfoster-1/ppicluster/scheduler/5full_netw_analysis_MCPrevisions_large.out
+#PBS -e /scratch/st-ljfoster-1/ppicluster/scheduler/5full_netw_analysis_MCPrevisions.err
+#PBS -o /scratch/st-ljfoster-1/ppicluster/scheduler/5full_netw_analysis_MCPrevisions.out
 #PBS -m abe
 #PBS -M richard.greg.stacey@gmail.com
-#PBS -l mem=8gb   
+#PBS -l mem=16gb   
 #PBS -A st-ljfoster-1
 #PBS -J 1-6
 
@@ -19,5 +19,5 @@ echo 'the array number is'
 echo $PBS_ARRAY_INDEX
 
 Rscript ~/projects/ppicluster/R/full_netw_analysis_MCPrevisions.R \
-  ~/projects/ppicluster/data/jobs_huri_louvain.txt \
+  ~/projects/ppicluster/data/jobs_biogrid_co.txt \
   $PBS_ARRAY_INDEX
