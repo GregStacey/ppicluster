@@ -25,6 +25,10 @@ home.dir = c("~/projects/ppicluster/",                                     # soc
 home.dir = home.dir[dir.exists(home.dir)]
 R.dir = paste(home.dir, "R/", sep="")
 data.dir = paste(home.dir, "data/", sep="")
+# CO temporary read/write location
+if (home.dir == "~/projects/ppicluster/") {# sockeye
+  co.tmpdir = "/scratch/st-ljfoster-1/ppicluster/data/"
+} else co.tmpdir = data.dir
 source(paste(R.dir, "functions.R", sep=""))
 
 
@@ -143,7 +147,7 @@ for (uu in 1:length(this.noise.range)) {
     # cluster one
     tmp = unlist(clusteroneR(ints.shuffle, pp=500, density_threshold = 0.1, 
                              java_path = "../java/cluster_one-1.0.jar",
-                             output_path = data.dir))
+                             output_path = co.tmpdir))
     clusts = sapply(tmp, strsplit, ";")
     
   } else if (params$algorithm == "mcl") {
