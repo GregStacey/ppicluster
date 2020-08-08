@@ -111,7 +111,6 @@ for (uu in 1:length(this.noise.range)) {
   } else if (params$algorithm == "louvain") {
     # 4. Louvain
     if (ncol(ints.shuffle)==2) ints.shuffle$weights = 1
-    #tmp = cluster_resolution(ints.shuffle, 1)
     tmp = louvain(ints.shuffle, 15)
     
     clusts = list()
@@ -119,6 +118,8 @@ for (uu in 1:length(this.noise.range)) {
     for (ii in 1:length(unqclusts)) {
       clusts[[ii]] = unqprots[tmp$cluster == unqclusts[ii]]
     }
+    # remove singletons
+    clusts = clusts[!tolower(unqclusts) =="singleton"]
     
   } else if (params$algorithm == "leiden") {
     # 5. Leiden

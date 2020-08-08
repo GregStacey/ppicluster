@@ -26,7 +26,7 @@ alg = c(function(x) pam(x, 50),
         walktrap.community,
         function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"),
         function(x) stats::cutree(stats::hclust(d = hierarch.edge.list.format(x), method="average"), k = 100),
-        function(x) mcode(graph.data.frame(x), vwp = 0.8, haircut = TRUE, fluff = TRUE, fdt = 0.5),
+        function(x) mcode(graph.data.frame(x), vwp = 0.1, haircut = TRUE, fluff = FALSE, fdt = 0.5),
         function(x) {
           x$weights = 1
           return(cluster_resolution(x, 1))},
@@ -79,6 +79,7 @@ if (F) {
   
   cc = 0
   df.predrep = data.frame(algorithm = character(1e5),
+                          cluster = character(1e5),
                           predJ = numeric(1e5), # from clust.perturb
                           repJ = numeric(1e5), # comparing to other set
                           set1 = character(1e5),
@@ -114,12 +115,12 @@ if (F) {
     
     # cluster with clust.perturb
     print(paste("jj=",jj,",  ii=",ii, ", net1"))
-    clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.02, iters = 3,
+    clust1 = clust.perturb(net1, clustering.algorithm = alg[[jj]], noise = 0.03, iters = 3,
                            edge.list.format = edge.list.format[[jj]], 
                            cluster.format = cluster.format[[jj]],
                            unqprots.format = unqprots.format)
     print(paste("jj=",jj,",  ii=",ii, ", net2"))
-    clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.02, iters = 3,
+    clust2 = clust.perturb(net2, clustering.algorithm = alg[[jj]], noise = 0.03, iters = 3,
                            edge.list.format = edge.list.format[[jj]], 
                            cluster.format = cluster.format[[jj]],
                            unqprots.format = unqprots.format)
@@ -141,6 +142,7 @@ if (F) {
     # store in dataframe
     I = (cc+1) : (cc+nrow(clust1))
     df.predrep$alg[I] = alg.names[jj]
+    df.predrep$cluster[I] = clust1$cluster
     df.predrep$predJ[I] = clust1$repJ
     df.predrep$repJ[I] = clust1$repJ.clust2
     df.predrep$set1[I] = paste(x1, collapse = ";")
@@ -148,6 +150,7 @@ if (F) {
     cc = cc+nrow(clust1)
     I = (cc+1) : (cc+nrow(clust2))
     df.predrep$alg[I] = alg.names[jj]
+    df.predrep$cluster[I] = clust2$cluster
     df.predrep$predJ[I] = clust2$repJ
     df.predrep$repJ[I] = clust2$repJ.clust1
     df.predrep$set1[I] = paste(x2, collapse = ";")
@@ -155,7 +158,7 @@ if (F) {
     cc = cc+nrow(clust2)
     
     # save in case of crash
-    write_tsv(df.predrep[1:cc,], path = sf)
+    #write_tsv(df.predrep[1:cc,], path = sf)
   }
 }
 
@@ -165,6 +168,8 @@ fns = list.files(path = "../data/", pattern = "^pred_J_expreps_", full.names = T
 tmp = list()
 for (ii in 1:length(fns)) {
   tmp[[ii]] = as.data.frame(read_tsv(fns[[ii]]))
+  good.names = names(tmp[[1]])
+  tmp[[ii]] = tmp[[ii]][, good.names]
 }
 df.predrep = bind_rows(tmp, .id = "column_label")
 df.predrep$alg = factor(df.predrep$alg, levels = alg.names)
@@ -174,7 +179,7 @@ ggplot(df.predrep, aes(x=predJ, y=repJ)) + geom_point(alpha = .1) +
   xlab("Predicted reproducibility (clust.perturb, repJ)") +
   ylab("Actual reproducibility\n(experiment-to-experiment, Ji)") +
   theme_bw()
-fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/Figure08_v01.pdf"
-ggsave(fn, width=10, height=2.6)
+fn = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/figures/Figure08_v02.pdf"
+ggsave(fn, width=10, height=4.6)
 
 

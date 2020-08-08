@@ -874,7 +874,7 @@ get.full.analysis = function(lazyload = T) {
     
     # (mcode, louvain, leiden, hierarch,)x(corum, drugbank, emailEU) + 
     #     (mcl, co_mcl, co, pam, walktrap, hierarch, mcode, louvain, leiden)x(biogrid, collins2007)
-    fns = list.files("../data/data 4/clusters/", pattern = "*.txt", full.names = T)
+    fns = list.files("../data/data 6/clusters/", pattern = "*.txt", full.names = T)
     bad = rep(NA, 1000)
     for (ii in 1:length(fns)) {
       tmp = as.data.frame(read_tsv(fns[ii]))
@@ -986,13 +986,13 @@ get.full.analysis = function(lazyload = T) {
     }
     sim = sim[1:cc,]
     
-    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions3.Rda"
+    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions4.Rda"
     if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions3.Rda"
     save(Ji, sim, file = sf)
     
   } else {
-    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions3.Rda"
-    if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions3.Rda"
+    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions4.Rda"
+    if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions4.Rda"
     load(sf)
   }
   
@@ -1098,8 +1098,9 @@ louvain = function(edgelist, resolution) {
   
   names(edgelist) = c("a","b", "weight")
   unqprots = unique(c(edgelist[,1], edgelist[,2]))
-  edgelist = rbind(edgelist, data.frame(a=unqprots, b=unqprots, weight=rep(1, length(unqprots))))
-  tmp = sparsematrix_from_edgelist(edgelist)
+  #edgelist = rbind(edgelist, data.frame(a=unqprots, b=unqprots, weight=rep(1, length(unqprots))))
+  tmp = sparsematrix_from_edgelist(edgelist, is_bipartite = F)
+  unqprots = unique(c(edgelist[,1], edgelist[,2]))
   tmp@Dimnames = list(unqprots, unqprots)
   #
   tmp = CreateSeuratObject(tmp)
@@ -1107,7 +1108,7 @@ louvain = function(edgelist, resolution) {
   tmp = FindVariableFeatures(tmp)
   tmp = RunPCA(tmp)
   tmp = FindNeighbors(tmp)
-  tmp = FindClusters(tmp, resolution = resolution)
+  tmp = FindClusters(tmp, resolution = resolution, group.singletons = F)
   clusts = data.frame(cluster = Idents(tmp), prots = names(Idents(tmp)), 
                       stringsAsFactors = F)
   return(clusts)
