@@ -50,7 +50,7 @@ for (uu in c(8)) {
   pci = as.data.frame(pci)
   pci$cluster = 1:nrow(pci)
   pci$size = unlist(lapply(lapply(lapply(set1, strsplit, ";"), "[[", 1), length))
-
+  
   # tile x and y
   # assume that cluster with sqrt(size) needs a box of width=m*sqrt(size)
   gridx = 250
@@ -143,6 +143,109 @@ ggsave(fn,width=10, height=2.5)
 
 
 
+# get simple stats for text
+Ji = get.full.analysis()[[1]]
+I = Ji$noise_mag==.01 & Ji$network=="CORUM" & Ji$iter==1
+unqalg = unique(Ji$algorithm)
+df = data.frame(algorithm = unqalg,
+                ncluster = rep(NA, length(unqalg)),
+                nchanged = rep(NA, length(unqalg)), stringsAsFactors = F)
+for (ii in 1:length(unqalg)) {
+  ia = I & Ji$algorithm==unqalg[ii]
+  df$ncluster[ii] = sum(ia)
+  df$nchanged[ii] = sum(Ji$Ji1[ia] < 1, na.rm = T)
+  df$J[ii] = mean(Ji$Ji1[ia])
+}
+df$frac.changed = df$nchanged / df$ncluster
+
+
+
+# do non-optimal clustering
+ints.corum = as.data.frame(read_tsv("../data/interactomes/corum_pairwise.txt"))
+noise.range = c(0, .01)
+clusts1 = clusts3 = clusts4 = clusts5 = clusts6 = clusts7 = clusts8 = clusts9 = list()
+for (uu in 1:length(noise.range)) {
+  ints.shuffle = shufflecorum(ints.corum, noise.range[uu])
+  unqprots = unique(c(ints.shuffle[,1], ints.shuffle[,2]))
+  
+  # 1. hierarchical
+  x = hierarch.edge.list.format(ints.shuffle)
+  tmp = stats::cutree(stats::hclust(d = x, method="average"), k = 1000)
+  clusts = list()
+  for (ii in 1:nclust) {
+    clusts[[ii]] = unqprots[tmp == ii]
+  }
+  clusts1[[uu]] = sapply(clusts, FUN = function(x) paste(x, collapse=";"))
+  
+  # 3. MCODE
+  x = graph.data.frame(ints.shuffle)
+  tmp = mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 1)
+  clusts = tmp[[1]] %>% lapply(., FUN = function(x) unqprots[x])
+  clusts3[[uu]] = sapply(clusts, FUN = function(x) paste(x, collapse=";"))
+  
+  # 4. Louvain
+  if (ncol(ints.shuffle)==2) ints.shuffle$weights = 1
+  tmp = louvain(ints.shuffle, 1e4)
+  clusts = list()
+  unqclusts = unique(tmp$cluster)
+  for (ii in 1:length(unqclusts)) {
+    clusts[[ii]] = unqprots[tmp$cluster == unqclusts[ii]]
+  }
+  clusts = clusts[!tolower(unqclusts) =="singleton"]
+  clusts4[[uu]] = sapply(clusts, FUN = function(x) paste(x, collapse=";"))
+  
+  # 5. Leiden
+  adjmat = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]))
+  if (ncol(ints.shuffle)==3) edge.attributes(adjmat)$weight = ints.shuffle[,3]
+  this.clust = leiden(adjmat, resolution_parameter = 1)
+  unqprots = names(V(adjmat))
+  unqclusts = sort(unique(this.clust))
+  clusts = list()
+  for (ii in 1:length(unqclusts)) {
+    clusts[[ii]] = unqprots[this.clust == unqclusts[ii]]
+  }
+  clusts5[[uu]] = sapply(clusts, FUN = function(x) paste(x, collapse=";"))
+  
+  # 6. walktrap
+  graph.object = graph_from_edgelist(as.matrix(ints.shuffle[,1:2]), directed = F)
+  if (ncol(ints.shuffle)==3) edge.attributes(graph.object)$weight = ints.shuffle[,3]
+  clusts = walktrap.community(graph.object, steps = 10)
+  clusts6[[uu]] = sapply(clusts, FUN = function(x) paste(x, collapse=";"))
+  
+  # 7. pam (k-med)
+  tmp = pamclust(ints.shuffle, 1000)
+  clusts = sapply(tmp, strsplit, ";")
+  clusts7[[uu]] = sapply(clusts, FUN = function(x) paste(x, collapse=";"))
+  
+  # 8. cluster one
+  tmp = unlist(clusteroneR(ints.shuffle, pp=2, density_threshold = 0.3, 
+                           java_path = paste(home.dir, "/java/cluster_one-1.0.jar", sep=""),
+                           output_path = co.tmpdir))
+  clusts = sapply(tmp, strsplit, ";")
+  clusts8[[uu]] = sapply(clusts, FUN = function(x) paste(x, collapse=";"))
+  
+  # 9. mcl
+  # G = graph.data.frame(ints.shuffle, directed=FALSE)
+  # A = as_adjacency_matrix(G,type="both", names=TRUE, sparse=FALSE)
+  # tmp = MCL::mcl(A, inflation = 4, addLoops = FALSE, max.iter = 100)
+  # unqprots = rownames(A)
+  # clusts = list()
+  # unqclusts = unique(tmp$Cluster)
+  # for (ii in 1:length(unqclusts)) {
+  #   clusts[[ii]] = unqprots[tmp$Cluster == unqclusts[ii]]
+  # }
+  # clusts9[[uu]] = sapply(clusts, FUN = function(x) paste(x, collapse=";"))
+}
+
+algs = c("hierarchical","mcode","louvain","leiden","walktrap","k-med","CO", "MCL")
+df2 = data.frame(algorithm = algs,
+                 noise_mag = rep(.01, 8),
+                 JJ = rep(NA, 8), stringsAsFactors = F)
+allclusts = list(clusts1,clusts3,clusts4,clusts5,clusts6,clusts7,clusts8,clusts9)
+for (ii in 1:7) {
+  print(ii)
+  df2$JJ[ii] = mean(calcJ2(allclusts[[ii]][[1]], allclusts[[ii]][[2]]))
+}
 
 # # test - small clusters
 # I = Ji$network == "CORUM" & Ji$noise_mag==0.02 & Ji$cluster.size<=5

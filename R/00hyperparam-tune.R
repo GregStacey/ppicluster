@@ -83,7 +83,7 @@ df.params = df.params[df.params$algorithm=="louvain", ]
 #
 
 df.params0 = df.params
-for (hparams in 1:nrow(df.params)) {
+for (hparams in 1:nrow(df.params0)) {
   # choose which parameter set
   if (!hparams==-1) {
     df.params = df.params0[hparams, ]
@@ -122,39 +122,61 @@ for (hparams in 1:nrow(df.params)) {
     clusts = clusts[[1]] %>% lapply(., FUN = function(x) unqprots[x])
     
   } else if (df.params$algorithm == "louvain") {
+    # # 4. Louvain
+    # tmp = louvain(ints.corum, params[1])
+    # 
+    # clusts = list()
+    # unqclusts = unique(tmp$cluster)
+    # for (ii in 1:length(unqclusts)) {
+    #   clusts[[ii]] = unqprots[tmp$clust == unqclusts[ii]]
+    # }
+    
     # 4. Louvain
+    if (ncol(ints.corum)==2) ints.corum$weights = 1
     tmp = louvain(ints.corum, params[1])
     
     clusts = list()
     unqclusts = unique(tmp$cluster)
     for (ii in 1:length(unqclusts)) {
-      clusts[[ii]] = unqprots[tmp$clust == unqclusts[ii]]
+      clusts[[ii]] = unqprots[tmp$cluster == unqclusts[ii]]
     }
+    # remove singletons
+    clusts = clusts[!tolower(unqclusts) =="singleton"]
     
   } else if (df.params$algorithm == "leiden") {
-    # 5. Leiden
-    adjmat = graph_from_edgelist(as.matrix(ints.corum))
-    tmp = leiden(adjmat, resolution_parameter = params[1])
-    unqprots = rownames(adjmat)
+    # # 5. Leiden
+    # adjmat = graph_from_edgelist(as.matrix(ints.corum))
+    # tmp = leiden(adjmat, resolution_parameter = params[1])
+    # unqprots = rownames(adjmat)
+    # 
+    # clusts = list()
+    # unqclusts = unique(tmp)
+    # for (ii in 1:length(unqclusts)) {
+    #   clusts[[ii]] = unqprots[tmp == unqclusts[ii]]
+    # }
     
+    # 5. Leiden
+    adjmat = graph_from_edgelist(as.matrix(ints.corum[,1:2]))
+    if (ncol(ints.corum)==3) edge.attributes(adjmat)$weight = ints.corum[,3]
+    this.clust = leiden(adjmat, resolution_parameter = params[1])
+    unqprots = names(V(adjmat))
+    
+    unqclusts = sort(unique(this.clust))
     clusts = list()
-    unqclusts = unique(tmp)
     for (ii in 1:length(unqclusts)) {
-      clusts[[ii]] = unqprots[tmp == unqclusts[ii]]
+      clusts[[ii]] = unqprots[this.clust == unqclusts[ii]]
     }
   }
   
   # remove clusts with N<3
   nn = unlist(lapply(clusts, length))
   clusts = clusts[nn>2]
-  
-  
+
   # compare to ground truth
   df = data.frame(cluster = unlist(lapply(clusts, paste, collapse = ";")), stringsAsFactors = F)
   df$Ji = unlist(sapply(df$cluster, FUN = function(x) calcA(x, corum$`subunits(UniProt IDs)`)))
   df$algorithm = df.params$algorithm
   df$params = df.params$params
-  
   
   # write
   sf = paste("../data/00hyperparam_tune/louvain_", hparams, "_paramtune.txt", sep="")
@@ -166,7 +188,7 @@ for (hparams in 1:nrow(df.params)) {
 # read all files and get optimal sets for each algorithm
 fns = list.files("../data/00hyperparam_tune/", pattern = "louvain*", full.names = T)
 df = as.data.frame(read_tsv(fns[1]))
-for (ii in 2:length(fns)) {
+for (ii in 1:length(fns)) {
   print(ii)
   df = rbind(df, as.data.frame(read_tsv(fns[ii])))
 }
@@ -177,11 +199,11 @@ df.best = data.frame(algorithm = unique(df$algorithm),
                      params = rep(NA, length(unique(df$algorithm))), stringsAsFactors = F)
 for (ii in 1:nrow(df.best)) {
   I = df$algorithm == df.best$algorithm[ii]
-  unqparams = unique(df$params[I])
+  unqparams = sort(unique(df$params[I]))
   JJ = numeric(length(unqparams))
   for (jj in 1:length(unqparams)) {
     ia = I & df$params == unqparams[jj]
-    JJ[jj] = mean(df$Ji[ia], na.rm=T)
+    JJ[jj] = median(df$Ji[ia], na.rm=T)
   }
   
   ib = which.max(JJ)

@@ -73,6 +73,13 @@ calcA = function(this.cluster, clusters) {
   return(A)
 }
 
+calcJ2 = function(clust.ref, clust) {
+  xx = rep(NA, length(clust))
+  for (ii in 1:length(clust)) {
+    xx[ii] = calcA(clust[ii], clust.ref)
+  }
+  return(xx)
+}
 
 calcAz = function(this.cluster, clusters) {
   # z-score of J, Ji
@@ -874,7 +881,7 @@ get.full.analysis = function(lazyload = T) {
     
     # (mcode, louvain, leiden, hierarch,)x(corum, drugbank, emailEU) + 
     #     (mcl, co_mcl, co, pam, walktrap, hierarch, mcode, louvain, leiden)x(biogrid, collins2007)
-    fns = list.files("../data/data 6/clusters/", pattern = "*.txt", full.names = T)
+    fns = list.files("../data/data final3/clusters/", pattern = "*.txt", full.names = T)
     bad = rep(NA, 1000)
     for (ii in 1:length(fns)) {
       tmp = as.data.frame(read_tsv(fns[ii]))
@@ -960,6 +967,9 @@ get.full.analysis = function(lazyload = T) {
     Ji$algorithm[Ji$algorithm == "leiden"] = "Leiden"
     Ji$algorithm[Ji$algorithm == "louvain"] = "Louvain"
     Ji$algorithm[Ji$algorithm == "mcode"] = "MCODE"
+    unqnet = unique(Ji$network)
+    unqalg = unique(Ji$algorithm)
+    unqnoise = unique(Ji$noise_mag)
     
     # calculate sim
     sim = data.frame(network = character(10^4),
@@ -986,13 +996,13 @@ get.full.analysis = function(lazyload = T) {
     }
     sim = sim[1:cc,]
     
-    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions4.Rda"
-    if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions3.Rda"
+    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions5.Rda"
+    if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions5.Rda"
     save(Ji, sim, file = sf)
     
   } else {
-    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions4.Rda"
-    if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions4.Rda"
+    sf = "/Users/gregstacey/Academics/Foster/Manuscripts/ClusterExplore/data/full_netw_MCPrevisions5.Rda"
+    if (!dir.exists(dirname(sf))) sf = "../data/full_netw_MCPrevisions5.Rda"
     load(sf)
   }
   
@@ -1108,10 +1118,39 @@ louvain = function(edgelist, resolution) {
   tmp = FindVariableFeatures(tmp)
   tmp = RunPCA(tmp)
   tmp = FindNeighbors(tmp)
-  tmp = FindClusters(tmp, resolution = resolution, group.singletons = F)
+  tmp = FindClusters(tmp, resolution = resolution, group.singletons = F, method = "igraph")
   clusts = data.frame(cluster = Idents(tmp), prots = names(Idents(tmp)), 
                       stringsAsFactors = F)
   return(clusts)
+}
+
+
+louvain.two.stage = function(clusts, edgelist, resolution) {
+  # second stage
+  clusts2 = clusts[NULL, ]
+  unqclusts1 = unique(clusts$cluster)
+  for (ii in 1:length(unqclusts1)) {
+    # try and break up first-stage cluster
+    this.clust = tryCatch( {
+      prots = clusts$prots[clusts$cluster == unqclusts1[ii]]
+      edges = edgelist[edgelist[,1]%in%prots & edgelist[,2]%in%prots, ]
+      this.clust = louvain(edges, resolution)
+    }, error = function(cond) {
+      # if you can't break up this cluster, just return the cluster
+      print(cond)
+      this.clust = clusts[clusts$cluster == unqclusts1[ii],]
+    })
+    
+    # fix overlapping cluster names
+    this.clust$cluster = as.numeric(this.clust$cluster)
+    nmax = max(this.clust$cluster)
+    if (!is.na(nmax)) this.clust$cluster = this.clust$cluster + nmax + 1
+    
+    # combine
+    clusts2 = rbind(clusts2, this.clust)
+  }
+  
+  return(clusts2)
 }
 
 

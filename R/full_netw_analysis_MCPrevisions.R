@@ -71,7 +71,7 @@ if (this.noise.range == "all") {
 }
 
 for (uu in 1:length(this.noise.range)) {
-  sf = paste(data.dir, "clusters/", 
+  sf = paste(data.dir, "data final3/clusters/", 
              basename(tools::file_path_sans_ext(params$dataset)),
              "-algorithm=", params$algorithm, 
              "-noise=", this.noise.range[uu], ".txt", sep="")
