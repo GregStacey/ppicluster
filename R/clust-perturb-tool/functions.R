@@ -110,111 +110,6 @@ removenetwork = function(ints.corum, noise){
 }
 
 
-pam.edge.list.format = function(ints) {
-  unqprots = unique(c(ints[,1], ints[,2]))
-  nn = length(unqprots)
-  
-  # create adjacency matrix in the style of `dist` object
-  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
-  I.row = match(ints[,1], unqprots) # row
-  I.col = match(ints[,2], unqprots) # column
-  
-  unqprots = unique(c(ints[,1], ints[,2]))
-  nn = length(unqprots)
-  
-  # create adjacency matrix in the style of `dist` object
-  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
-  I.row = match(ints[,1], unqprots) # row
-  I.col = match(ints[,2], unqprots) # column
-  
-  I.fill = numeric(length(I.row))
-  for (ii in 1:length(I.row)) {
-    a = I.row[ii]
-    b = I.col[ii]
-    # ensure I.col < I.row, i.e. upper triangular
-    if (I.row[ii] < I.col[ii]) {
-      a = I.col[ii]
-      b = I.row[ii]
-    }
-    
-    I.fill[ii] = a - 1
-    if (b>1) {
-      colsum = 0
-      for (jj in 1:(b-1)) {
-        colsum = colsum + (nn-jj) - 1
-      }
-      I.fill[ii] = colsum + a - 1
-    }
-  }
-  
-  # dummy dist object
-  x = matrix(runif(nn * 10), nrow = nn, ncol=10)
-  d = dist(x)
-  attr(d, 'Upper') = T
-  d[1:length(d)] = 1
-  d[I.fill] = 0
-  
-  return(d)
-}
-
-pam.cluster.format = function(clusts, unqprots) {
-  # compile `clusts` into lists of proteins
-  unqclusts = unique(clusts$clustering)
-  Nmembers = numeric(length(unqclusts))
-  clusts.prots = character(length(unqclusts))
-  for (ii in 1:length(unqclusts)) {
-    I = clusts$cluster==unqclusts[ii]
-    clusts.prots[ii] = paste(unqprots[I], collapse=";")
-    Nmembers[ii] = sum(I)
-  }
-  clusts.prots = clusts.prots[Nmembers>=3]
-  clusts.prots = as.list(clusts.prots)
-  
-  return(clusts.prots)
-}
-
-
-# mcl
-# requires passing cluster.format the unqprots from the edge list
-# this is so clusters, e.g. "1;2;3" are matched to proteins
-mcl.edge.list.format = function(ints.corum) {
-  G = graph.data.frame(ints.corum,directed=FALSE)
-  A = as_adjacency_matrix(G,type="both",names=TRUE,sparse=FALSE)
-}
-
-mcl.cluster.format = function(tmp, unqprots) {
-  clusts = character()
-  unqclusts = unique(tmp)
-  for (ii in 1:length(unqclusts)) {
-    I = tmp == unqclusts[ii]
-    if (sum(I)<3) next
-    clusts[ii] = paste(unqprots[I], collapse = ";")
-  }
-  clusts = clusts[!clusts==""]
-  clusts = clusts[!is.na(clusts)]
-  return(clusts)
-}
-
-
-# # hierachical
-# hierarch.edge.list.format = function(ints) {
-#   return(pam.edge.list.format(ints))
-# }
-hierarch.cluster.format = function(tmp, unqprots) {
-  clusts = character()
-  unqclusts = unique(tmp)
-  for (ii in 1:length(unqclusts)) {
-    I = tmp == unqclusts[ii]
-    clusts[ii] = paste(unqprots[I], collapse = ";")
-  }
-  clusts = clusts[!clusts==""]
-  clusts = clusts[!is.na(clusts)]
-  return(clusts)
-}
-
-
-
-
 mymcl = function (m, infl, iter = 1000, remove.self.loops = FALSE, prune = FALSE, 
                   thresh = 1e-06, pruning.prob = 1e-06, use.sparse = NULL, 
                   verbose = FALSE) 
@@ -295,4 +190,140 @@ mymcl = function (m, infl, iter = 1000, remove.self.loops = FALSE, prune = FALSE
     if (j > length(attractors)) unlabelled = 0
   }
   return(clusters)
+}
+
+
+
+
+
+
+
+# edge formatting
+# requires passing cluster.format the unqprots from the edge list
+# this is so clusters, e.g. "1;2;3" are matched to proteins
+pam.edge.list.format = function(ints) {
+  unqprots = unique(c(ints[,1], ints[,2]))
+  nn = length(unqprots)
+  
+  # create adjacency matrix in the style of `dist` object
+  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
+  I.row = match(ints[,1], unqprots) # row
+  I.col = match(ints[,2], unqprots) # column
+  
+  unqprots = unique(c(ints[,1], ints[,2]))
+  nn = length(unqprots)
+  
+  # create adjacency matrix in the style of `dist` object
+  # MAKE SURE YOU'RE GETTING THIS RIGHT!!!
+  I.row = match(ints[,1], unqprots) # row
+  I.col = match(ints[,2], unqprots) # column
+  
+  I.fill = numeric(length(I.row))
+  for (ii in 1:length(I.row)) {
+    a = I.row[ii]
+    b = I.col[ii]
+    # ensure I.col < I.row, i.e. upper triangular
+    if (I.row[ii] < I.col[ii]) {
+      a = I.col[ii]
+      b = I.row[ii]
+    }
+    
+    I.fill[ii] = a - 1
+    if (b>1) {
+      colsum = 0
+      for (jj in 1:(b-1)) {
+        colsum = colsum + (nn-jj) - 1
+      }
+      I.fill[ii] = colsum + a - 1
+    }
+  }
+  
+  # dummy dist object
+  x = matrix(runif(nn * 10), nrow = nn, ncol=10)
+  d = dist(x)
+  attr(d, 'Upper') = T
+  d[1:length(d)] = 1
+  d[I.fill] = 0
+  
+  return(d)
+}
+
+mcl.edge.list.format = function(ints.corum) {
+  G = graph.data.frame(ints.corum,directed=FALSE)
+  A = as_adjacency_matrix(G,type="both",names=TRUE,sparse=FALSE)
+}
+leiden.edge.list.format = function(ints) {
+  adjmat = graph_from_edgelist(as.matrix(ints[,1:2]))
+  if (ncol(ints.shuffle)==3) edge.attributes(adjmat)$weight = ints.shuffle[,3]
+  return(adjmat)
+}
+louvain.edge.list.format = function(ints) {
+  if (ncol(ints)==2) ints$weights = 1
+  return(ints)
+}
+mcode.edge.list.format = function(ints) {
+  return(graph.data.frame(ints))
+}
+
+# cluster formatting
+mcl.cluster.format = function(tmp, unqprots) {
+  clusts = character()
+  unqclusts = unique(tmp)
+  for (ii in 1:length(unqclusts)) {
+    I = tmp == unqclusts[ii]
+    if (sum(I)<3) next
+    clusts[ii] = paste(unqprots[I], collapse = ";")
+  }
+  clusts = clusts[!clusts==""]
+  clusts = clusts[!is.na(clusts)]
+  return(clusts)
+}
+pam.cluster.format = function(clusts, unqprots) {
+  # compile `clusts` into lists of proteins
+  unqclusts = unique(clusts$clustering)
+  Nmembers = numeric(length(unqclusts))
+  clusts.prots = character(length(unqclusts))
+  for (ii in 1:length(unqclusts)) {
+    I = clusts$cluster==unqclusts[ii]
+    clusts.prots[ii] = paste(unqprots[I], collapse=";")
+    Nmembers[ii] = sum(I)
+  }
+  clusts.prots = clusts.prots[Nmembers>=3]
+  clusts.prots = as.list(clusts.prots)
+  
+  return(clusts.prots)
+}
+hierarch.cluster.format = function(tmp, unqprots) {
+  clusts = character()
+  unqclusts = unique(tmp)
+  for (ii in 1:length(unqclusts)) {
+    I = tmp == unqclusts[ii]
+    clusts[ii] = paste(unqprots[I], collapse = ";")
+  }
+  clusts = clusts[!clusts==""]
+  clusts = clusts[!is.na(clusts)]
+  return(clusts)
+}
+leiden.cluster.format = function(tmp, unqprots) {
+  unqclusts = unique(tmp$cluster)
+  clusts = rep(NA, length(unqclusts))
+  for (ii in 1:length(unqclusts)) {
+    clusts[ii] = paste(unqprots[tmp$cluster == unqclusts[ii]], collapse = ";")
+  }
+  # remove singletons
+  clusts = clusts[!tolower(unqclusts) =="singleton"]
+  return(clusts)
+}
+louvain.cluster.format = function(tmp, unqprots) {
+  unqclusts = unique(tmp$cluster)
+  clusts = rep(NA, length(unqclusts))
+  for (ii in 1:length(unqclusts)) {
+    clusts[[ii]] = paste(unqprots[tmp$cluster == unqclusts[ii]], collapse = ";")
+  }
+  # remove singletons
+  clusts = clusts[!tolower(unqclusts) =="singleton"]
+}
+mcode.cluster.format = function(tmp, unqprots) {
+  clusts = tmp[[1]] %>% lapply(., FUN = function(x) paste(unqprots[x], collapse = ";"))
+  return(clusts)
 }

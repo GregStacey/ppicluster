@@ -15,19 +15,31 @@ unqprots = unique(c(ints.corum$protA, ints.corum$protB))
 
 noise = 0.1
 iters = 100
-alg.names = c("k-Med", "MCL", "walktrap", "CO")
+alg.names = c("k-Med", "MCL", "walktrap", "CO", "Louvain", "Leiden", "MCODE", "hierarchical")
 alg = c(function(x) pam(x, 1500),
         function(x) mymcl(x, infl = 2, iter = 100, verbose = T),
         walktrap.community,
-        function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"))
+        function(x) clusteroneR(x, pp=500, density_threshold = 0.1, java_path = "../java/cluster_one-1.0.jar"),
+        function(x) louvain(x, 15),
+        function(x) leiden(x, resolution_parameter = 2),
+        function(x) mcode(x, vwp = 0, haircut = FALSE, fluff = FALSE, fdt = 0.1),
+        function(x) print("hierarchical"))
 edge.list.format = list(pam.edge.list.format, 
                         mcl.edge.list.format, 
                         function(x) graph_from_edgelist(as.matrix(x), directed = F),
-                        NULL)
+                        NULL, 
+                        louvain.edge.list.format, 
+                        leiden.edge.list.format, 
+                        mcode.edge.list.format, 
+                        hierarch.edge.list.format)
 cluster.format = list(pam.cluster.format,
                       mcl.cluster.format,
                       NULL,
-                      NULL)
+                      NULL,
+                      louvain.cluster.format,
+                      leiden.cluster.format,
+                      mcode.cluster.format,
+                      hierarch.cluster.format)
 
 
 if (0) {
@@ -62,16 +74,47 @@ if (0) {
   #                                cluster.format = cluster.format[[jj]])
   # save(clusters.kmed, clusters.mcl, clusters.walk, clusters.co,
   #      file = "../data/enrichment_clustperturb.Rda")
-
-  # mcl
-  print("mcl")
-  jj = 2
-  clusters.mcl = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]],
+  #
+  # # mcl
+  # print("mcl")
+  # jj = 2
+  # clusters.mcl = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]],
+  #                               noise = noise, iter = iters,
+  #                               edge.list.format = edge.list.format[[jj]],
+  #                               cluster.format = cluster.format[[jj]])
+  # save(clusters.mcl,
+  #      file = "../data/enrichment_clustperturb_mcl.Rda")
+  
+  jj = 5
+  cluster.louvain = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]],
+                                  noise = noise, iter = iters,
+                                  edge.list.format = edge.list.format[[jj]],
+                                  cluster.format = cluster.format[[jj]])
+  save(cluster.louvain, file = "../data/enrichment_clustperturb_mcpres.Rda,")
+  
+  jj = 7
+  cluster.leiden = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]],
+                                 noise = noise, iter = iters,
+                                 edge.list.format = edge.list.format[[jj]],
+                                 cluster.format = cluster.format[[jj]])
+  save(cluster.louvain, cluster.leiden,
+       file = "../data/enrichment_clustperturb_mcpres.Rda,")
+  
+  jj = 7
+  cluster.mcode = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]],
                                 noise = noise, iter = iters,
                                 edge.list.format = edge.list.format[[jj]],
                                 cluster.format = cluster.format[[jj]])
-  save(clusters.mcl,
-       file = "../data/enrichment_clustperturb_mcl.Rda")
+  save(cluster.louvain, cluster.leiden, cluster.mcode,
+       file = "../data/enrichment_clustperturb_mcpres.Rda,")
+  
+  jj = 8
+  cluster.hierarch = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]],
+                                   noise = noise, iter = iters,
+                                   edge.list.format = edge.list.format[[jj]],
+                                   cluster.format = cluster.format[[jj]])
+  save(cluster.louvain, cluster.leiden, cluster.mcode, cluster.hierarch,
+       file = "../data/enrichment_clustperturb_mcpres.Rda,")
 }
 
 
