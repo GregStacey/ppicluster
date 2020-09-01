@@ -254,7 +254,7 @@ mcl.edge.list.format = function(ints.corum) {
 }
 leiden.edge.list.format = function(ints) {
   adjmat = graph_from_edgelist(as.matrix(ints[,1:2]))
-  if (ncol(ints.shuffle)==3) edge.attributes(adjmat)$weight = ints.shuffle[,3]
+  if (ncol(ints)==3) edge.attributes(adjmat)$weight = ints[,3]
   return(adjmat)
 }
 louvain.edge.list.format = function(ints) {
@@ -305,13 +305,11 @@ hierarch.cluster.format = function(tmp, unqprots) {
   return(clusts)
 }
 leiden.cluster.format = function(tmp, unqprots) {
-  unqclusts = unique(tmp$cluster)
-  clusts = rep(NA, length(unqclusts))
+  unqclusts = sort(unique(tmp))
+  clusts = list()
   for (ii in 1:length(unqclusts)) {
-    clusts[ii] = paste(unqprots[tmp$cluster == unqclusts[ii]], collapse = ";")
+    clusts[[ii]] = unqprots[tmp == unqclusts[ii]]
   }
-  # remove singletons
-  clusts = clusts[!tolower(unqclusts) =="singleton"]
   return(clusts)
 }
 louvain.cluster.format = function(tmp, unqprots) {

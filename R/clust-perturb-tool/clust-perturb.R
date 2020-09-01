@@ -40,7 +40,8 @@ clust.perturb0 = function(network,
                           noise = 0.5, 
                           iters = 100, 
                           edge.list.format = NULL,
-                          cluster.format = NULL) {
+                          cluster.format = NULL,
+                          node.names = NULL) {
   
   #print(clustering.algorithm)
   #print(edge.list.format)
@@ -130,7 +131,8 @@ clust.perturb2 = function(network,
                           noise = 0.5, 
                           iters = 100, 
                           edge.list.format = NULL,
-                          cluster.format = NULL) {
+                          cluster.format = NULL,
+                          node.names = NULL) {
   
   print('1')
   
@@ -173,6 +175,11 @@ clust.perturb2 = function(network,
       # add noise to network
       ints.shuffle = shufflecorum(network, noise[ii])
       unqprots = unique(c(ints.shuffle$protA, ints.shuffle$protB))
+      
+      # get unqprots by custom method if needed
+      if (!is.null(node.names)) {
+        unqprots = node.names(ints.shuffle)
+      }
       
       # connect ints.shuffle to clusters0
       i.removed = !paste(network$protA,network$protB,sep="-") %in% paste(ints.shuffle$protA,ints.shuffle$protB,sep="-")

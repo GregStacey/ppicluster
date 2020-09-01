@@ -7,7 +7,7 @@ source("clust-perturb-tool/functions.R")
 fn = "../data/allComplexes.txt"
 corum = as.data.frame(read_tsv(fn))
 corum = corum[corum$Organism=="Human",]
-ints.corum = binarize.corum(corum)
+ints.corum = as.data.frame(read_tsv("../data/interactomes/corum_pairwise.txt"))
 unqprots = unique(c(ints.corum$protA, ints.corum$protB))
 
 
@@ -92,11 +92,17 @@ if (0) {
                                   cluster.format = cluster.format[[jj]])
   save(cluster.louvain, file = "../data/enrichment_clustperturb_mcpres.Rda,")
   
-  jj = 7
-  cluster.leiden = clust.perturb(ints.corum, clustering.algorithm = alg[[jj]],
+  jj = 6
+  leiden.node.names = function(x) {
+    adjmat = graph_from_edgelist(as.matrix(x[,1:2]))
+    unqprots = names(V(adjmat))
+    return(unqprots)
+  }
+  cluster.leiden = clust.perturb2(ints.corum, clustering.algorithm = alg[[jj]],
                                  noise = noise, iter = iters,
                                  edge.list.format = edge.list.format[[jj]],
-                                 cluster.format = cluster.format[[jj]])
+                                 cluster.format = cluster.format[[jj]],
+                                 node.names = leiden.node.names)
   save(cluster.louvain, cluster.leiden,
        file = "../data/enrichment_clustperturb_mcpres.Rda,")
   
